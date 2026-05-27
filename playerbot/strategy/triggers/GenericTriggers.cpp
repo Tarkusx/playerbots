@@ -111,7 +111,7 @@ bool OutNumberedTrigger::IsActive()
         if (!creature)
             continue;
 
-        if (!creature->CanAttackOnSight(bot))
+        if (!creature->IsHostileTo(bot))
             continue;
 
         int32 dLevel = creature->GetLevel() - botLevel;

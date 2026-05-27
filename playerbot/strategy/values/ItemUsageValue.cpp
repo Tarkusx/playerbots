@@ -955,7 +955,7 @@ bool ItemUsageValue::IsItemUsefulForSkill(ItemPrototype const* proto)
     switch (proto->Class)
     {
     case ITEM_CLASS_TRADE_GOODS:
-    case ITEM_CLASS_MISC:
+    case ITEM_CLASS_JUNK:
     case ITEM_CLASS_REAGENT:
     {
         if (ai->HasSkill(SKILL_TAILORING) && IsItemUsedBySkill(proto, SKILL_TAILORING))
@@ -1965,7 +1965,7 @@ bool ItemUsageValue::IsItemUsefulForFutureEquip(ItemPrototype const* proto)
 
 bool ItemUsageValue::IsItemUsefulForFutureCraft(ItemPrototype const* proto)
 {
-    if (proto->Class != ITEM_CLASS_TRADE_GOODS && proto->Class != ITEM_CLASS_MISC && proto->Class != ITEM_CLASS_REAGENT)
+    if (proto->Class != ITEM_CLASS_TRADE_GOODS && proto->Class != ITEM_CLASS_JUNK && proto->Class != ITEM_CLASS_REAGENT)
         return false;
 
     if (proto->Quality < ITEM_QUALITY_NORMAL)

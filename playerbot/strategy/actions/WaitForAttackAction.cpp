@@ -15,7 +15,7 @@ bool WaitForAttackKeepSafeDistanceAction::Execute(Event& event)
 
     if (target && target->IsAlive())
     {
-        const float safeDistance = std::max(float(target->GetAttackDistance(bot) + ATTACK_DISTANCE), WaitForAttackStrategy::GetSafeDistance());
+        const float safeDistance = std::max(float(PlayerbotsCompatibility::GetAttackDistance(target, bot) + ATTACK_DISTANCE), WaitForAttackStrategy::GetSafeDistance());
         const float safeDistanceThreshold = WaitForAttackStrategy::GetSafeDistanceThreshold();
 
         // Find the best point around the target.
@@ -103,9 +103,9 @@ bool WaitForAttackKeepSafeDistanceAction::IsEnemyClose(const WorldPosition& poin
             if (enemy->IsWithinLOSInMap(bot))
             {
                 // If the enemy is not neutral
-                if (enemy->CanAttackOnSight(bot))
+                if (enemy->IsHostileTo(bot))
                 {
-                    const float enemyAttackRange = enemy->GetAttackDistance(bot) + ATTACK_DISTANCE;
+                    const float enemyAttackRange = PlayerbotsCompatibility::GetAttackDistance(enemy, bot) + ATTACK_DISTANCE;
                     const float distanceToPoint = WorldPosition(enemy).sqDistance(point);
                     if (distanceToPoint <= (enemyAttackRange * enemyAttackRange))
                     {

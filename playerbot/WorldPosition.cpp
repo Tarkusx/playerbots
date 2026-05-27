@@ -1224,7 +1224,7 @@ uint32 WorldPosition::getUnitsAggro(const std::list<ObjectGuid>& units, const Pl
         
         if (!unit) continue; 
         
-        if (this->sqDistance(unit) > unit->GetAttackDistance(bot) * unit->GetAttackDistance(bot))
+        if (this->sqDistance(unit) > PlayerbotsCompatibility::GetAttackDistance(unit, bot) * PlayerbotsCompatibility::GetAttackDistance(unit, bot))
             continue;
 
         count++;

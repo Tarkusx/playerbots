@@ -47,8 +47,8 @@ bool SetAvoidAreaAction::Execute(Event& event)
             continue;
 
         WorldPosition point(targetUnit);
-        pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 12, targetUnit->GetAttackDistance(bot) * 2.5);
-        pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 13, targetUnit->GetAttackDistance(bot));
+        pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 12, PlayerbotsCompatibility::GetAttackDistance(targetUnit, bot) * 2.5);
+        pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 13, PlayerbotsCompatibility::GetAttackDistance(targetUnit, bot));
     }
 
     return true;

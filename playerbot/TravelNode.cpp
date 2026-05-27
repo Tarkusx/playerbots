@@ -4,7 +4,10 @@
 #include <iomanip>
 #include <regex>
 
+#include <boost/filesystem.hpp>
+
 #include "Globals/ObjectMgr.h"
+#include "Database/DBCStores.h"
 #include "PlayerbotAI.h"
 #include "MotionGenerators/PathFinder.h"
 #include "Entities/Transports.h"
@@ -57,11 +60,11 @@ void TravelNodePath::calculateCost(bool distanceOnly)
                 for (auto& creaturePair : point.getCreaturesNear(50)) //Agro radius + 5
                 {
                     CreatureData const cData = creaturePair->second;
-                    CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(cData.id);
+                    CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(cData.creature_id[0]);
 
                     if (cInfo)
                     {
-                        FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->Faction);
+                        FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->faction);
 
                         if (aReact.find(factionEntry) == aReact.end())
                             aReact.insert(std::make_pair(factionEntry, PlayerbotAI::friendToAlliance(factionEntry)));
@@ -71,12 +74,12 @@ void TravelNodePath::calculateCost(bool distanceOnly)
                             hReact.insert(std::make_pair(factionEntry, PlayerbotAI::friendToHorde(factionEntry)));
                         hFriend = hReact.find(factionEntry)->second;
 
-                        if (maxLevelCreature[0] < cInfo->MaxLevel && !aFriend && !hFriend)
-                            maxLevelCreature[0] = cInfo->MaxLevel;
-                        if (maxLevelCreature[1] < cInfo->MaxLevel && aFriend && !hFriend)
-                            maxLevelCreature[1] = cInfo->MaxLevel;
-                        if (maxLevelCreature[2] < cInfo->MaxLevel && !aFriend && hFriend)
-                            maxLevelCreature[2] = cInfo->MaxLevel;
+                        if (maxLevelCreature[0] < cInfo->level_max && !aFriend && !hFriend)
+                            maxLevelCreature[0] = cInfo->level_max;
+                        if (maxLevelCreature[1] < cInfo->level_max && aFriend && !hFriend)
+                            maxLevelCreature[1] = cInfo->level_max;
+                        if (maxLevelCreature[2] < cInfo->level_max && !aFriend && hFriend)
+                            maxLevelCreature[2] = cInfo->level_max;
                     }
                 }
 
@@ -121,14 +124,14 @@ float TravelNodePath::getCost(Unit* unit, uint32 cGold)
         if (getPathType() == TravelNodePathType::areaTrigger && pathObject)
         {
             uint32 triggerId = getPathObject();
-            AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(pathObject);
-            AreaTrigger const* at = sObjectMgr.GetAreaTrigger(pathObject);
-            if (atEntry && at && atEntry->mapid == bot->GetMapId())
+            AreaTriggerEntry const* atEntry = sObjectMgr.GetAreaTrigger(pathObject);
+            AreaTriggerTeleport const* atTele = sObjectMgr.GetAreaTriggerTeleport(pathObject);
+            if (atEntry && atTele && atEntry->mapid == bot->GetMapId())
             {
                 Map* map = WorldPosition(atEntry->mapid, atEntry->box_x, atEntry->box_y, atEntry->box_z).getMap(bot->GetInstanceId());
-                if (map)
-                    if (at && at->conditionId && !sObjectMgr.IsConditionSatisfied(at->conditionId, bot, map, nullptr, CONDITION_FROM_AREATRIGGER_TELEPORT))
-                        return -1;
+                if (map && atTele->requiredCondition &&
+                    !sObjectMgr.IsConditionSatisfied(atTele->requiredCondition, bot, map, nullptr, CONDITION_FROM_AREATRIGGER))
+                    return -1;
             }
         }
 
@@ -158,10 +161,10 @@ float TravelNodePath::getCost(Unit* unit, uint32 cGold)
             if (taxiPath)
             {
 
-                if (!bot->isTaxiCheater() && taxiPath->price > cGold)
+                if (!bot->IsTaxiCheater() && taxiPath->price > cGold)
                     return -1;
 
-                if (!bot->isTaxiCheater() && !bot->m_taxi.IsTaximaskNodeKnown(taxiPath->to))
+                if (!bot->IsTaxiCheater() && !bot->GetTaxi().IsTaximaskNodeKnown(taxiPath->to))
                     return -1;
 
                 TaxiNodesEntry const* startTaxiNode = sTaxiNodesStore.LookupEntry(taxiPath->from);
@@ -239,7 +242,7 @@ uint32 TravelNode::getAreaTriggerId()
         if (link.second->getPathType() != TravelNodePathType::areaTrigger)
             continue;
 
-        AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(link.second->getPathObject());
+        AreaTriggerEntry const* atEntry = sObjectMgr.GetAreaTrigger(link.second->getPathObject());
         if (!atEntry)
             continue;
 
@@ -254,14 +257,13 @@ uint32 TravelNode::getAreaTriggerId()
 
 bool TravelNode::isAreaTriggerTarget(uint32 areaTriggerId)
 {
-    for (uint32 i = 0; i < sAreaTriggerStore.GetNumRows(); i++)
+    for (auto const& itr : sObjectMgr.GetAreaTriggersMap())
     {
+        uint32 i = itr.first;
         if (areaTriggerId && areaTriggerId != i)
             continue;
 
-        AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(i);
-        if (!atEntry)
-            continue;
+        AreaTriggerEntry const* atEntry = &itr.second;
 
         AreaTrigger const* at = sObjectMgr.GetAreaTrigger(i);
         if (!at)
@@ -1036,7 +1038,7 @@ bool TravelPath::UpcommingSpecialMovement(WorldPosition startPos, float maxDist,
     {
         if (startP->entry) //For area triggers we need to be close enough to trigger it's activation.
         {
-            AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(startP->entry);
+            AreaTriggerEntry const* atEntry = sObjectMgr.GetAreaTrigger(startP->entry);
             if (!atEntry)
                 return false;
 
@@ -1147,11 +1149,11 @@ void TravelPath::ClipPath(PlayerbotAI* ai, Unit* mover, bool ignoreEnemyTargets)
             if (unit->GetLevel() > mover->GetLevel() + 5)
                 continue;
 
-            float range = unit->GetAttackDistance(mover);
+            float range = PlayerbotsCompatibility::GetAttackDistance(unit, mover);
             if (WorldPosition(unit).sqDistance(p->point) > range * range)
                 continue;
 
-            if (!unit->CanAttackOnSight(mover) || !unit->IsWithinLOSInMap(mover))
+            if (!unit->IsHostileTo(mover) || !unit->IsWithinLOSInMap(mover))
                 continue;
 
             endP = p;
@@ -1694,7 +1696,7 @@ TravelNodeRoute TravelNodeMap::getRoute(TravelNode* start, TravelNode* goal, Uni
             childNode->m_h = h;
             childNode->parent = currentNode;
 
-            if (bot && !bot->isTaxiCheater())
+            if (bot && !bot->IsTaxiCheater())
                 childNode->currentGold = currentNode->currentGold - link.second->getPrice();
 
             if (childNode->close)
@@ -1766,7 +1768,7 @@ TravelNodeRoute TravelNodeMap::getRoute(WorldPosition startPos, WorldPosition en
 
             if (endPath.empty())
             {
-                if (endPos.mapid == startPos.mapid)
+                if (endPos.mapId == startPos.mapId)
                 {
                     endPath = endNodePosition.getPathTo(endPos, unit);
 
@@ -2063,54 +2065,23 @@ void TravelNodeMap::manageNodes(Unit* bot, bool mapFull)
 void TravelNodeMap::LoadMaps()
 {
     sLog.outError("Trying to load all maps and tiles for node generation. Please ignore any maps that could not be loaded.");
-    for (uint32 i = 0; i < sMapStorage.GetNumRows(); ++i)
+    for (const auto& entry : boost::filesystem::directory_iterator(sWorld.GetDataPath() + "mmaps"))
     {
-        if (!sMapStorage.LookupEntry<MapEntry>(i))
+        if (entry.path().extension() != ".mmtile")
             continue;
 
-        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->MapID;
-        if (mapId == 0 || mapId == 1 || mapId == 530 || mapId == 571)
-        {
-#ifndef MANGOSBOT_TWO
-            MMAP::MMapFactory::createOrGetMMapManager()->loadAllMapTiles(sWorld.GetDataPath(), mapId);
-#else
-            MMAP::MMapFactory::createOrGetMMapManager()->loadAllMapTiles(sWorld.GetDataPath(), mapId, 0);
-#endif
-        }
-        else
-        {
-            MMAP::MMapFactory::createOrGetMMapManager()->loadMapInstance(sWorld.GetDataPath(), mapId, 0);
-        }
-    }
-
-#ifndef MANGOSBOT_TWO
-    for (uint32 i = 0; i < sMapStorage.GetNumRows(); ++i)
-    {
-        if (!sMapStorage.LookupEntry<MapEntry>(i))
+        auto filename = entry.path().filename();
+        auto fileNameString = filename.c_str();
+        // trying to avoid string copy
+        uint32 mapId = (fileNameString[0] - '0') * 100 + (fileNameString[1] - '0') * 10 + (fileNameString[2] - '0');
+        if (!sMapStorage.LookupEntry<MapEntry>(mapId))
             continue;
 
-        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->MapID;
+        uint32 x = (fileNameString[3] - '0') * 10 + (fileNameString[4] - '0');
+        uint32 y = (fileNameString[5] - '0') * 10 + (fileNameString[6] - '0');
 
-        for (const auto& entry : boost::filesystem::directory_iterator(sWorld.GetDataPath() + "mmaps"))
-        {
-            if (entry.path().extension() == ".mmtile")
-            {
-                auto filename = entry.path().filename();
-                auto fileNameString = filename.c_str();
-                // trying to avoid string copy
-                uint32 fileMapId = (fileNameString[0] - '0') * 100 + (fileNameString[1] - '0') * 10 + (fileNameString[2] - '0');
-                if (fileMapId != mapId)
-                    continue;
-
-                uint32 x = (fileNameString[3] - '0') * 10 + (fileNameString[4] - '0');
-                uint32 y = (fileNameString[5] - '0') * 10 + (fileNameString[6] - '0');
-
-                if (!MMAP::MMapFactory::createOrGetMMapManager()->IsMMapIsLoaded(mapId, x, y))
-                    MMAP::MMapFactory::createOrGetMMapManager()->loadMap(sWorld.GetDataPath(), mapId, x, y);
-            }
-        }
+        MMAP::MMapFactory::createOrGetMMapManager()->loadMap(mapId, x, y);
     }
-#endif
 }
 
 void TravelNodeMap::generateNpcNodes()
@@ -2120,7 +2091,7 @@ void TravelNodeMap::generateNpcNodes()
     for (auto& creaturePair : WorldPosition().getCreaturesNear())
     {
         GuidPosition guidP(creaturePair);
-        CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(guidP.GetEntry());
+        CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(guidP.GetEntry());
 
         if (!cInfo)
             continue;
@@ -2144,16 +2115,16 @@ void TravelNodeMap::generateNpcNodes()
         }
         else if (cInfo->rank == 3)
         {
-            std::string nodeName = cInfo->Name;
+            std::string nodeName = cInfo->name;
 
             sTravelNodeMap.addNode(guidP, nodeName, true, true);
         }
         else if (cInfo->rank == 1 && !guidP.isOverworld())
         {
-            if (bossMap.find(cInfo->Entry) == bossMap.end())
-                bossMap[cInfo->Entry] = guidP;
-            else if (bossMap[cInfo->Entry])
-                bossMap[cInfo->Entry] = GuidPosition();
+            if (bossMap.find(cInfo->entry) == bossMap.end())
+                bossMap[cInfo->entry] = guidP;
+            else if (bossMap[cInfo->entry])
+                bossMap[cInfo->entry] = GuidPosition();
         }
     }
 
@@ -2164,12 +2135,12 @@ void TravelNodeMap::generateNpcNodes()
         if (!guidP)
             continue;
 
-        CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(guidP.GetEntry());
+        CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(guidP.GetEntry());
 
         if (!cInfo)
             continue;
 
-        std::string nodeName = cInfo->Name;
+        std::string nodeName = cInfo->name;
 
         sTravelNodeMap.addNode(guidP, nodeName, true, true);
     }
@@ -2216,11 +2187,10 @@ void TravelNodeMap::generateAreaTriggerNodes()
 {
     //Entrance nodes
 
-    for (uint32 i = 0; i < sAreaTriggerStore.GetNumRows(); i++)
+    for (auto const& itr : sObjectMgr.GetAreaTriggersMap())
     {
-        AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(i);
-        if (!atEntry)
-            continue;
+        uint32 i = itr.first;
+        AreaTriggerEntry const* atEntry = &itr.second;
 
         AreaTrigger const* at = sObjectMgr.GetAreaTrigger(i);
         if (!at)
@@ -2244,11 +2214,10 @@ void TravelNodeMap::generateAreaTriggerNodes()
 
     //Exit nodes
 
-    for (uint32 i = 0; i < sAreaTriggerStore.GetNumRows(); i++)
+    for (auto const& itr : sObjectMgr.GetAreaTriggersMap())
     {
-        AreaTriggerEntry const* atEntry = sAreaTriggerStore.LookupEntry(i);
-        if (!atEntry)
-            continue;
+        uint32 i = itr.first;
+        AreaTriggerEntry const* atEntry = &itr.second;
 
         AreaTrigger const* at = sObjectMgr.GetAreaTrigger(i);
         if (!at)
@@ -2321,9 +2290,9 @@ void TravelNodeMap::generatePortalNodes()
     }
 
     //Portal spell destinations.
-    for (uint32 i = 0; i < GetSpellStore()->GetMaxEntry(); ++i)
+    for (uint32 i = 0; i < sSpellTemplate.GetMaxEntry(); ++i)
     {
-        const SpellEntry* pSpellInfo = GetSpellStore()->LookupEntry<SpellEntry>(i);
+        const SpellEntry* pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(i);
 
         if (!pSpellInfo)
             continue;
@@ -2389,7 +2358,7 @@ void TravelNodeMap::generateTransportNodes()
             if (data->displayId == 808) //Remove plunger
                 continue;
 
-            TransportAnimation const* animation = sTransportMgr.GetTransportAnimInfo(entry);
+            TransportTemplate const* animation = sTransportMgr.GetTransportTemplate(entry);
 
             uint32 pathId = data->moTransport.taxiPathId;
             float moveSpeed = data->moTransport.moveSpeed;
@@ -2406,7 +2375,31 @@ void TravelNodeMap::generateTransportNodes()
             {
                 if (animation)
                 {
-                    TransportPathContainer aPath = animation->Path;
+                    struct TransportPathPoint
+                    {
+                        float X;
+                        float Y;
+                        float Z;
+                        float TimeSeg;
+                    };
+
+                    std::vector<TransportPathPoint> aPathStorage;
+                    std::vector<std::pair<uint32, TransportPathPoint*>> aPath;
+                    aPathStorage.reserve(animation->keyFrames.size());
+                    if (animation->keyFrames.empty())
+                        continue;
+
+                    float startX = animation->keyFrames.front().Node->x;
+                    float startY = animation->keyFrames.front().Node->y;
+                    float startZ = animation->keyFrames.front().Node->z;
+
+                    for (size_t i = 0; i < animation->keyFrames.size(); ++i)
+                    {
+                        auto const& frame = animation->keyFrames[i];
+                        aPathStorage.push_back({ frame.Node->x - startX, frame.Node->y - startY, frame.Node->z - startZ, float(frame.ArriveTime) });
+                        aPath.push_back(std::make_pair(uint32(i), &aPathStorage.back()));
+                    }
+
                     float timeStart;
 
                     for (auto& transport : WorldPosition().getGameObjectsNear(0, entry))
@@ -2416,11 +2409,11 @@ void TravelNodeMap::generateTransportNodes()
                         WorldPosition basePos(guidP);
                         WorldPosition lPos = WorldPosition();
 
-                        for (auto& p : aPath)
-                        {
+                    for (auto& p : aPath)
+                    {
 #ifndef MANGOSBOT_TWO
-                            float dx = cos(basePos.getO()) * p.second->X - sin(basePos.getO()) * p.second->Y;
-                            float dy = sin(basePos.getO()) * p.second->X + cos(basePos.getO()) * p.second->Y;
+                        float dx = cos(basePos.getO()) * p.second->X - sin(basePos.getO()) * p.second->Y;
+                        float dy = sin(basePos.getO()) * p.second->X + cos(basePos.getO()) * p.second->Y;
 #else
                             float dx = -1 * p.second->X;
                             float dy = -1 * p.second->Y;
@@ -2526,16 +2519,17 @@ void TravelNodeMap::generateTransportNodes()
             else //Boats/Zepelins
             {
                 //Loop over the path and connect stop locations.
-                for (auto& p : path)
+                for (size_t i = 0; i < path.size(); ++i)
                 {
-                    WorldPosition pos = WorldPosition(p->mapid, p->x, p->y, p->z, 0);
+                    auto const& p = path[i];
+                    WorldPosition pos = WorldPosition(p.mapid, p.x, p.y, p.z, 0);
 
                     if (prevNode)
                     {
                         ppath.push_back(pos);
                     }
 
-                    if (p->delay > 0)
+                    if (p.delay > 0)
                     {
                         TravelNode* node = sTravelNodeMap.addNode(pos, data->name, true, true, true, entry);
 
@@ -2570,9 +2564,10 @@ void TravelNodeMap::generateTransportNodes()
                 if (prevNode)
                 {
                     //Continue from start until first stop and connect to end.
-                    for (auto& p : path)
+                    for (size_t i = 0; i < path.size(); ++i)
                     {
-                        WorldPosition pos = WorldPosition(p->mapid, p->x, p->y, p->z, 0);
+                        auto const& p = path[i];
+                        WorldPosition pos = WorldPosition(p.mapid, p.x, p.y, p.z, 0);
 
                         //if (data->displayId == 3015)
                         //    pos.setZ(pos.getZ() + 6.0f);
@@ -2581,7 +2576,7 @@ void TravelNodeMap::generateTransportNodes()
 
                         ppath.push_back(pos);
 
-                        if (p->delay > 0)
+                        if (p.delay > 0)
                         {
                             TravelNode* node = sTravelNodeMap.getNode(pos, NULL, 5.0f);
 
@@ -2993,11 +2988,14 @@ void TravelNodeMap::generateTaxiPaths()
 
         std::vector<WorldPosition> ppath;
 
-        if (startNode->fDist(WorldPosition(nodes.front()->mapid, nodes.front()->x, nodes.front()->y, nodes.front()->z, 0.0)) > 0.1f)
+        if (startNode->fDist(WorldPosition(nodes[0].mapid, nodes[0].x, nodes[0].y, nodes[0].z, 0.0)) > 0.1f)
             ppath.push_back(*startNode->getPosition());
 
-        for (auto& n : nodes)
-            ppath.push_back(WorldPosition(n->mapid, n->x, n->y, n->z, 0.0));
+        for (size_t i = 0; i < nodes.size(); ++i)
+        {
+            auto const& n = nodes[i];
+            ppath.push_back(WorldPosition(n.mapid, n.x, n.y, n.z, 0.0));
+        }
 
         if (endNode->fDist(ppath.back()) > 0.1f)
             ppath.push_back(*endNode->getPosition());
@@ -3712,10 +3710,6 @@ TravelNodeMap::PathFindResult TravelNodeMap::testPathToLoop(const WorldPosition&
     }
 
     std::unique_ptr<PathFinder> pathfinder = std::make_unique<PathFinder>(bot);
-
-    pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
-    pathfinder->setAreaCost(12, 5.0f);
-    pathfinder->setAreaCost(13, 20.0f);
 
     PointsArray points;
     PathType pathType;

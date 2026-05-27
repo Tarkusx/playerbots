@@ -3629,7 +3629,7 @@ bool DebugAction::HandleItem(Event& event, Player* requester, const std::string&
         { ITEM_CLASS_QUEST, "Quest" },
         { ITEM_CLASS_KEY, "Key" },
         { ITEM_CLASS_PERMANENT, "Permanent" },
-        { ITEM_CLASS_MISC, "Miscellaneous" },
+        { ITEM_CLASS_JUNK, "Miscellaneous" },
 #ifdef MANGOSBOT_TWO
         { ITEM_CLASS_GLYPH, "Glyph" }
 #endif
@@ -3694,7 +3694,7 @@ bool DebugAction::HandleItem(Event& event, Player* requester, const std::string&
         { ITEM_CLASS_PERMANENT, {
             { 0, "Permanent" }
         }},
-        { ITEM_CLASS_MISC, {
+        { ITEM_CLASS_JUNK, {
             { 0, "Junk" }, { 1, "Reagent" }, { 2, "Pet" }, { 3, "Holiday" }, { 4, "Other" }, { 5, "Mount" }
         }},
 #ifdef MANGOSBOT_TWO

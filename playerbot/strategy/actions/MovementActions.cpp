@@ -1922,12 +1922,12 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     if (unit->GetLevel() > bot->GetLevel() + 5)
                         continue;
 
-                    float range = unit->GetAttackDistance(bot);
+                    float range = PlayerbotsCompatibility::GetAttackDistance(unit, bot);
 
                     if (WorldPosition(unit).sqDistance(point) > range * range)
                         continue;
 
-                    if (!unit->CanAttackOnSight(bot))
+                    if (!unit->IsHostileTo(bot))
                         continue;
 
                     if (!unit->IsWithinLOSInMap(bot))

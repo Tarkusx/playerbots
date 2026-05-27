@@ -7063,15 +7063,28 @@ bool PlayerbotAI::HasQuestItemsInWOLootList(WorldObject* wo)
     if (!wo)
         return false;
 
-    LootItemList lootItemList = {};
-
-    if (wo->m_loot)
-        wo->m_loot->GetLootItemsListFor(bot, lootItemList);
-
-    if (HasQuestItemsInLootList(lootItemList))
+    auto hasQuestItems = [this](Loot const& loot) -> bool
     {
-        return true;
-    }
+        for (LootItem const& lootItem : loot.items)
+        {
+            if (lootItem.needs_quest)
+                return true;
+        }
+
+        for (LootItem const& lootItem : loot.m_questItems)
+        {
+            if (lootItem.needs_quest)
+                return true;
+        }
+
+        return false;
+    };
+
+    if (Creature* creature = wo->ToCreature())
+        return hasQuestItems(creature->loot);
+
+    if (GameObject* go = wo->ToGameObject())
+        return hasQuestItems(go->loot);
 
     return false;
 }
@@ -7094,42 +7107,38 @@ bool PlayerbotAI::CanLootSomethingFromWO(WorldObject* wo)
     if (!wo)
         return false;
 
+    auto hasLootForBot = [](Loot const& loot) -> bool
+    {
+        if (loot.gold > 0)
+            return true;
+
+        for (LootItem const& lootItem : loot.items)
+        {
+            if (!lootItem.is_looted)
+                return true;
+        }
+
+        for (LootItem const& lootItem : loot.m_questItems)
+        {
+            if (!lootItem.is_looted)
+                return true;
+        }
+
+        return false;
+    };
+
     ObjectGuid guid = wo->GetObjectGuid();
     if (guid.IsCreature())
     {
         Creature* creature = GetCreature(guid);
         if (creature && sServerFacade.GetDeathState(creature) == CORPSE)
-        {
-            if (creature->m_loot->GetGoldAmount() > 0)
-            {
-                return true;
-            }
-            LootItemList lootItemList = {};
-
-            if (creature->m_loot)
-                creature->m_loot->GetLootItemsListFor(bot, lootItemList);
-
-            if (HasNotFullStacksInBagsForLootItems(lootItemList))
-            {
-                return true;
-            }
-        }
+            return hasLootForBot(creature->loot);
     }
     else if (wo->IsGameObject())
     {
         GameObject* go = GetGameObject(guid);
         if (go)
-        {
-            LootItemList lootItemList = {};
-
-            if (go->m_loot)
-                go->m_loot->GetLootItemsListFor(bot, lootItemList);
-
-            if (HasNotFullStacksInBagsForLootItems(lootItemList))
-            {
-                return true;
-            }
-        }
+            return hasLootForBot(go->loot);
     }
 
     return false;
@@ -7291,7 +7300,7 @@ void PlayerbotAI::InventoryTellItems(Player* player, std::map<uint32, int> itemM
             case ITEM_CLASS_KEY:
                 TellPlayer(player, "--- keys ---");
                 break;
-            case ITEM_CLASS_MISC:
+            case ITEM_CLASS_JUNK:
                 TellPlayer(player, "--- other ---");
                 break;
             }
@@ -7585,7 +7594,7 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
 
         playersNr = std::min(playersNr - sPlayerbotAIConfig.respawnModThreshold, sPlayerbotAIConfig.respawnModMax);
 
-        accelMod = playersNr * (creature->CanAttackOnSight(bot) ? sPlayerbotAIConfig.respawnModHostile : sPlayerbotAIConfig.respawnModNeutral) * 0.01f;
+        accelMod = playersNr * (creature->IsHostileTo(bot) ? sPlayerbotAIConfig.respawnModHostile : sPlayerbotAIConfig.respawnModNeutral) * 0.01f;
     }
 
     if (!accelMod)
@@ -7601,13 +7610,13 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
     }
     else
     {
-        CreatureData const* data = sObjectMgr.GetCreatureData(creature->GetDbGuid());
+        CreatureData const* data = creature->GetCreatureData();
 
         if (!data)
             return;
 
         m_respawnDelay = data->GetRandomRespawnTime() * IN_MILLISECONDS;
-        m_corpseAccelerationDecayDelay = MINIMUM_LOOTING_TIME;
+        m_corpseAccelerationDecayDelay = 20 * IN_MILLISECONDS;
 
         uint32 totalDelay = m_respawnDelay + m_corpseAccelerationDecayDelay;
 
@@ -7623,29 +7632,21 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
             m_respawnDelay -= totalDelay * accelMod;
     }
 
-    creature->SetRespawnDelay(m_respawnDelay / IN_MILLISECONDS,true);
+    creature->SetRespawnDelay(m_respawnDelay / IN_MILLISECONDS);
 
-    if (!m_corpseAccelerationDecayDelay && creature->m_loot)
+    if (!m_corpseAccelerationDecayDelay)
     {
-        LootAccess const* lootAccess = reinterpret_cast<LootAccess const*>(creature->m_loot);
-
-        if (lootAccess->IsLootedForAll()) //No loot left. Just despawn the corpse.
+        if (creature->loot.empty())
         {
             creature->RemoveCorpse();
             return;
         }
 
         uint32 defaultDelay = 2 * MINUTE;
-
         CreatureInfo const* cinfo = creature->GetCreatureInfo();
 
-        if (cinfo->CorpseDelay)
-            defaultDelay = cinfo->CorpseDelay;
-        else if (sObjectMgr.IsEncounter(creature->GetEntry(), creature->GetMapId()))
-        {
-            // encounter boss forced decay timer to 1h
+        if (creature->IsWorldBoss())
             defaultDelay = 3600;                               // TODO: maybe add that to config file
-        }
         else
         {
             switch (cinfo->rank)
@@ -7668,17 +7669,11 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
             }
         }
 
-        defaultDelay *= static_cast<uint32>(IN_MILLISECONDS) / (1+accelMod);
-
-        //We will decrease the loot time by a factor capping at 20 seconds.
+        defaultDelay *= static_cast<uint32>(IN_MILLISECONDS) / (1 + accelMod);
         m_corpseAccelerationDecayDelay = std::max(uint32(20 * static_cast<uint32>(IN_MILLISECONDS)), defaultDelay);
-        creature->SetCorpseAccelerationDelay(m_corpseAccelerationDecayDelay);
-
-        creature->ReduceCorpseDecayTimer();
-        return;
     }
-    MANGOS_ASSERT(m_corpseAccelerationDecayDelay < 24 * HOUR * static_cast<uint32>(IN_MILLISECONDS));
-    creature->SetCorpseAccelerationDelay(m_corpseAccelerationDecayDelay);
+
+    creature->SetCorpseDelay(m_corpseAccelerationDecayDelay / IN_MILLISECONDS);
 }
 
 std::list<Unit*> PlayerbotAI::GetAllHostileUnitsAroundWO(WorldObject* wo, float distanceAround)

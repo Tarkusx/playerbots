@@ -596,7 +596,7 @@ namespace ai
                 return false;
 #endif
 
-            if (bot->getClass() == CLASS_MAGE) // mage should use mana gem, shares cd with dark rune
+            if (bot->GetClass() == CLASS_MAGE) // mage should use mana gem, shares cd with dark rune
                 return false;
 
             return bot->GetHealth() > 1000;
@@ -654,7 +654,7 @@ namespace ai
             if (sServerFacade.IsInCombat(bot))
                 return false;
 
-            if (!bot->HasMana())
+            if (bot->GetPowerType() != POWER_MANA)
                 return false;
 
             if (ai->HasCheat(BotCheatMask::item))

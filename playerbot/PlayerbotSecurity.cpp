@@ -18,7 +18,7 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
 {
 
     // Allow everything if request is from gm account
-    if (from->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
+    if (from->GetSession()->GetSecurity() >= SEC_MODERATOR)
     {
         return PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL;
     }
@@ -82,7 +82,7 @@ PlayerbotSecurityLevel PlayerbotSecurity::LevelFor(Player* from, DenyReason* rea
         if (bot->GetPlayerbotAI()->HasRealPlayerMaster() && bot->GetSession()->m_lfgInfo.queued)
 #endif
 #ifdef MANGOSBOT_ZERO
-        if (sWorld.GetLFGQueue().IsPlayerInQueue(bot->GetObjectGuid()))
+        if (sLFGMgr.IsPlayerInQueue(bot->GetObjectGuid()))
 #endif
 #ifdef MANGOSBOT_TWO
         if (false/*sLFGMgr.GetQueueInfo(bot->GetObjectGuid())*/)
@@ -160,7 +160,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
         return false;
 
     Player* master = bot->GetPlayerbotAI()->GetMaster();
-    if (master && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->IsOpposing(master) && master->GetSession()->GetSecurity() < SEC_GAMEMASTER)
+    if (master && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->IsOpposing(master) && master->GetSession()->GetSecurity() < SEC_MODERATOR)
         return false;
 
     std::ostringstream out;
@@ -212,7 +212,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
 					const AreaTableEntry* entry = GetAreaEntryByAreaID(area);
                     if (entry)
                     {
-                        out << " |cffffffff(|cffff0000" << entry->area_name[0] << "|cffffffff)";
+                        out << " |cffffffff(|cffff0000" << PlayerbotsCompatibility::GetAreaName(entry, 0) << "|cffffffff)";
                     }
                 }
             }
@@ -254,7 +254,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
     if (!lastSaid || (time(0) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
     {
         whispers[guid][text] = time(0);
-        bot->Whisper(text, LANG_UNIVERSAL, ObjectGuid(guid));
+        bot->GetPlayerbotAI()->Whisper(text, from->GetName());
     }
     return false;
 }

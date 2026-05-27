@@ -11,7 +11,7 @@ bool ChangeTalentsAction::Execute(Event& event)
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     std::ostringstream out;
     TalentSpec botSpec(bot);
-    uint8 cls = bot->getClass();
+    uint8 cls = bot->GetClass();
     std::string param = event.getParam();
 
     if (!param.empty())
@@ -81,7 +81,7 @@ bool ChangeTalentsAction::Execute(Event& event)
             }
             else
             {
-                std::vector<TalentPath*> paths = getPremadePaths(bot->getClass(), param);
+                std::vector<TalentPath*> paths = getPremadePaths(bot->GetClass(), param);
                 if (paths.size() > 0)
                 {
                     out.str("");
@@ -130,7 +130,7 @@ bool ChangeTalentsAction::Execute(Event& event)
         TalentPath* specPath;
         if (specId)
         {
-            specPath = getPremadePath(bot->getClass(), specId);
+            specPath = getPremadePath(bot->GetClass(), specId);
 
             if (!specPath)
             {
@@ -180,7 +180,7 @@ std::vector<TalentPath*> ChangeTalentsAction::getPremadePaths(Player* bot, Talen
 {
     std::vector<TalentPath*> ret;
     
-    for (auto& path : sPlayerbotAIConfig.classSpecs[bot->getClass()].talentPath)
+    for (auto& path : sPlayerbotAIConfig.classSpecs[bot->GetClass()].talentPath)
     {
         TalentSpec newSpec = *GetBestPremadeSpec(bot, path.id);
         newSpec.CropTalents(bot);        
@@ -264,7 +264,7 @@ bool ChangeTalentsAction::AutoSelectTalents(Player* bot, std::ostringstream* out
     uint32 specNo = sRandomPlayerbotMgr.GetValue(bot->GetGUIDLow(), "specNo");
     uint32 specId = specNo ? specNo - 1 : 0;
     std::string specLink = sRandomPlayerbotMgr.GetData(bot->GetGUIDLow(), "specLink");
-    uint8 cls = bot->getClass();
+    uint8 cls = bot->GetClass();
 
     //Continue the current spec
     if (specNo > 0)
@@ -276,7 +276,7 @@ bool ChangeTalentsAction::AutoSelectTalents(Player* bot, std::ostringstream* out
             bot->GetPlayerbotAI()->UpdateTalentSpec();
         if (newSpec.GetTalentPoints() > 0)
         {
-            *out << "Upgrading spec " << "|h|cffffffff" << getPremadePath(bot->getClass(), specId)->name << " (" << newSpec.formatSpec(cls) << ")";
+            *out << "Upgrading spec " << "|h|cffffffff" << getPremadePath(bot->GetClass(), specId)->name << " (" << newSpec.formatSpec(cls) << ")";
         }
     }
     else if (!specLink.empty())
@@ -293,7 +293,7 @@ bool ChangeTalentsAction::AutoSelectTalents(Player* bot, std::ostringstream* out
     }
 
     //Spec was not found or not sufficient
-    if (bot->CalculateTalentsPoints() > 0 || (!specNo && specLink.empty()))
+    if (PlayerbotsCompatibility::CalculateTalentPoints(bot) > 0 || (!specNo && specLink.empty()))
     {
         TalentSpec oldSpec(bot);
         int currentTree = oldSpec.highestTree();
@@ -304,13 +304,13 @@ bool ChangeTalentsAction::AutoSelectTalents(Player* bot, std::ostringstream* out
 
         if (paths.size() == 0) //No spec like the old one found. Pick any.
         {
-            if (bot->CalculateTalentsPoints() > 0)
+            if (PlayerbotsCompatibility::CalculateTalentPoints(bot) > 0)
                 *out << "No specs like the current spec found.";
 
-            paths = getPremadePaths(bot->getClass(), "", role);
+            paths = getPremadePaths(bot->GetClass(), "", role);
 
             if (paths.empty() && role != BotRoles::BOT_ROLE_NONE)
-                paths = getPremadePaths(bot->getClass(), "", BotRoles::BOT_ROLE_NONE);
+                paths = getPremadePaths(bot->GetClass(), "", BotRoles::BOT_ROLE_NONE);
         }   
 
         if(paths.size() > 0 && oldSpec.GetTalentPoints() > 0)
@@ -383,16 +383,16 @@ bool ChangeTalentsAction::AutoSelectTalents(Player* bot, std::ostringstream* out
 //Returns a pre-made talent spec that best suits the bots current talents. 
 TalentSpec* ChangeTalentsAction::GetBestPremadeSpec(Player* bot, int specId)
 {
-    TalentPath* path = getPremadePath(bot->getClass(), specId);
+    TalentPath* path = getPremadePath(bot->GetClass(), specId);
     for (auto& spec : path->talentSpec)
     {
-        if (spec.points >= bot->CalculateTalentsPoints())
+        if (spec.points >= PlayerbotsCompatibility::CalculateTalentPoints(bot))
             return &spec;
     }
     if (path->talentSpec.size())
         return &path->talentSpec.back();
 
-    return &sPlayerbotAIConfig.classSpecs[bot->getClassMask()].baseSpec;
+    return &sPlayerbotAIConfig.classSpecs[bot->GetClassMask()].baseSpec;
 }
 
 bool AutoSetTalentsAction::Execute(Event& event)
@@ -407,7 +407,7 @@ bool AutoSetTalentsAction::Execute(Event& event)
         return false;
     }
 
-    if (bot->CalculateTalentsPoints() <= 0)
+    if (PlayerbotsCompatibility::CalculateTalentPoints(bot) <= 0)
     {
         return false;
     }
@@ -418,5 +418,4 @@ bool AutoSetTalentsAction::Execute(Event& event)
 
     return true;
 }
-
 

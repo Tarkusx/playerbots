@@ -205,7 +205,7 @@ namespace ai
         virtual bool Visit(Item* item) override
         {
             const ItemPrototype* proto = item->GetProto();
-            if (proto && !proto->Name1 && strstri(proto->Name1, name.c_str()))
+            if (proto && !proto->Name1.empty() && strstri(proto->Name1.c_str(), name.c_str()))
                 count += item->GetCount();
 
             return true;
@@ -224,7 +224,7 @@ namespace ai
 
         virtual bool Accept(const ItemPrototype* proto) override
         {
-            return proto && proto->Name1 && strstri(proto->Name1, name.c_str());
+            return proto && !proto->Name1.empty() && strstri(proto->Name1.c_str(), name.c_str());
         }
 
     private:
@@ -417,7 +417,7 @@ namespace ai
 
         virtual bool Accept(const ItemPrototype* proto) override
         {
-            if (proto->Class == ITEM_CLASS_MISC)
+            if (proto->Class == ITEM_CLASS_GENERIC)
             {
                 for (int j = 0; j < MAX_ITEM_PROTO_SPELLS; j++)
                 {
@@ -511,7 +511,7 @@ namespace ai
         {
             const ItemPrototype* proto = item->GetProto();
 
-            if(!(proto->Flags& ITEM_FLAG_HAS_LOOT))
+            if(!(proto->Flags& ITEM_FLAG_LOOTABLE))
                 return false;
 
             uint32 spellId = 0;

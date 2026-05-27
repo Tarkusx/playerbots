@@ -10,12 +10,17 @@ namespace ai
     class Event
 	{
 	public:
-        Event(Event const& other)
+        Event(Event const& other) : source(other.source), param(other.param), packet(other.packet), owner(other.owner) {}
+        Event& operator=(Event const& other)
         {
+            if (this == &other)
+                return *this;
+
             source = other.source;
             param = other.param;
-            packet = other.packet;
+            packet = WorldPacket(other.packet);
             owner = other.owner;
+            return *this;
         }
         Event() {}
         Event(std::string source) : source(source) {}

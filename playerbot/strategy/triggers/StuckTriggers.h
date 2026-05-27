@@ -1,6 +1,6 @@
 #pragma once
 #include "playerbot/strategy/Trigger.h"
-#include <MotionGenerators/MoveMap.h>
+#include "MoveMap.h"
 
 namespace ai
 {
@@ -174,9 +174,9 @@ namespace ai
                 return true;
             }
 
-            if (bot->duel && bot->duel->startTime - time(0) > 15 * MINUTE)
+            if (bot->m_duel && bot->m_duel->startTime - time(0) > 15 * MINUTE)
             {
-                ai->TellDebug(ai->GetMaster(), "Stuck: In Duel for " + std::to_string(bot->duel->startTime - time(0)) + " seconds.", "debug stuck");
+                ai->TellDebug(ai->GetMaster(), "Stuck: In Duel for " + std::to_string(bot->m_duel->startTime - time(0)) + " seconds.", "debug stuck");
 
                 return true;
             }
@@ -215,9 +215,9 @@ namespace ai
                 return true;
             }
 
-            if (bot->duel && bot->duel->startTime - time(0) > 15 * MINUTE)
+            if (bot->m_duel && bot->m_duel->startTime - time(0) > 15 * MINUTE)
             {
-                ai->TellDebug(ai->GetMaster(), "Stuck: In Duel for " + std::to_string(bot->duel->startTime - time(0)) + " seconds.", "debug stuck");
+                ai->TellDebug(ai->GetMaster(), "Stuck: In Duel for " + std::to_string(bot->m_duel->startTime - time(0)) + " seconds.", "debug stuck");
 
                 return true;
             }
@@ -242,7 +242,7 @@ namespace ai
                 if (!leader)
                     return false;
 
-                return leader->isAFK();
+                return leader->IsAFK();
             }
 
             return false;

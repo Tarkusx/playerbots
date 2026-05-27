@@ -448,10 +448,10 @@ bool BGTactics::CheckFlagAv()
         return false;
     }
 
-    BattleGroundTypeId bgType = bg->GetTypeId();
+    BattleGroundTypeId bgType = bg->GetTypeID();
 #ifdef MANGOSBOT_TWO
     if (bgType == BATTLEGROUND_RB)
-        bgType = bg->GetTypeId(true);
+        bgType = bg->GetTypeID(true);
 #endif
 
     if (bgType != BATTLEGROUND_AV)
@@ -493,7 +493,7 @@ bool BGTactics::CheckFlagAv()
 
         Spell* spell = new Spell(bot, spellInfo, false);
         spell->m_targets.setGOTarget(go);
-        spell->SpellStart(&spell->m_targets);
+        spell->prepare(spell->m_targets);
         ai->WaitForSpellCast(spell);
 
         //WorldPacket data(CMSG_GAMEOBJ_USE);

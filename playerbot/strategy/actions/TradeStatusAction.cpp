@@ -23,7 +23,7 @@ bool TradeStatusAction::Execute(Event& event)
     if (!trader->GetPlayerbotAI())
     {
         shouldTrade = false;
-        if (trader == master || bot->IsInGroup(trader))
+        if (trader == master || PlayerbotsCompatibility::IsInGroup(bot, trader))
         {
             shouldTrade = ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false, trader);
         }

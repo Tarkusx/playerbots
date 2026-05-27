@@ -134,9 +134,9 @@ std::list<Item*> ItemsUsefulToEnchantValue::Calculate()
 
         uint32 currentEnchnatWeight = 0;
         if (item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT))
-            currentEnchnatWeight = sRandomItemMgr.CalculateEnchantWeight(bot->getClass(), sRandomItemMgr.GetPlayerSpecId(bot), item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
+            currentEnchnatWeight = sRandomItemMgr.CalculateEnchantWeight(bot->GetClass(), sRandomItemMgr.GetPlayerSpecId(bot), item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT));
 
-        uint32 newEnchantWeight = sRandomItemMgr.CalculateEnchantWeight(bot->getClass(), sRandomItemMgr.GetPlayerSpecId(bot), enchant_id);
+        uint32 newEnchantWeight = sRandomItemMgr.CalculateEnchantWeight(bot->GetClass(), sRandomItemMgr.GetPlayerSpecId(bot), enchant_id);
 
         if (!item->GetEnchantmentId(PERM_ENCHANTMENT_SLOT) || currentEnchnatWeight >= newEnchantWeight)
             continue;

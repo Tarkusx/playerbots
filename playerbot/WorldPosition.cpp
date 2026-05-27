@@ -10,7 +10,7 @@
 #include "Globals/ObjectAccessor.h"
 #include "Entities/Transports.h"
 
-#include "MotionGenerators/MoveMap.h"
+#include "MoveMap.h"
 
 #ifdef MANGOSBOT_TWO
 #include "Vmap/VMapFactory.h"
@@ -26,12 +26,12 @@ using namespace MaNGOS;
 
 WorldPosition::WorldPosition(const uint32 mapId, const GuidPosition& guidP, uint32 instanceId)
 {
-    if (guidP.mapid !=0 || guidP.coord_x != 0 || guidP.coord_y != 0 || guidP.coord_z !=0) {
-        set(WorldPosition(guidP.mapid, guidP.coord_x, guidP.coord_y, guidP.coord_z, guidP.orientation));
+    if (guidP.mapId !=0 || guidP.x != 0 || guidP.y != 0 || guidP.z !=0) {
+        set(WorldPosition(guidP.mapId, guidP.x, guidP.y, guidP.z, guidP.o));
         return;
     }
 
-    set(ObjectGuid(guidP), guidP.mapid, instanceId);
+    set(ObjectGuid(guidP), guidP.mapId, instanceId);
  }
 
 void WorldPosition::set(const ObjectGuid& guid, const uint32 mapId, const uint32 instanceId)
@@ -106,7 +106,7 @@ WorldPosition::WorldPosition(const std::vector<WorldPosition*>& list, const Worl
     else if (conType == WP_RANDOM)
         set(*list[urand(0, size - 1)]);
     else if (conType == WP_CENTROID)
-        set(std::accumulate(list.begin(), list.end(), WorldLocation(list[0]->getMapId(), 0, 0, 0, 0), [size](WorldLocation i, WorldPosition* j) {i.coord_x += j->getX() / size; i.coord_y += j->getY() / size; i.coord_z += j->getZ() / size; i.orientation += j->getO() / size; return i; }));
+        set(std::accumulate(list.begin(), list.end(), WorldLocation(list[0]->getMapId(), 0, 0, 0, 0), [size](WorldLocation i, WorldPosition* j) {i.x += j->getX() / size; i.y += j->getY() / size; i.z += j->getZ() / size; i.o += j->getO() / size; return i; }));
     else if (conType == WP_MEAN_CENTROID)
     {
         WorldPosition pos = WorldPosition(list, WP_CENTROID);
@@ -124,7 +124,7 @@ WorldPosition::WorldPosition(const std::vector<WorldPosition>& list, const World
     else if (conType == WP_RANDOM)
         set(list[urand(0, size - 1)]);
     else if (conType == WP_CENTROID)
-        set(std::accumulate(list.begin(), list.end(), WorldLocation(list[0].getMapId(), 0, 0, 0, 0), [size](WorldLocation i, WorldPosition j) {i.coord_x += j.getX() / size; i.coord_y += j.getY() / size; i.coord_z += j.getZ() / size; i.orientation += j.getO() / size; return i; }));
+        set(std::accumulate(list.begin(), list.end(), WorldLocation(list[0].getMapId(), 0, 0, 0, 0), [size](WorldLocation i, WorldPosition j) {i.x += j.getX() / size; i.y += j.getY() / size; i.z += j.getZ() / size; i.o += j.getO() / size; return i; }));
     else if (conType == WP_MEAN_CENTROID)
     {
         WorldPosition pos = WorldPosition(list, WP_CENTROID);
@@ -134,7 +134,7 @@ WorldPosition::WorldPosition(const std::vector<WorldPosition>& list, const World
 
 float WorldPosition::distance(const WorldPosition& to) const
 {
-    if(mapid == to.getMapId())
+    if(mapId == to.getMapId())
         return relPoint(to).size();
 
     //this -> mapTransfer | mapTransfer -> center
@@ -143,7 +143,7 @@ float WorldPosition::distance(const WorldPosition& to) const
 
 float WorldPosition::fDist(const WorldPosition& to) const
 {
-    if (mapid == to.getMapId())
+    if (mapId == to.getMapId())
         return sqrt(sqDistance2d(to));
 
     //this -> mapTransfer | mapTransfer -> center
@@ -328,19 +328,19 @@ std::vector<WorldPosition> WorldPosition::GetNextPoint(std::vector<WorldPosition
 
 bool WorldPosition::IsInStaticLineOfSight(WorldPosition pos, float heightMod) const
 {
-    if (mapid != pos.mapid)
+    if (mapId != pos.mapId)
     {
         return false;
     }
     
-    float srcX = coord_x;
-    float srcY = coord_y;
-    float srcZ = coord_z + heightMod;
-    float dstX = pos.coord_x;
-    float dstY = pos.coord_y;
-    float dstZ = pos.coord_z + heightMod;
+    float srcX = x;
+    float srcY = y;
+    float srcZ = z + heightMod;
+    float dstX = pos.x;
+    float dstY = pos.y;
+    float dstZ = pos.z + heightMod;
 
-    return VMAP::VMapFactory::createOrGetVMapManager()->isInLineOfSight(mapid, srcX, srcY, srcZ, dstX, dstY, dstZ, true);
+    return VMAP::VMapFactory::createOrGetVMapManager()->isInLineOfSight(mapId, srcX, srcY, srcZ, dstX, dstY, dstZ, true);
 }
 
 bool WorldPosition::canFly() const
@@ -356,7 +356,7 @@ bool WorldPosition::canFly() const
 
 #ifdef MANGOSBOT_ONE  
     uint32 v_map = GetVirtualMapForMapAndZone(getMapId(), zoneid);
-    MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
+    MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(v_map);
     if (!mapEntry || mapEntry->addon < 1 || !mapEntry->IsContinent())
         return false;
 #endif
@@ -371,7 +371,7 @@ bool WorldPosition::canFly() const
     // don't allow flying in Dalaran restricted areas
     // (no other zones currently has areas with AREA_FLAG_CANNOT_FLY)
     if (AreaTableEntry const* atEntry = GetAreaEntryByAreaID(areaid))
-        return (!(atEntry->flags & AREA_FLAG_CANNOT_FLY));
+        return (!(atEntry->Flags & AREA_FLAG_CANNOT_FLY));
 #endif
 
     return true;
@@ -382,20 +382,20 @@ float WorldPosition::projectOnSegment(const WorldPosition& p1, const WorldPositi
     if (p1.getMapId() != p2.getMapId() || p1.getMapId() != getMapId())
         return 0.0f;
 
-    float dx = p2.coord_x - p1.coord_x;
-    float dy = p2.coord_y - p1.coord_y;
-    float dz = p2.coord_z - p1.coord_z;
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+    float dz = p2.z - p1.z;
 
     float lenSq = dx * dx + dy * dy + dz * dz;
     if (lenSq == 0.0f)
         return 0.0f; // p1 and p2 are the same point
 
-    return ((coord_x - p1.coord_x) * dx + (coord_y - p1.coord_y) * dy + (coord_z - p1.coord_z) * dz) / lenSq;
+    return ((x - p1.x) * dx + (y - p1.y) * dy + (z - p1.z) * dz) / lenSq;
 }
 
 G3D::Vector3 WorldPosition::getVector3() const
 {
-    return G3D::Vector3(coord_x, coord_y, coord_z); 
+    return G3D::Vector3(x, y, z); 
 }
 
 std::string WorldPosition::print(uint8 precision, bool onlyXyz) const
@@ -403,15 +403,15 @@ std::string WorldPosition::print(uint8 precision, bool onlyXyz) const
     std::ostringstream out;
 
     if (!onlyXyz)
-        out << mapid << ";";
+        out << mapId << ";";
 
     out << std::fixed << std::setprecision(precision);
-    out << coord_x;
-    out << ';' << coord_y;
-    out << ';' << coord_z;
+    out << x;
+    out << ';' << y;
+    out << ';' << z;
 
     if (!onlyXyz)
-        out << ';' << orientation;
+        out << ';' << o;
 
     return out.str();
 }
@@ -458,7 +458,7 @@ std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName)
 {    
     if (!isOverworld())
     {
-        MapEntry const* map = sMapStore.LookupEntry(getMapId());
+        MapEntry const* map = sMapStorage.LookupEntry<MapEntry>(getMapId());
         if (map)
             return map->name[0];
     }
@@ -468,11 +468,11 @@ std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName)
     if (!area)
         return "";
 
-    std::string areaName = area->area_name[0];
+    std::string areaName = PlayerbotsCompatibility::GetAreaName(area, 0);
 
     if (fullName)
     {
-        uint16 zoneId = area->zone;
+        uint16 zoneId = area->ZoneId;
 
         while (zoneId > 0)
         {
@@ -481,14 +481,14 @@ std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName)
             if (!parentArea)
                 break;
 
-            std::string subAreaName = parentArea->area_name[0];
+            std::string subAreaName = PlayerbotsCompatibility::GetAreaName(parentArea, 0);
 
             if (zoneName)
                 areaName = subAreaName;
             else
                 areaName = subAreaName + " " + areaName;
 
-            zoneId = parentArea->zone;
+            zoneId = parentArea->ZoneId;
         }
     }
 
@@ -497,11 +497,11 @@ std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName)
 
 int32 WorldPosition::getAreaLevel() const
 {
-    if (mapid == 609)
+    if (mapId == 609)
         return 1;
 
     if(GetArea())
-        return sTravelMgr.GetAreaLevel(GetArea()->ID);
+        return sTravelMgr.GetAreaLevel(GetArea()->Id);
 
     return 0;
 }
@@ -511,10 +511,10 @@ bool WorldPosition::HasAreaFlag(const AreaFlags flag) const
     AreaTableEntry const* areaEntry = GetArea();
     if (areaEntry)
     {
-        if (areaEntry->zone)
-            areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+        if (areaEntry->ZoneId)
+            areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-        if (areaEntry && areaEntry->flags & flag)
+        if (areaEntry && areaEntry->Flags & flag)
             return true;
     }
 
@@ -526,11 +526,11 @@ bool WorldPosition::HasFaction(const Team team) const
     AreaTableEntry const* areaEntry = GetArea();
     if (areaEntry)
     {
-        if (areaEntry->team == 2 && team == ALLIANCE)
+        if (areaEntry->Team == 2 && team == ALLIANCE)
             return true;
-        if (areaEntry->team == 4 && team == HORDE)
+        if (areaEntry->Team == 4 && team == HORDE)
             return true;
-        if (areaEntry->team == 6)
+        if (areaEntry->Team == 6)
             return true;
     }
     return false;
@@ -556,12 +556,12 @@ std::set<GenericTransport*> WorldPosition::getTransports(uint32 entry)
 
 void WorldPosition::CalculatePassengerPosition(GenericTransport* transport)
 {
-    transport->CalculatePassengerPosition(coord_x, coord_y, coord_z, &orientation);
+    transport->CalculatePassengerPosition(x, y, z, &o);
 }
 
 void WorldPosition::CalculatePassengerOffset(GenericTransport* transport)
 {
-    transport->CalculatePassengerOffset(coord_x, coord_y, coord_z, &orientation);
+    transport->CalculatePassengerOffset(x, y, z, &o);
 }
 
 bool WorldPosition::isOnTransport(GenericTransport* transport)
@@ -578,7 +578,7 @@ bool WorldPosition::isOnTransport(GenericTransport* transport)
 
     below.setZ(below.getZ() - 5.0f);
 
-    bool result0 = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapid, coord_x, coord_y, coord_z + 0.5f, below.getX(), below.getY(), below.getZ(), below.coord_x, below.coord_y, below.coord_z, 0.0f);
+    bool result0 = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapId, x, y, z + 0.5f, below.getX(), below.getY(), below.getZ(), below.x, below.y, below.z, 0.0f);
 
     if (result0)
         return false;
@@ -627,7 +627,7 @@ bool WorldPosition::SetOnTransport(GenericTransport* transport, int32 startHeigh
     start.setZ(transPos.getZ() + startHeight);
     below.setZ(transPos.getZ() + endHeight);
 
-    bool result = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapid, coord_x, coord_y, coord_z, below.getX(), below.getY(), below.getZ(), below.coord_x, below.coord_y, below.coord_z, 0.0f);
+    bool result = VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapId, x, y, z, below.getX(), below.getY(), below.getZ(), below.x, below.y, below.z, 0.0f);
 
     if (result)
         return false;
@@ -1040,7 +1040,7 @@ bool WorldPosition::setAtWaterSurface()
     float waterLevel = getWaterLevel();
     if (waterLevel > -100000.0f)
     {
-        coord_z = waterLevel + 0.5f;
+        z = waterLevel + 0.5f;
         return true;
     }
     return false;
@@ -1125,7 +1125,7 @@ std::vector<WorldPosition> WorldPosition::getPathFromPath(const std::vector<Worl
 
 bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 instanceId)
 {
-    MANGOS_ASSERT(std::isfinite(coord_x) && std::isfinite(coord_y) && std::isfinite(coord_z));
+    MANGOS_ASSERT(std::isfinite(x) && std::isfinite(y) && std::isfinite(z));
 
     MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
 
@@ -1135,7 +1135,7 @@ bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 
 
     MANGOS_ASSERT(query && query->getAttachedNavMesh());
 
-    float curPoint[VERTEX_SIZE] = {coord_y, coord_z, coord_x };
+    float curPoint[VERTEX_SIZE] = {y, z, x };
     float extend[VERTEX_SIZE] = { maxRange, maxHeight, maxRange };
     float newPoint[VERTEX_SIZE];
 
@@ -1154,9 +1154,9 @@ bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 
 
     dtStatus dtResult = query->findNearestPoly(curPoint, extend, &filter, &polyRef, newPoint);
 
-    coord_y = newPoint[0];
-    coord_z = newPoint[1];
-    coord_x = newPoint[2];
+    y = newPoint[0];
+    z = newPoint[1];
+    x = newPoint[2];
 
     return dtStatusSucceed(dtResult) && polyRef != INVALID_POLYREF;
 }
@@ -1164,22 +1164,22 @@ bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 
 bool WorldPosition::GetReachableRandomPointOnGround(const Player* bot, const float radius, const bool randomRange) 
 {
 #ifndef MANGOSBOT_TWO         
-    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetReachableRandomPointOnGround(coord_x, coord_y, coord_z, radius, randomRange);
+    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetReachableRandomPointOnGround(x, y, z, radius, randomRange);
 #else
-    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetReachableRandomPointOnGround(bot->GetPhaseMask(), coord_x, coord_y, coord_z, radius, randomRange);
+    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetReachableRandomPointOnGround(bot->GetPhaseMask(), x, y, z, radius, randomRange);
 #endif
 }
 
 bool WorldPosition::isUnderground() const
 {
-    float groundZ = getMap(getFirstInstanceId())->GetHeight(coord_x, coord_y, coord_z+0.5f, true), maxZ;
-    maxZ = getTerrain()->GetWaterOrGroundLevel(coord_x, coord_y, coord_z + 0.5f, groundZ, true, 1.0f);
+    float groundZ = getMap(getFirstInstanceId())->GetHeight(x, y, z+0.5f, true), maxZ;
+    maxZ = getTerrain()->GetWaterOrGroundLevel(x, y, z + 0.5f, groundZ, true, 1.0f);
 
     if (maxZ > INVALID_HEIGHT)
     {
-        if (coord_z + 0.5f > maxZ)
+        if (z + 0.5f > maxZ)
             return false;
-        else if (coord_z < groundZ)
+        else if (z < groundZ)
             return true;
     }
 
@@ -1196,8 +1196,8 @@ std::vector<WorldPosition> WorldPosition::ComputePathToRandomPoint(const Player*
     if (randomRange)
         range *= rand_norm_f();
 
-    coord_x += range * cos(angle);
-    coord_y += range * sin(angle);
+    x += range * cos(angle);
+    y += range * sin(angle);
 
     std::unique_ptr<PathFinder> pathfinder = std::make_unique<PathFinder>(bot);
 

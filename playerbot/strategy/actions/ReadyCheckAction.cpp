@@ -83,7 +83,7 @@ public:
     bool Check(Player* requester, PlayerbotAI *ai, AiObjectContext* context) override
     {
         Player* bot = ai->GetBot();
-        if (bot->getClass() == CLASS_HUNTER)
+        if (bot->GetClass() == CLASS_HUNTER)
         {
             if (!bot->GetUInt32Value(PLAYER_AMMO_ID))
             {

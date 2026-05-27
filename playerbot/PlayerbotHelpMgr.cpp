@@ -915,7 +915,7 @@ void PlayerbotHelpMgr::FormatHelpTopics()
 
         for (uint8 i = 1; i < MAX_LOCALE; ++i)
         {
-            FormatHelpTopic(helpText.second.m_text_locales[sObjectMgr.GetStorageLocaleIndexFor(LocaleConstant(i))]);
+            FormatHelpTopic(helpText.second.m_text_locales[sObjectMgr.GetOrNewIndexForLocale(LocaleConstant(i))]);
         }
     }
 }
@@ -938,7 +938,7 @@ void PlayerbotHelpMgr::LoadBotHelpTexts()
 
             for (uint8 i = 1; i < MAX_LOCALE; ++i)
             {
-                text_locale[sObjectMgr.GetStorageLocaleIndexFor(LocaleConstant(i))] = fields[i + 2].GetString();
+                text_locale[sObjectMgr.GetOrNewIndexForLocale(LocaleConstant(i))] = fields[i + 2].GetString();
             }
 
             botHelpText[name] = BotHelpEntry(templateText, text, text_locale);

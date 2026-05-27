@@ -38,7 +38,7 @@ public:
 
 PlayerLoginInfo::PlayerLoginInfo(const uint32 account, const uint32 guid, const uint8 race, const uint8 cls, const uint32 level, const bool isNew, const WorldPosition& position, const uint32 guildId) : account(account), guid(guid), race(race), cls(cls), level(level), isNew(isNew), position(position), guildId(guildId) {}
 
-PlayerLoginInfo::PlayerLoginInfo(Player* player) : PlayerLoginInfo(player->GetSession()->GetAccountId(), player->GetDbGuid(), player->getRace(), player->getClass(), player->GetLevel(), player->GetTotalPlayedTime() == 0, player, player->GetGuildId()) {};
+PlayerLoginInfo::PlayerLoginInfo(Player* player) : PlayerLoginInfo(player->GetSession()->GetAccountId(), player->GetGUIDLow(), player->GetRace(), player->GetClass(), player->GetLevel(), player->GetTotalPlayedTime() == 0, player, player->GetGuildId()) {};
 
 uint32 PlayerLoginInfo::GetLevel() const
 {
@@ -65,7 +65,7 @@ bool PlayerLoginInfo::IsNearPlayer(const LoginSpace& space) const
     for (auto& player : space.realPlayerInfos)
     {
         WorldPosition p(player.position);
-        if (p.mapid == position.mapid && p.sqDistance(position) < sPlayerbotAIConfig.loginBotsNearPlayerRange * sPlayerbotAIConfig.loginBotsNearPlayerRange)
+        if (p.mapId == position.mapId && p.sqDistance(position) < sPlayerbotAIConfig.loginBotsNearPlayerRange * sPlayerbotAIConfig.loginBotsNearPlayerRange)
         {
             return true;
         }
@@ -82,7 +82,7 @@ bool PlayerLoginInfo::IsOnPlayerMap(const LoginSpace& space) const
     for (auto& player : space.realPlayerInfos)
     {
         WorldPosition p(player.position);
-        if (p.mapid == position.mapid)
+        if (p.mapId == position.mapId)
         {
             return true;
         }
@@ -296,7 +296,7 @@ bool PlayerLoginInfo::LoginBot()
     if (holderState != HolderState::HOLDER_RECEIVED)
         return false;
 
-    if (sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid), false))
+    if (sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid)))
     {
         loginState = LoginState::BOT_ONLINE;
         return false;
@@ -309,7 +309,7 @@ bool PlayerLoginInfo::LoginBot()
     if(sPlayerbotAIConfig.randomBotTimedLogout)
         sRandomPlayerbotMgr.SetValue(guid, "add", 1, "", urand(sPlayerbotAIConfig.minRandomBotInWorldTime, sPlayerbotAIConfig.maxRandomBotInWorldTime));
 
-    Player* player = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid), false);
+    Player* player = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid));
 
     if (!player)
     {
@@ -329,7 +329,7 @@ bool PlayerLoginInfo::LogoutBot()
     if (loginState != LoginState::BOT_ON_LOGOUTQUEUE)
         return false;
 
-    Player* player = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid), false);
+    Player* player = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid));
 
     if (!player)
     {
@@ -343,7 +343,7 @@ bool PlayerLoginInfo::LogoutBot()
 
     sRandomPlayerbotMgr.LogoutPlayerBot(guid);
 
-    if (sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid), false))
+    if (sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid)))
         return false;
 
     loginState = LoginState::BOT_OFFLINE;    
@@ -456,7 +456,7 @@ BotPool PlayerBotLoginMgr::LoadBotsFromDb()
 
 void PlayerBotLoginMgr::SendHolders(const BotInfos& queue)
 {  
-    CharacterDatabase.AsyncPQuery(&RandomPlayerbotMgr::DatabasePing, sWorld.GetCurrentMSTime(), std::string("CharacterDatabase"), "select 1");
+    CharacterDatabase.AsyncPQuery(&RandomPlayerbotMgr::DatabasePing, WorldTimer::getMSTime(), std::string("CharacterDatabase"), "select 1");
 
     for (auto& info : queue)
     {
@@ -468,7 +468,7 @@ void PlayerBotLoginMgr::SendHolders(const BotInfos& queue)
 
 void PlayerBotLoginMgr::SendHolders(BotPool* pool)
 {
-    CharacterDatabase.AsyncPQuery(&RandomPlayerbotMgr::DatabasePing, sWorld.GetCurrentMSTime(), std::string("CharacterDatabase"), "select 1");
+    CharacterDatabase.AsyncPQuery(&RandomPlayerbotMgr::DatabasePing, WorldTimer::getMSTime(), std::string("CharacterDatabase"), "select 1");
 
     for (auto& [guid, info] : *pool)
     {
@@ -753,4 +753,3 @@ uint32 PlayerBotLoginMgr::GetLevelBucketSize(uint32 level)
 
     return GetMaxOnlineBotCount() * sPlayerbotAIConfig.levelProbability[level] / levelProbabilityTotal;
 }
-

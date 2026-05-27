@@ -11,11 +11,13 @@
 #include "playerbot/ServerFacade.h"
 #include "strategy/values/LootValues.h"
 
-#include "Entities/ItemEnchantmentMgr.h"
+#include "ItemEnchantmentMgr.h"
 
 #include "strategy/values/SharedValueContext.h"
 
 char * strstri (const char* str1, const char* str2);
+static inline const char* strstri(std::string const& str1, const char* str2) { return ::strstri(str1.c_str(), str2); }
+static inline const char* strstr(std::string const& str1, const char* str2) { return ::strstr(str1.c_str(), str2); }
 
 uint64 BotEquipKey::GetKey()
 {
@@ -1226,7 +1228,7 @@ void RandomItemMgr::BuildItemInfoCache()
                 cacheInfo->source = ITEM_SOURCE_VENDOR;
                 cacheInfo->sourceIds.push_back(vendor);
 
-                FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->Faction);
+                FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->faction);
                 if (PlayerbotAI::friendToAlliance(factionEntry))
                     isAlly = true;
                 if (PlayerbotAI::friendToHorde(factionEntry))
@@ -1234,7 +1236,7 @@ void RandomItemMgr::BuildItemInfoCache()
 
                 // check faction conditions
                 VendorItemData const* vItems = sObjectMgr.GetNpcVendorItemList(vendor);
-                VendorItemData const* tItems = sObjectMgr.GetNpcVendorTemplateItemList(cInfo->VendorTemplateId);
+                VendorItemData const* tItems = sObjectMgr.GetNpcVendorTemplateItemList(cInfo->vendor_id);
 
                 if (vItems || tItems)
                 {
@@ -1961,7 +1963,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
         {
             if (spellData.SpellCooldown != 0)
             {
-                int32 spellDuration = GetSpellDuration(spellproto);
+                int32 spellDuration = spellproto->GetDuration();
                 coverage = static_cast<float>(spellDuration) / spellData.SpellCooldown;
             }
             else
@@ -1980,7 +1982,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
 #ifdef MANGOSBOT_TWO
             float averageItemDelay = 2.39f;
 #endif
-            coverage = (static_cast<float>(spellproto->procChance) / 100) * (static_cast<float>(GetSpellDuration(spellproto)) / averageItemDelay);
+            coverage = (static_cast<float>(spellproto->procChance) / 100) * (static_cast<float>(spellproto->GetDuration()) / averageItemDelay);
 
             if (coverage > 0.9f)
                 coverage = 0.9f;
@@ -2481,21 +2483,21 @@ uint32 RandomItemMgr::CalculateSocketWeight(uint8 playerclass, ItemQualifier& qu
 uint32 RandomItemMgr::ItemStatWeight(Player* player, ItemQualifier& qualifier)
 {
     ItemSpecType itSpec;
-    uint32 weight = CalculateStatWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetProto(), itSpec);
+    uint32 weight = CalculateStatWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetProto(), itSpec);
     if(qualifier.GetEnchantId())
-        weight += CalculateEnchantWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetEnchantId());
+        weight += CalculateEnchantWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetEnchantId());
     if (qualifier.GetRandomPropertyId())
-        weight += CalculateRandomPropertyWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetRandomPropertyId());
+        weight += CalculateRandomPropertyWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetRandomPropertyId());
     if(qualifier.GetGem1())
-        weight += CalculateGemWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetGem1());
+        weight += CalculateGemWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetGem1());
     if (qualifier.GetGem2())
-        weight += CalculateGemWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetGem2());
+        weight += CalculateGemWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetGem2());
     if (qualifier.GetGem3())
-        weight += CalculateGemWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetGem3());
+        weight += CalculateGemWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetGem3());
     if (qualifier.GetGem4())
-        weight += CalculateGemWeight(player->getClass(), GetPlayerSpecId(player), qualifier.GetGem4());
+        weight += CalculateGemWeight(player->GetClass(), GetPlayerSpecId(player), qualifier.GetGem4());
 
-    weight += CalculateSocketWeight(player->getClass(), qualifier, GetPlayerSpecId(player));
+    weight += CalculateSocketWeight(player->GetClass(), qualifier, GetPlayerSpecId(player));
 
     return weight;
 }
@@ -2611,7 +2613,7 @@ std::string RandomItemMgr::GetPlayerSpecName(Player* player)
 {
     std::string specName;
     int tab = AiFactory::GetPlayerSpecTab(player);
-    switch (player->getClass())
+    switch (player->GetClass())
     {
     case CLASS_PRIEST:
         if (tab == 2)
@@ -2717,7 +2719,7 @@ uint32 RandomItemMgr::GetPlayerSpecId(Player* player)
 
     for (auto itr : m_weightScales)
     {
-        if (itr.second.info.name == specName && itr.second.info.classId == player->getClass())
+        if (itr.second.info.name == specName && itr.second.info.classId == player->GetClass())
             return itr.second.info.id;
     }
     return 0;
@@ -2942,7 +2944,7 @@ std::vector<uint32> RandomItemMgr::GetUpgradeList(Player* player, uint32 specId,
             if (!player->GetHonorPoints() && !player->GetArenaPoints())
                 continue;
 #else
-            if (!player->GetHonorRankInfo().rank)
+            if (!player->GetHonorMgr().GetRank().rank)
                 continue;
 #endif
         }
@@ -2998,7 +3000,7 @@ bool RandomItemMgr::CanBuyFromVendor(Player *player, uint32 itemId, uint32 creat
 
     VendorItemList vendorItems;
     VendorItemData const* vItems = sObjectMgr.GetNpcVendorItemList(creatureId);
-    VendorItemData const* tItems = sObjectMgr.GetNpcVendorTemplateItemList(cInfo->VendorTemplateId);
+    VendorItemData const* tItems = sObjectMgr.GetNpcVendorTemplateItemList(cInfo->vendor_id);
 
     if (!vItems && !tItems)
     {
@@ -3014,12 +3016,12 @@ bool RandomItemMgr::CanBuyFromVendor(Player *player, uint32 itemId, uint32 creat
 
         if (crItem && crItem->item == itemId)
         {
-            ItemPrototype const* pProto = ObjectMgr::GetItemPrototype(itemId);
+            ItemPrototype const* pProto = sObjectMgr.GetItemPrototype(itemId);
             if (pProto)
             {
                 // when no faction required but rank > 0 will be used faction id from the vendor faction template to compare the rank
                 if (!pProto->RequiredReputationFaction && pProto->RequiredReputationRank > 0 &&
-                    ReputationRank(pProto->RequiredReputationRank) > player->GetReputationRank(sFactionTemplateStore.LookupEntry(cInfo->Faction)->faction))
+                    ReputationRank(pProto->RequiredReputationRank) > player->GetReputationRank(sFactionTemplateStore.LookupEntry(cInfo->faction)->faction))
                     return false;
 
                 if (crItem->conditionId && !sObjectMgr.IsConditionSatisfied(crItem->conditionId, player, player->GetMap(), nullptr, CONDITION_FROM_VENDOR))
@@ -3230,7 +3232,7 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
         if (!player->GetHonorPoints() && !player->GetArenaPoints())
             return 0;
 #else
-        if (!player->GetHonorRankInfo().rank)
+        if (!player->GetHonorMgr().GetRank().rank)
             return 0;
 #endif
     }*/
@@ -3241,13 +3243,13 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
 
 #ifdef MANGOSBOT_ZERO
     // skip missing pvp ranks
-    if (info->pvpRank && player->GetHonorHighestRankInfo().rank < info->pvpRank)
+    if (info->pvpRank && player->GetHonorMgr().GetRank().rank < info->pvpRank)
         return 0;
-    if (info->pvpRank && info->pvpRank < 16 && player->GetHonorHighestRankInfo().rank == 18)
+    if (info->pvpRank && info->pvpRank < 16 && player->GetHonorMgr().GetRank().rank == 18)
         return 0;
 
     // skip non pvp items for some specs
-    if (info->pvpRank < 16 && player->GetHonorHighestRankInfo().rank == 18)
+    if (info->pvpRank < 16 && player->GetHonorMgr().GetRank().rank == 18)
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (proto && !(
@@ -3292,7 +3294,7 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
         if (!m_weightScales[spec].info.id)
             continue;
 
-        if (m_weightScales[spec].info.classId != player->getClass())
+        if (m_weightScales[spec].info.classId != player->GetClass())
             continue;
 
         if (info->weights[spec] > bestSpecScore && info->weights[spec] > 1)

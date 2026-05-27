@@ -58,7 +58,7 @@ static bool HasOtherWarlockInGroup(Player* bot, Group* group)
         Player* member = ref->getSource();
         if (!member || member == bot)
             continue;
-        if (member->getClass() == CLASS_WARLOCK)
+        if (member->GetClass() == CLASS_WARLOCK)
             return true;
     }
     return false;

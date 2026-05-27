@@ -6,6 +6,7 @@
 #include "SystemConfig.h"
 
 class Player;
+class PlayerbotAI;
 class PlayerbotMgr;
 class ChatHandler;
 
@@ -104,7 +105,10 @@ public:
     }
 
 public:
+    bool LoadConfig();
+    bool BootstrapRuntime();
     bool Initialize();
+    bool IsRuntimeBootstrapped() const { return runtimeBootstrapped; }
     bool IsInRandomAccountList(uint32 id);
     bool IsFreeAltBot(uint32 guid);
     bool IsFreeAltBot(Player* player) {return IsFreeAltBot(player->GetGUIDLow());}
@@ -112,6 +116,7 @@ public:
 	bool IsInPvpProhibitedZone(uint32 id);
 
     bool enabled;
+    bool runtimeBootstrapped;
     bool allowGuildBots;
     bool allowMultiAccountAltBots;
     uint32 globalCoolDown, reactDelay, maxWaitForMove, expireActionTime, dispelAuraDuration, passiveDelay, repeatDelay,
@@ -194,15 +199,19 @@ public:
     uint32 randomBotMinLevel, randomBotMaxLevel;
     float randomChangeMultiplier;
     uint32 specProbability[MAX_CLASSES][10];
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
     std::string premadeLevelSpec[MAX_CLASSES][10][91]; //lvl 10 - 100
+#endif
     uint32 classRaceProbabilityTotal;
     uint32 classRaceProbability[MAX_CLASSES][MAX_RACES];
     bool useFixedClassRaceCounts;
     using ClassRacePair = std::pair<uint8, uint8>;
     std::map<ClassRacePair, uint32> fixedClassRaceCounts;
     uint32 levelProbability[DEFAULT_MAX_LEVEL + 1];
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
     ClassSpecs classSpecs[MAX_CLASSES];
     GlyphPrioritySpecMap glyphPriorityMap[MAX_CLASSES];
+#endif
     bool gearProgressionSystemEnabled;
     uint32 gearProgressionSystemItemLevels[MAX_GEAR_PROGRESSION_LEVEL][2];
     int32 gearProgressionSystemItems[MAX_GEAR_PROGRESSION_LEVEL][MAX_CLASSES][4][SLOT_EMPTY];
@@ -424,7 +433,9 @@ public:
     bool CanLogAction(PlayerbotAI* ai, std::string actionName, bool isExecute, std::string lastActionName);
 
 private:
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
     void LoadTalentSpecs();
+#endif
     void LoadLLMDefaultPrompts(const std::string& fileName);
 
     Config config;

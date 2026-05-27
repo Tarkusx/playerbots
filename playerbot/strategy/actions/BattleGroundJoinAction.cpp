@@ -557,7 +557,7 @@ bool BGJoinAction::isUseful()
         return false;
 
 #ifdef MANGOSBOT_TWO
-    if (bot->getClass() == CLASS_DEATH_KNIGHT && bot->GetLevel() < 60)
+    if (bot->GetClass() == CLASS_DEATH_KNIGHT && bot->GetLevel() < 60)
         return false;
 #endif
 

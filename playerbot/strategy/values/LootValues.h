@@ -1,10 +1,15 @@
 #pragma once
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
+#include <map>
 #include "ItemUsageValue.h"
 
 namespace ai
 { 
+    // Compatibility stub: Turtle does not expose the upstream playerbots group-loot
+    // roll container. Keep this local and minimal until the roll subsystem is ported.
+    using GroupLootRollMap = std::map<ObjectGuid, uint32>;
+
     //Cheat class copy to hack into the loot system
     class LootLootGroupAccess                               // A set of loot definitions for items (refs are not allowed)
     {
@@ -251,4 +256,3 @@ namespace ai
 #endif 
     };
 }
-

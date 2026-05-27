@@ -21,11 +21,11 @@ trainableSpellMap* TrainableSpellMapValue::Calculate()
         if (!creatureInfo)
             continue;
 
-        if (!creatureInfo->TrainerType && !creatureInfo->TrainerClass)
+        if (!creatureInfo->trainer_type && !creatureInfo->trainer_class)
             continue;
 
-        if(creatureInfo->TrainerTemplateId)
-            trainerTemplateIds[creatureInfo->TrainerTemplateId].push_back(creatureInfo);
+        if(creatureInfo->trainer_id)
+            trainerTemplateIds[creatureInfo->trainer_id].push_back(creatureInfo);
         else
             trainerTemplateIds[id].push_back(creatureInfo);
     }
@@ -41,13 +41,13 @@ trainableSpellMap* TrainableSpellMapValue::Calculate()
 
         CreatureInfo const* firstTrainer = trainers.front();
 
-        TrainerType trainerType = (TrainerType)firstTrainer->TrainerType;
+        TrainerType trainerType = (TrainerType)firstTrainer->trainer_type;
 
         uint32 spellRequirement;
         if (trainerType == TRAINER_TYPE_CLASS || trainerType == TRAINER_TYPE_PETS)
-            spellRequirement = firstTrainer->TrainerClass;
+            spellRequirement = firstTrainer->trainer_class;
         else if (trainerType == TRAINER_TYPE_MOUNTS)
-            spellRequirement = firstTrainer->TrainerRace;
+            spellRequirement = firstTrainer->trainer_race;
 
         for (auto& [id, trainerSpell] : trainer_spells->spellList)
         {
@@ -70,10 +70,7 @@ trainableSpellMap* TrainableSpellMapValue::Calculate()
                     continue;
 
 #ifndef MANGOSBOT_TWO
-                if (otherTrainerSpell->learnedSpell != trainerSpell.learnedSpell)
-#else
-                if (otherTrainerSpell->learnedSpell[0] != trainerSpell.learnedSpell[0])
-#endif
+                if (PlayerbotsCompatibility::GetTrainerLearnedSpellId(otherTrainerSpell) != PlayerbotsCompatibility::GetTrainerLearnedSpellId(&trainerSpell))
                     continue;
 
                 if (otherTrainerSpell->conditionId != trainerSpell.conditionId)
@@ -91,11 +88,10 @@ trainableSpellMap* TrainableSpellMapValue::Calculate()
                 {
                     // exist, already checked at loading
 #ifdef MANGOSBOT_ZERO
-                    SpellEntry const* spell = sSpellTemplate.LookupEntry<SpellEntry>(trainerSpell.learnedSpell);
+                    SpellEntry const* spell = sSpellTemplate.LookupEntry<SpellEntry>(PlayerbotsCompatibility::GetTrainerLearnedSpellId(&trainerSpell));
 #else
-                    SpellEntry const* spell = sSpellTemplate.LookupEntry<SpellEntry>(trainerSpell.learnedSpell[0]);
+                    SpellEntry const* spell = sSpellTemplate.LookupEntry<SpellEntry>(PlayerbotsCompatibility::GetTrainerLearnedSpellId(&trainerSpell));
 #endif
-
                     spellRequirement = spell->EffectMiscValue[1];
                 }
             }
@@ -123,32 +119,28 @@ std::vector<TrainerSpell const*> TrainableSpellsValue::Calculate()
 
         for (auto& [requirement, trainerSpellList] : spellReqList)
         {
-            if (trainerType == TRAINER_TYPE_CLASS && requirement != bot->getClass())
+            if (trainerType == TRAINER_TYPE_CLASS && requirement != bot->GetClass())
                 continue;
-            if (trainerType == TRAINER_TYPE_MOUNTS && requirement != bot->getRace())
+            if (trainerType == TRAINER_TYPE_MOUNTS && requirement != bot->GetRace())
                 continue;
 
             for (auto& [trainerSpell, trainers] : trainerSpellList)
             {
-                uint32 reqLevel = 0;
-
-                reqLevel = trainerSpell->isProvidedReqLevel ? trainerSpell->reqLevel : std::max(reqLevel, trainerSpell->reqLevel);
-                TrainerSpellState state = bot->GetTrainerSpellState(trainerSpell, reqLevel);
+                TrainerSpellState state = bot->GetTrainerSpellState(trainerSpell);
                 if (state != TRAINER_SPELL_GREEN)
                     continue;
 
                 //Skip initial profession training.
-#ifdef MANGOSBOT_ZERO
-                if (bot->GetLevel() < 10 && sSpellMgr.IsProfessionSpell(trainerSpell->learnedSpell) && sSpellMgr.GetSpellRank(trainerSpell->learnedSpell) == 1)
-#else
-                if (bot->GetLevel() < 10 && sSpellMgr.IsProfessionSpell(trainerSpell->learnedSpell[0]) && sSpellMgr.GetSpellRank(trainerSpell->learnedSpell[0]) == 1)
-#endif
-                    continue;
+                if (uint32 learnedSpell = PlayerbotsCompatibility::GetTrainerLearnedSpellId(trainerSpell))
+                {
+                    if (bot->GetLevel() < 10 && sSpellMgr.IsProfessionSpell(learnedSpell) && sSpellMgr.GetSpellRank(learnedSpell) == 1)
+                        continue;
+                }
 
                 trainableSpells.push_back(trainerSpell);
             }
         }
-    }   
+    }
 
     return trainableSpells;
 }
@@ -182,9 +174,9 @@ std::vector<int32> AvailableTrainersValue::Calculate()
 
         for (auto& [requirement, trainerSpellList] : spellReqList)
         {
-            if (trainerType == TRAINER_TYPE_CLASS && requirement != bot->getClass())
+            if (trainerType == TRAINER_TYPE_CLASS && requirement != bot->GetClass())
                 continue;
-            if (trainerType == TRAINER_TYPE_MOUNTS && requirement != bot->getRace())
+            if (trainerType == TRAINER_TYPE_MOUNTS && requirement != bot->GetRace())
                 continue;
 
             for (auto& [trainerSpell, trainers] : trainerSpellList)

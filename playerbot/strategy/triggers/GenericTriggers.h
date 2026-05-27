@@ -1180,7 +1180,7 @@ namespace ai
                 if (!enemy)
                     continue;
 
-                if (enemy->getClass() == CLASS_ROGUE || enemy->getClass() == CLASS_DRUID)
+                if (enemy->GetClass() == CLASS_ROGUE || enemy->GetClass() == CLASS_DRUID)
                     return true;
             }
             return false;

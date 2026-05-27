@@ -60,7 +60,7 @@ bool CastSpellAction::Execute(Event& event)
     {
         if (GetTargetName() == "current target" && (!bot->GetCurrentSpell(CURRENT_MELEE_SPELL) && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)))
         {
-            if (bot->getClass() == CLASS_HUNTER && spellName != "auto shot" && sServerFacade.GetDistance2d(bot, GetTarget()) > 5.0f)
+            if (bot->GetClass() == CLASS_HUNTER && spellName != "auto shot" && sServerFacade.GetDistance2d(bot, GetTarget()) > 5.0f)
                 ai->CastSpell("auto shot", GetTarget());
         }
 
@@ -218,7 +218,7 @@ bool CastPetSpellAction::isPossible()
     if (pet && ai->IsSafe(pet))
     {
         const uint32& spellId = GetSpellID();
-        if (pet->HasSpell(spellId) && pet->IsSpellReady(spellId))
+        if (pet->HasSpell(spellId) && !pet->HasSpellCooldown(spellId))
         {
             // Check if the pet is not too far from the owner
             if (bot->GetDistance(pet) <= sPlayerbotAIConfig.sightDistance)
@@ -460,7 +460,7 @@ bool InterruptCurrentSpellAction::isUseful()
     for (int type = CURRENT_MELEE_SPELL; type < CURRENT_CHANNELED_SPELL; type++)
     {
         Spell* currentSpell = bot->GetCurrentSpell((CurrentSpellTypes)type);
-        if (currentSpell && currentSpell->CanBeInterrupted())
+        if (currentSpell)
             return true;
     }
     return false;
@@ -472,7 +472,7 @@ bool InterruptCurrentSpellAction::Execute(Event& event)
     for (int type = CURRENT_MELEE_SPELL; type < CURRENT_CHANNELED_SPELL; type++)
     {
         Spell* currentSpell = bot->GetCurrentSpell((CurrentSpellTypes)type);
-        if (currentSpell && currentSpell->CanBeInterrupted())
+        if (currentSpell)
         {
             bot->InterruptSpell((CurrentSpellTypes)type);
             ai->SpellInterrupted(currentSpell->m_spellInfo->Id);
@@ -515,7 +515,7 @@ bool CastSpellTargetAction::IsTargetValid(Unit* target)
     return target &&
            ai->IsSafe(target) &&
            (bot == target || sServerFacade.GetDistance2d(bot, target) < sPlayerbotAIConfig.sightDistance) &&
-           bot->IsInGroup(target) &&
+           PlayerbotsCompatibility::IsInGroup(bot, target) &&
            (!aliveCheck || !target->IsDead()) &&
            (!auraCheck || !ai->HasAura(GetSpellID(), target));
 }

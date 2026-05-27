@@ -183,7 +183,7 @@ bool FleeManager::isUseful()
             if (unit)
             {
                 float const distanceSquared = startPosition.sqDistance(WorldPosition(unit));
-                float attackDistanceSquared = unit->GetAttackDistance(bot);
+                float attackDistanceSquared = PlayerbotsCompatibility::GetAttackDistance(unit, bot);
                 attackDistanceSquared *= attackDistanceSquared;
                 if (distanceSquared < attackDistanceSquared)
                 {

@@ -239,7 +239,7 @@ bool WorldBuffTravelApplyAction::TakeFlightFromMaster(uint32 npcEntry, uint32 de
 // If bot is a warlock at a regrouping step, summon far away group members and sync their step.
 bool WorldBuffTravelApplyAction::TrySummonFarAwayMembers(WorldBuffTravelStep step)
 {
-    if (bot->getClass() != CLASS_WARLOCK)
+    if (bot->GetClass() != CLASS_WARLOCK)
         return false;
 
     if (step != WorldBuffTravelStep::STEP_BOOTY_BAY &&
@@ -718,7 +718,7 @@ bool WorldBuffTravelDMExitedAction::Execute(Event& event)
 
 bool WorldBuffTravelDMCastPortalAction::isUseful()
 {
-    return bot->getClass() == CLASS_MAGE;
+    return bot->GetClass() == CLASS_MAGE;
 }
 
 bool WorldBuffTravelDMCastPortalAction::Execute(Event& event)
@@ -787,7 +787,7 @@ bool WorldBuffTravelDMTakePortalAction::Execute(Event& event)
 
 bool WorldBuffTravelCastPortalAction::isUseful()
 {
-    return bot->getClass() == CLASS_MAGE;
+    return bot->GetClass() == CLASS_MAGE;
 }
 
 bool WorldBuffTravelCastPortalAction::Execute(Event& event)

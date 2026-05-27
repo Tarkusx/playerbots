@@ -316,7 +316,7 @@ bool SpellNoCooldownTrigger::IsActive()
     if (!spellId)
         return false;
 
-    return bot->IsSpellReady(spellId);
+    return sServerFacade.IsSpellReady(bot, spellId);
 }
 
 bool RandomTrigger::IsActive()
@@ -814,7 +814,7 @@ bool InRaidFightTrigger::IsActive()
 bool GreaterBuffOnPartyTrigger::IsActive()
 {
     Unit* target = GetTarget();
-    return target && bot->IsInGroup(target) && BuffOnPartyTrigger::IsActive() && !ai->HasAura(lowerSpell, target, false, checkIsOwner);
+    return target && PlayerbotsCompatibility::IsInGroup(bot, target) && BuffOnPartyTrigger::IsActive() && !ai->HasAura(lowerSpell, target, false, checkIsOwner);
 }
 
 bool TargetOfAttacker::IsActive()
@@ -954,7 +954,7 @@ bool SpellTargetTrigger::IsTargetValid(Unit* target)
     return target &&
            ai->IsSafe(target) &&
            (bot == target || sServerFacade.GetDistance2d(bot, target) < sPlayerbotAIConfig.sightDistance) &&
-           (bot->IsInGroup(target)) &&
+           (PlayerbotsCompatibility::IsInGroup(bot, target)) &&
            (!aliveCheck || !target->IsDead()) &&
            (!auraCheck || !ai->HasAura(spell, target));
 }
@@ -962,7 +962,7 @@ bool SpellTargetTrigger::IsTargetValid(Unit* target)
 bool SpellTargetTrigger::IsSpellReady()
 {
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
-    return spellId && bot->IsSpellReady(spellId);
+    return spellId && sServerFacade.IsSpellReady(bot, spellId);
 }
 
 bool ItemTargetTrigger::IsTargetValid(Unit* target)

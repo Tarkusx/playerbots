@@ -6,7 +6,7 @@ namespace ai
 {
     BUFF_ACTION(CastColdBloodAction, "cold blood");
 
-    BUFF_ACTION_U(CastPreparationAction, "preparation", !bot->IsSpellReady(14177) || !bot->IsSpellReady(2983) || !bot->IsSpellReady(2094));
+    BUFF_ACTION_U(CastPreparationAction, "preparation", !sServerFacade.IsSpellReady(bot, 14177) || !sServerFacade.IsSpellReady(bot, 2983) || !sServerFacade.IsSpellReady(bot, 2094));
 
     class CastShadowstepAction : public CastSpellAction 
     {
@@ -17,7 +17,7 @@ namespace ai
 
         virtual bool isUseful() override
         {
-            return bot->HasSpell(36554) && bot->IsSpellReady(36554);
+            return bot->HasSpell(36554) && sServerFacade.IsSpellReady(bot, 36554);
         }
 
         virtual bool Execute(Event& event) override
@@ -334,8 +334,8 @@ namespace ai
 
         virtual bool isUseful()
         {
-            return CastComboAction::isUseful() && GetTarget() && (GetTarget()->getClass() == CLASS_WARRIOR ||
-                GetTarget()->getClass() == CLASS_ROGUE);
+            return CastComboAction::isUseful() && GetTarget() && (GetTarget()->GetClass() == CLASS_WARRIOR ||
+                GetTarget()->GetClass() == CLASS_ROGUE);
         }
     };
 
@@ -366,7 +366,7 @@ namespace ai
                     if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
                         continue;
 
-                    if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
+                    if (member->GetClass() == CLASS_SHAMAN && member->GetLevel() > 32)
                         return false;
                 }
             }

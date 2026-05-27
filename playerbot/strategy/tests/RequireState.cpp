@@ -35,7 +35,7 @@ TestResult RequireBotIs::Execute(const std::string& params, Player* bot,
                 return TestResult::FAIL;
             }
 
-            if (bot->getClass() != expectedClass)
+            if (bot->GetClass() != expectedClass)
             {
                 return TestResult::FAIL;
             }
@@ -48,7 +48,7 @@ TestResult RequireBotIs::Execute(const std::string& params, Player* bot,
                 return TestResult::FAIL;
             }
 
-            if (bot->getRace() != expectedRace)
+            if (bot->GetRace() != expectedRace)
             {
                 return TestResult::FAIL;
             }

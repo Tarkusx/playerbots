@@ -173,6 +173,7 @@ endif()
 
 target_include_directories(${LIBRARY_NAME}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${PROJECT_SOURCE_DIR}/dep/recastnavigation
 )
 
 # Install config files

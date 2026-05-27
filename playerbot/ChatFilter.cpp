@@ -4,6 +4,8 @@
 #include "strategy/values/ItemUsageValue.h"
 #include "ChatHelper.h"
 #include "Guilds/GuildMgr.h"
+#include "Guild/Guild.h"
+#include "Guild/GuildMgr.h"
 
 using namespace ai;
 
@@ -369,7 +371,7 @@ public:
         if (!melee && !ranged)
             return message;
 
-        switch (bot->getClass())
+        switch (bot->GetClass())
         {
             case CLASS_WARRIOR:
             case CLASS_PALADIN:
@@ -524,7 +526,7 @@ public:
         for (std::map<std::string, uint8>::iterator i = classNames.begin(); i != classNames.end(); i++)
         {
             bool isClass = message.find(i->first) == 0;
-            if (isClass && bot->getClass() != i->second)
+            if (isClass && bot->GetClass() != i->second)
                 return "";
 
             found |= isClass;
@@ -571,7 +573,7 @@ public:
     {
         Player* bot = ai->GetBot();
 
-        std::string filter = "@" + ChatHelper::formatRace(bot->getRace());
+        std::string filter = "@" + ChatHelper::formatRace(bot->GetRace());
 
         filter[1] = tolower(filter[1]);
 
@@ -650,14 +652,14 @@ public:
         }
         if (message.find("@raid") == 0)
         {
-            if (!bot->GetGroup() || !bot->GetGroup()->IsRaidGroup())
+            if (!bot->GetGroup() || !bot->GetGroup()->isRaidGroup())
                 return message;
 
             return ChatFilter::Filter(message);
         }
         if (message.find("@noraid") == 0)
         {
-            if (bot->GetGroup() && bot->GetGroup()->IsRaidGroup())
+            if (bot->GetGroup() && bot->GetGroup()->isRaidGroup())
                 return message;
 
             return ChatFilter::Filter(message);
@@ -667,7 +669,7 @@ public:
             if (!bot->GetGroup())
                 return message;
 
-            if (!bot->GetGroup()->IsRaidGroup())
+            if (!bot->GetGroup()->isRaidGroup())
                 return message;
 
             if (bot->GetGroup()->IsLeader(bot->GetObjectGuid()))

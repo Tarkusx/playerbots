@@ -1,5 +1,7 @@
 #pragma once
 
+class Guild;
+
 namespace ai
 {
 

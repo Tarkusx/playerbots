@@ -199,6 +199,7 @@ public:
 
         std::list<std::string> HandleHelp(std::string param);
         std::list<std::string> HandleConsoleReset(std::string param);
+        std::list<std::string> HandleConsoleBootstrap(std::string param);
         std::list<std::string> HandleConsoleStats(std::string param);
         std::list<std::string> HandleConsoleReload(std::string param);
         std::list<std::string> HandleConsoleUpdate(std::string param);

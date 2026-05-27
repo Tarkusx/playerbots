@@ -25,7 +25,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
 #ifndef MANGOSBOT_TWO
     // Check if shaman +30 lvl (non-WOTLK)
 
-    if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
+    if (bot->GetClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
         allowMainhand = false;
 
     if (bot->GetGroup())
@@ -37,7 +37,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
             if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
                 continue;
 
-            if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
+            if (member->GetClass() == CLASS_SHAMAN && member->GetLevel() > 32)
             {
                 allowMainhand = false;
                 break;
@@ -93,7 +93,7 @@ bool ImbueWithStoneAction::isUseful()
 
 #ifndef MANGOSBOT_TWO
     // Deny mainhand stone use if bot is a Shaman over 30 or grouped with one over 32 (TBC/Vanilla only)
-    if (bot->getClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
+    if (bot->GetClass() == CLASS_SHAMAN && bot->GetLevel() > 30)
         allowMainhand = false;
 
     if (bot->GetGroup())
@@ -105,7 +105,7 @@ bool ImbueWithStoneAction::isUseful()
             if (!member || member == bot || !member->IsInWorld() || !group->SameSubGroup(bot, member))
                 continue;
 
-            if (member->getClass() == CLASS_SHAMAN && member->GetLevel() > 32)
+            if (member->GetClass() == CLASS_SHAMAN && member->GetLevel() > 32)
             {
                 allowMainhand = false;
                 break;

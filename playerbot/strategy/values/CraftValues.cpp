@@ -23,7 +23,7 @@ std::vector<uint32> CraftSpellsValue::Calculate()
             continue;
 
 #ifdef MANGOSBOT_TWO
-        if (pSpellInfo->Effect[0] == SPELL_EFFECT_CREATE_ITEM_2 && spellId == 61288 && bot->IsSpellReady(61288)) //Todo handle other item_2 spells
+        if (pSpellInfo->Effect[0] == SPELL_EFFECT_CREATE_ITEM_2 && spellId == 61288 && sServerFacade.IsSpellReady(bot, 61288)) //Todo handle other item_2 spells
         {
             spellIds.push_back(spellId);
             continue;

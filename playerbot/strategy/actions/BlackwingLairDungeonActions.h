@@ -77,7 +77,7 @@ namespace ai
 
         bool Execute(Event& event) override
         {
-            if (bot->getClass() != CLASS_ROGUE)
+            if (bot->GetClass() != CLASS_ROGUE)
                 return false;
 
             if (ai->HasAura("stealth", bot))
@@ -96,7 +96,7 @@ namespace ai
 
         bool isPossible() override
         {
-            return bot->getClass() == CLASS_ROGUE && !ai->HasAura("stealth", bot);
+            return bot->GetClass() == CLASS_ROGUE && !ai->HasAura("stealth", bot);
         }
 
         bool isUseful() override
@@ -161,7 +161,7 @@ namespace ai
 
         bool Execute(Event& event) override
         {
-            if (bot->getClass() != CLASS_ROGUE)
+            if (bot->GetClass() != CLASS_ROGUE)
                 return false;
 
             if (!bot->HasSpell(SPELL_DISARM_TRAP))
@@ -206,7 +206,7 @@ namespace ai
 
         bool isPossible() override
         {
-            return bot->getClass() == CLASS_ROGUE && 
+            return bot->GetClass() == CLASS_ROGUE && 
                    bot->HasSpell(SPELL_DISARM_TRAP) && 
                    ai->CanMove();
         }

@@ -1,6 +1,7 @@
 
 #include "playerbot/playerbot.h"
 #include "ChatHelper.h"
+#include "Language.h"
 #include "playerbot/AiFactory.h"
 #include "strategy/values/ItemUsageValue.h"
 #include <numeric>
@@ -447,7 +448,14 @@ std::string ChatHelper::formatQuest(Quest const* quest)
     std::ostringstream out;
     int loc_idx = sPlayerbotTextMgr.GetLocalePriority();
     std::string title = quest->GetTitle();
-    sObjectMgr.GetQuestLocaleStrings(quest->GetQuestId(), loc_idx, &title);
+    if (loc_idx >= 0)
+    {
+        if (QuestLocale const* locale = sObjectMgr.GetQuestLocale(quest->GetQuestId()))
+        {
+            if (locale->Title.size() > static_cast<size_t>(loc_idx) && !locale->Title[loc_idx].empty())
+                title = locale->Title[loc_idx];
+        }
+    }
     out << "|cFFFFFF00|Hquest:" << quest->GetQuestId() << ':' << quest->GetQuestLevel() << "|h[" << title << "]|h|r";
     return out.str();
 }
@@ -495,9 +503,9 @@ std::string ChatHelper::formatWorldEntry(int32 entry)
     GameObjectInfo const* gInfo = NULL;
 
     if (entry > 0)
-        cInfo = ObjectMgr::GetCreatureTemplate(entry);
+        cInfo = sObjectMgr.GetCreatureTemplate(entry);
     else
-        gInfo = ObjectMgr::GetGameObjectInfo(entry * -1);
+        gInfo = sObjectMgr.GetGameObjectInfo(entry * -1);
 
     std::ostringstream out;
     out << "|cFFFFFF00|Hentry:" << abs(entry) << ":" << "|h[";
@@ -507,7 +515,7 @@ std::string ChatHelper::formatWorldEntry(int32 entry)
     if (entry < 0 && gInfo)
         name = gInfo->name;
     else if (entry > 0 && cInfo)
-        name = cInfo->Name;
+        name = cInfo->name;
     
     if(name.empty())
         name = "unknown:" + std::to_string(entry);
@@ -523,11 +531,10 @@ std::string ChatHelper::formatWorldEntry(int32 entry)
     }
     if (loc_idx >= 0 && entry > 0)
     {
-        char const* tname = "";
-        sObjectMgr.GetCreatureLocaleStrings(entry, loc_idx, &tname);
-        if (*tname)
+        if (CreatureLocale const* cl = sObjectMgr.GetCreatureLocale(entry))
         {
-            name = *tname;
+            if (cl->Name.size() > static_cast<size_t>(loc_idx) && !cl->Name[loc_idx].empty())
+                name = cl->Name[loc_idx];
         }
     }
     
@@ -555,10 +562,11 @@ std::string ChatHelper::formatItem(ItemQualifier& itemQualifier, int count, int 
     std::string name = proto->Name1;
     if (loc_idx >= 0)
     {
-        std::string tname;
-        sObjectMgr.GetItemLocaleStrings(itemQualifier.GetId(), loc_idx, &tname);
-        if (!tname.empty())
-            name = tname;
+        if (ItemLocale const* il = sObjectMgr.GetItemLocale(itemQualifier.GetId()))
+        {
+            if (il->Name.size() > static_cast<size_t>(loc_idx) && !il->Name[loc_idx].empty())
+                name = il->Name[loc_idx];
+        }
     }
 
     if (itemQualifier.GetRandomPropertyId())
@@ -980,12 +988,12 @@ std::string ChatHelper::formatRole(BotRoles role)
 
 std::string ChatHelper::specName(const Player* player)
 {
-    return specs[player->getClass()][AiFactory::GetPlayerSpecTab(player)];
+    return specs[player->GetClass()][AiFactory::GetPlayerSpecTab(player)];
 }
 
 std::string ChatHelper::formatClass(const Player* player, int spec)
 {
-    uint8 cls = player->getClass();
+    uint8 cls = player->GetClass();
 
     std::ostringstream out;
     out << specs[cls][spec] << " (";
@@ -1240,9 +1248,9 @@ inline std::string toInitCap(const std::string& str) {
 void ChatHelper::PopulateSpellNameList()
 {
     spellIds.clear();
-    for (uint32 i = 0; i < GetSpellStore()->GetMaxEntry(); ++i)
+    for (uint32 i = 0; i < sSpellTemplate.GetMaxEntry(); ++i)
     {
-        SpellEntry const* tempSpell = GetSpellStore()->LookupEntry<SpellEntry>(i);
+        SpellEntry const* tempSpell = sSpellTemplate.LookupEntry<SpellEntry>(i);
 
         if (!tempSpell)
             continue;

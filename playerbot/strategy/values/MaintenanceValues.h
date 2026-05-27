@@ -160,7 +160,7 @@ namespace ai
         ShouldDrinkValue(PlayerbotAI* ai) : BoolCalculatedValue(ai, "should drink", 2) {}
         virtual bool Calculate() override
         {
-            if (!bot->HasMana())
+            if (bot->GetPowerType() != POWER_MANA)
                 return false;
 
             if (AI_VALUE2(uint8, "mana", "self target") >= 85)

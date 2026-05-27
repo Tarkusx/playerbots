@@ -174,8 +174,8 @@ namespace ai
 
         virtual bool IsActive() override
         {
-            return !bot->IsSpellReady(133)      //fireball
-                && !bot->IsSpellReady(2948);    //scorch
+            return !sServerFacade.IsSpellReady(bot, 133)      //fireball
+                && !sServerFacade.IsSpellReady(bot, 2948);    //scorch
         }
     };
 
@@ -247,8 +247,8 @@ namespace ai
 
         virtual bool IsActive() override
         {
-            return !bot->IsSpellReady(12472)    //icy veins on cooldown
-                && bot->IsSpellReady(11958);    //cold snap not on cooldown
+            return !sServerFacade.IsSpellReady(bot, 12472)    //icy veins on cooldown
+                && sServerFacade.IsSpellReady(bot, 11958);    //cold snap not on cooldown
         }
     };
 

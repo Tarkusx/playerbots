@@ -249,22 +249,22 @@ void AttackersValue::AddTargetsOf(Player* player, std::set<Unit*>& targets, std:
         }
 
         // Get the current attackers of the player
-        for (Unit* attacker : player->getAttackers())
+        for (Unit* attacker : player->GetAttackers())
         {
             units.insert(attacker);
         }
 
         // Add the duel opponent (Only consider the owner bot)
-        if (bot == player && bot->duel && bot->duel->opponent)
+        if (bot == player && bot->m_duel && bot->m_duel->opponent)
         {
-            units.insert(bot->duel->opponent);
+            units.insert(bot->m_duel->opponent);
         }
 
         // Add the pet attackers (if nearby)
         Pet* pet = player->GetPet();
         if (pet && sServerFacade.GetDistance2d(bot, pet) <= GetRange())
         {
-            for (Unit* attacker : pet->getAttackers())
+            for (Unit* attacker : pet->GetAttackers())
             {
                 units.insert(attacker);
             }
@@ -361,7 +361,7 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
         }
 
         // Don't check distance on duel opponents
-        if (!player->duel || (player->duel && (player->duel->opponent != target)))
+        if (!player->m_duel || (player->m_duel && (player->m_duel->opponent != target)))
         {
             // If the enemy player is not within sight distance
             if (!enemyPlayer->IsWithinDist(playerToCheckAgainst, EnemyPlayerValue::GetMaxAttackDistance(playerToCheckAgainst), false))

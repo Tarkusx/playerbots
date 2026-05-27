@@ -86,7 +86,7 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
             WorldPacket data(SMSG_EMOTE, 4 + 8);
             data << uint32(EMOTE_ONESHOT_LOOT);
             data << bot->GetObjectGuid();
-            bot->GetSession()->SendPacket(data);
+            bot->GetSession()->SendPacket(&data);
         }
 
         return true;

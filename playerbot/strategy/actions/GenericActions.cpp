@@ -119,7 +119,7 @@ bool InitializePetAction::isUseful()
         // Or if alt bot and autoLearnTrainerSpells is true
         (!sPlayerbotAIConfig.IsInRandomAccountList(bot->GetSession()->GetAccountId()) && sPlayerbotAIConfig.autoLearnTrainerSpells))
     {
-        if (bot->getClass() == CLASS_HUNTER)
+        if (bot->GetClass() == CLASS_HUNTER)
         {
             bool hasTamedPet = bot->GetPet();
             if (!hasTamedPet)
@@ -140,7 +140,7 @@ bool InitializePetAction::isUseful()
         }
 // Warlock pets should auto learn spells in WOTLK
 #ifndef MANGOSBOT_TWO
-        else if (bot->getClass() == CLASS_WARLOCK)
+        else if (bot->GetClass() == CLASS_WARLOCK)
         {
             // Only initialize if warlock has the pet summoned
             Pet* pet = bot->GetPet();
@@ -363,7 +363,7 @@ bool SetPetAction::Execute(Event& event)
             if (!spellName.empty())
             {
                 const uint32 spellId = AI_VALUE2(uint32, "spell id", spellName);
-                if (pet->HasSpell(spellId) && IsAutocastable(spellId))
+                if (pet->HasSpell(spellId) && !Spells::IsPassiveSpell(spellId))
                 {
                     auto IsAutocastActive = [&pet, &spellId]() -> bool
                     {
@@ -494,7 +494,7 @@ bool SetPetAction::Execute(Event& event)
             {
                 constexpr uint32 PET_IMP = 416;
                 constexpr uint32 PHASE_SHIFT = 4511;
-                if (bot->getClass() == CLASS_WARLOCK &&
+                if (bot->GetClass() == CLASS_WARLOCK &&
                     pet->AI() && pet->AI()->HasReactState(REACT_PASSIVE) &&
                     pet->GetEntry() == PET_IMP && pet->HasAura(PHASE_SHIFT))
                 {
@@ -565,7 +565,7 @@ bool SetPetAction::Execute(Event& event)
         }
         else if (command == "abandon")
         {
-            if (bot->getClass() == CLASS_HUNTER)
+            if (bot->GetClass() == CLASS_HUNTER)
             {
                 //std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_PET_ABANDON, 8));
                 //*packet << pet->GetObjectGuid();
@@ -593,7 +593,7 @@ bool SetPetAction::Execute(Event& event)
     }
     else if (command == "call")
     {
-        if (bot->getClass() == CLASS_HUNTER || bot->getClass() == CLASS_WARLOCK)
+        if (bot->GetClass() == CLASS_HUNTER || bot->GetClass() == CLASS_WARLOCK)
         {
             ai->ChangeStrategy("+pet", BotState::BOT_STATE_COMBAT);
             ai->ChangeStrategy("+pet", BotState::BOT_STATE_NON_COMBAT);

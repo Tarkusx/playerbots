@@ -28,7 +28,7 @@ bool SetAvoidAreaAction::Execute(Event& event)
         if (!cInfo)
             continue;
 
-        if (cInfo->NpcFlags > 0) //Ignore npcs.
+        if (cInfo->npc_flags > 0) //Ignore npcs.
             continue;
 
         if (cInfo->MaxLevel < bot->GetLevel() - 3) //Ignore lower level mobs.

@@ -479,7 +479,7 @@ bool GuildShareItemEntry::MatchesPlayer(Player* player) const
     switch (filter)
     {
     case GuildShareFilter::FILTER_CLASS:
-        return player->getClass() == playerClass;
+        return player->GetClass() == playerClass;
 
     case GuildShareFilter::FILTER_ALL:
         return true;
@@ -544,7 +544,7 @@ std::vector<GuildShareItemEntry> GuildShareListValue::Calculate()
     if (!guild)
         return result;
 
-    std::string ginfo = guild->GetGINFO();
+        std::string ginfo = guild->GetInfo();
     if (ginfo.empty())
         return result;
 
@@ -1299,10 +1299,10 @@ bool CanBuyTabard::Calculate()
 	AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot));
 	if (areaEntry)
 	{
-		if (areaEntry->zone)
-			areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+		if (areaEntry->ZoneId)
+			areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-		if (areaEntry && areaEntry->flags & AREA_FLAG_CAPITAL)
+		if (areaEntry && areaEntry->Flags & AREA_FLAG_CAPITAL)
 			inCity = true;
 	}
 

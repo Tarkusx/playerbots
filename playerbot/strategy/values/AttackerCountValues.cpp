@@ -8,7 +8,7 @@ using namespace ai;
 
 uint8 MyAttackerCountValue::Calculate()
 {
-    return bot->getAttackers().size();
+    return bot->GetAttackers().size();
 }
 
 bool HasAggroValue::Calculate()
@@ -120,7 +120,7 @@ uint8 BalancePercentValue::Calculate()
                 continue;
 
             uint32 level = creature->GetLevel();
-            switch (creature->GetCreatureInfo()->Rank) 
+            switch (creature->GetCreatureInfo()->rank) 
             {
                 case CREATURE_ELITE_RARE:
                 {

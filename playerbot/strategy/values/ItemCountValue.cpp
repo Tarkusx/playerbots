@@ -70,7 +70,7 @@ std::list<Item*> EquipedUsableTrinketValue::Calculate()
 		{
 			if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE &&
 				proto->Spells[i].SpellId > 0 &&
-				bot->IsSpellReady(proto->Spells[i].SpellId, proto))
+				sServerFacade.IsSpellReady(bot, proto->Spells[i].SpellId, proto->ItemId))
 			{
 				result.push_back(item);
 			}

@@ -48,7 +48,7 @@ bool WhoAction::Execute(Event& event)
     {
         if (AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot)))
         {
-            out << ", (|cffb04040" << areaEntry->area_name[0] << "|r)";
+            out << ", (|cffb04040" << PlayerbotsCompatibility::GetAreaName(areaEntry, 0) << "|r)";
         }
     }
 

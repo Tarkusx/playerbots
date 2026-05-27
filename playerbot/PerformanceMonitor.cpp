@@ -5,16 +5,16 @@
 #include "Database/DatabaseEnv.h"
 #include "PlayerbotAI.h"
 
-PerformanceMonitor::PerformanceMonitor() 
+PlayerbotPerformanceMonitor::PlayerbotPerformanceMonitor() 
 {
 
 }
 
-PerformanceMonitor::~PerformanceMonitor()
+PlayerbotPerformanceMonitor::~PlayerbotPerformanceMonitor()
 {
 }
 
-std::unique_ptr<PerformanceMonitorOperation> PerformanceMonitor::start(PerformanceMetric metric, std::string name, PerformanceStack* stack, uint32 mapId, uint32 instanceId)
+std::unique_ptr<PerformanceMonitorOperation> PlayerbotPerformanceMonitor::start(PerformanceMetric metric, std::string name, PerformanceStack* stack, uint32 mapId, uint32 instanceId)
 {
     if (!sPlayerbotAIConfig.perfMonEnabled)
     {
@@ -49,7 +49,7 @@ std::unique_ptr<PerformanceMonitorOperation> PerformanceMonitor::start(Performan
     return std::make_unique<PerformanceMonitorOperation>(pd, name, stack);
 }
 
-std::unique_ptr<PerformanceMonitorOperation> PerformanceMonitor::start(PerformanceMetric metric, std::string name, PlayerbotAI * ai)
+std::unique_ptr<PerformanceMonitorOperation> PlayerbotPerformanceMonitor::start(PerformanceMetric metric, std::string name, PlayerbotAI * ai)
 {
     if (!sPlayerbotAIConfig.perfMonEnabled) return NULL;
 
@@ -95,7 +95,7 @@ std::string StackString(const std::vector<std::string>& stack, bool fullStack = 
     return result;
 }
 
-void PerformanceMonitor::PrintStats(bool perTick, bool fullStack, bool showMap)
+void PlayerbotPerformanceMonitor::PrintStats(bool perTick, bool fullStack, bool showMap)
 {
     if (mapsData.empty())
         return;
@@ -275,7 +275,7 @@ void PerformanceMonitor::PrintStats(bool perTick, bool fullStack, bool showMap)
     }
 }
 
-void PerformanceMonitor::Reset()
+void PlayerbotPerformanceMonitor::Reset()
 {
     for (auto& [mapId, mapData] : mapsData)
     {
@@ -292,7 +292,7 @@ void PerformanceMonitor::Reset()
     }
 }
 
-void PerformanceMonitor::Init(uint32 mapId, uint32 instanceId)
+void PlayerbotPerformanceMonitor::Init(uint32 mapId, uint32 instanceId)
 {    
     if (sPlayerbotAIConfig.perfMonEnabled)
     {
@@ -333,45 +333,4 @@ void PerformanceMonitorOperation::finish()
         stack->erase(std::remove(stack->begin(), stack->end(), name), stack->end());
 }
 
-bool ChatHandler::HandlePerfMonCommand(char* args)
-{
-    if (!strcmp(args, "reset"))
-    {
-        sPerformanceMonitor.Reset();
-        sLog.outString("Performance monitor reset");
-        return true;
-    }
-
-    if (!strcmp(args, "toggle"))
-    {
-        sPlayerbotAIConfig.perfMonEnabled = !sPlayerbotAIConfig.perfMonEnabled;
-        if (sPlayerbotAIConfig.perfMonEnabled)
-            sLog.outString("Performance monitor enabled");
-        else
-            sLog.outString("Performance monitor disabled");
-
-        return true;
-    }   
-
-    std::string arguments = args;
-
-    bool tick = false, stack = false, map = false;
-
-    if (arguments.find("tick") != std::string::npos) 
-    {
-        tick = true;
-    }
-
-    if (arguments.find("stack") != std::string::npos)
-    {
-        stack = true;
-    }
-
-    if (arguments.find("map") != std::string::npos)
-    {
-        map = true;
-    }
-
-    sPerformanceMonitor.PrintStats(tick, stack, map);
-    return true;
-}
+// TODO: wire a real Turtle ChatHandler command before re-enabling this playerbots-only perfmon hook.

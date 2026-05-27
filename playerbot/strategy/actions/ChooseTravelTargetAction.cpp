@@ -276,8 +276,8 @@ void ChooseTravelTargetAction::ReportTravelTarget(Player* bot, Player* requester
         out << bot->GetName() << ",";
         out << std::fixed << std::setprecision(2);
 
-        out << std::to_string(bot->getRace()) << ",";
-        out << std::to_string(bot->getClass()) << ",";
+        out << std::to_string(bot->GetRace()) << ",";
+        out << std::to_string(bot->GetClass()) << ",";
         float subLevel = ai->GetLevelFloat();
 
         out << subLevel << ",";
@@ -1174,7 +1174,7 @@ bool RequestNamedTravelTargetAction::Execute(Event& event)
                                 if (!dest->GetCreatureInfo())
                                     return true;
 
-                                if (dest->GetCreatureInfo()->NpcFlags & UNIT_NPC_FLAG_AUCTIONEER)
+                                if (dest->GetCreatureInfo()->npc_flags & UNIT_NPC_FLAG_AUCTIONEER)
                                     return false;
 
                                 return true;
@@ -1277,7 +1277,7 @@ bool RequestNamedTravelTargetAction::Execute(Event& event)
                             if (!dest->GetCreatureInfo())
                                 return true;
 
-                            if (dest->GetCreatureInfo()->NpcFlags & cityFlags)
+                            if (dest->GetCreatureInfo()->npc_flags & cityFlags)
                                 return false;
 
                             return true;

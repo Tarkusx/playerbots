@@ -24,10 +24,10 @@ bool SpellCastUsefulValue::Calculate()
 	{
 		Spell* spell = bot->GetCurrentSpell(CURRENT_MELEE_SPELL);
 #ifdef CMANGOS
-		if (spell && spell->m_spellInfo->Id == spellid && IsNextMeleeSwingSpell(spell->m_spellInfo) && bot->hasUnitState(UNIT_STAT_MELEE_ATTACKING))
+		if (spell && spell->m_spellInfo->Id == spellid && IsNextMeleeSwingSpell(spell->m_spellInfo) && bot->HasUnitState(UNIT_STAT_MELEE_ATTACKING))
 #endif
 #ifdef MANGOS
-		if (spell && spell->m_spellInfo->Id == spellid && spell->IsNextMeleeSwingSpell() && bot->hasUnitState(UNIT_STAT_MELEE_ATTACKING))
+		if (spell && spell->m_spellInfo->Id == spellid && spell->IsNextMeleeSwingSpell() && bot->HasUnitState(UNIT_STAT_MELEE_ATTACKING))
 #endif
 			return false;
 	}
@@ -86,5 +86,5 @@ bool SpellReadyValue::Calculate()
     if (!spellid)
         return false;
 
-    return bot->IsSpellReady(spellid);
+    return sServerFacade.IsSpellReady(bot, spellid);
 }

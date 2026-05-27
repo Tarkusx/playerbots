@@ -260,7 +260,7 @@ bool MovementAction::UseTaxi(PlayerbotAI* ai, uint32 entry, bool needNpc)
     if (!tEntry)
     {
 #ifdef MANGOSBOT_TWO
-        bot->OnTaxiFlightEject(true);
+        bot->GetMotionMaster()->MovementExpired();
         ai->Unmount();
 #endif
         bool goClick = ai->HandleSpellClick(entry); //Source gryphon of ebonhold.
@@ -298,7 +298,7 @@ bool MovementAction::UseTaxi(PlayerbotAI* ai, uint32 entry, bool needNpc)
         bot->SetMoney(botMoney + tEntry->price);
     }
 
-    bot->OnTaxiFlightEject(true);
+    bot->GetMotionMaster()->MovementExpired();
 
     ai->Unmount();
 
@@ -1186,7 +1186,7 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
     if (bot == mover)
     {
         bot->HandleEmoteState(0);
-        if (!bot->IsStandState())
+        if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
             bot->SetStandState(UNIT_STAND_STATE_STAND);
 
         if (bot->IsNonMeleeSpellCasted(true, false, true))
@@ -1560,7 +1560,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     WorldPosition telePos;
                     AreaTrigger const* at = sObjectMgr.GetAreaTrigger(entry);
                     if (at)
-                        telePos = WorldPosition(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
+                        telePos = WorldPosition(at->mapid, at->x, at->y, at->z, at->box_orientation);
 
                     std::ostringstream out;
                     out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
@@ -1570,8 +1570,8 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     else
                         startPosition.printWKT({startPosition, movePosition}, out, 1);
 
-                    out << std::to_string(bot->getRace()) << ",";
-                    out << std::to_string(bot->getClass()) << ",";
+                    out << std::to_string(bot->GetRace()) << ",";
+                    out << std::to_string(bot->GetClass()) << ",";
                     float subLevel = ai->GetLevelFloat();
                     out << subLevel << ",";
                     out << (entry ? entry : -1);
@@ -1632,7 +1632,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     {
                         AreaTrigger const* at = sObjectMgr.GetAreaTrigger(entry);
                         if (at)
-                            telePos = WorldPosition(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
+                        telePos = WorldPosition(at->mapid, at->x, at->y, at->z, at->box_orientation);
                     }
                     else
                         telePos = movePosition;
@@ -1645,8 +1645,8 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     else
                         startPosition.printWKT({startPosition, movePosition}, out, 1);
 
-                    out << std::to_string(bot->getRace()) << ",";
-                    out << std::to_string(bot->getClass()) << ",";
+                    out << std::to_string(bot->GetRace()) << ",";
+                    out << std::to_string(bot->GetClass()) << ",";
                     float subLevel = ai->GetLevelFloat();
                     out << subLevel << ",";
                     out << (entry ? entry : -1);
@@ -1986,8 +1986,8 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         out << sPlayerbotAIConfig.GetTimestampStr() << "+00,";
         out << bot->GetName() << ",";
         startPosition.printWKT({startPosition, movePosition}, out, 1);
-        out << std::to_string(bot->getRace()) << ",";
-        out << std::to_string(bot->getClass()) << ",";
+        out << std::to_string(bot->GetRace()) << ",";
+        out << std::to_string(bot->GetClass()) << ",";
         float subLevel = ai->GetLevelFloat();
         out << subLevel << ",";
         out << 0;
@@ -2010,7 +2010,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     if (!isVehicle)
     {
         bot->HandleEmoteState(0);
-        if (!bot->IsStandState())
+        if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
             bot->SetStandState(UNIT_STAND_STATE_STAND);
 
         if (bot->IsNonMeleeSpellCasted(true, false, true))
@@ -2427,7 +2427,7 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
     }
 
     bot->HandleEmoteState(0);
-    if (!bot->IsStandState())
+    if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
         bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     if (bot->IsNonMeleeSpellCasted(true))
@@ -2565,7 +2565,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
     UpdateMovementState();
 
     bot->HandleEmoteState(0);
-    if (!bot->IsStandState())
+    if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
         bot->SetStandState(UNIT_STAND_STATE_STAND);
 
 #ifndef MANGOSBOT_ZERO
@@ -2780,7 +2780,7 @@ bool MovementAction::Flee(Unit *target)
     uint32 fleeDelay = urand(2, sPlayerbotAIConfig.returnDelay / 1000);
 
     // let hunter kite mob
-    if (isTarget && bot->getClass() == CLASS_HUNTER)
+    if (isTarget && bot->GetClass() == CLASS_HUNTER)
     {
         fleeDelay = 1;
     }
@@ -3253,7 +3253,7 @@ bool SetFacingTargetAction::isPossible()
         bot->IsBeingTeleported() ||
         bot->HasAuraType(SPELL_AURA_MOD_CONFUSE) || sServerFacade.IsCharmed(bot) ||
         bot->HasAuraType(SPELL_AURA_MOD_STUN) || bot->IsTaxiFlying() ||
-        bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
+        bot->HasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
         return false;
 
     return true;
@@ -4188,7 +4188,7 @@ bool JumpAction::DoJump(const WorldPosition &dest, const WorldPosition& highestP
     ai->InterruptSpell(false);
     ai->StopMoving();
     ai->SetJumpDestination(landing);
-    bot->SetFallInformation(0, maxHeight);
+    bot->SetFallInformation(maxHeight);
 
     bool slowJump = false;// !jumpBackward && hSpeed == bot->GetSpeed(MOVE_WALK);
     // TODO calculate slow jump (jump + move forward)
@@ -4210,7 +4210,7 @@ bool JumpAction::DoJump(const WorldPosition &dest, const WorldPosition& highestP
     float vcos = jumpInPlace ? 1 : cos(angle);
 
     // write jump info
-    uint32 curTime = sWorld.GetCurrentMSTime();
+    uint32 curTime = WorldTimer::getMSTime();
     uint32 jumpTime = curTime + sWorld.GetAverageDiff() * 2 + uint32(timeToLand * static_cast<float>(IN_MILLISECONDS));
     ai->SetJumpTime(jumpTime);
     bot->m_movementInfo.jump.zspeed = -vSpeed;

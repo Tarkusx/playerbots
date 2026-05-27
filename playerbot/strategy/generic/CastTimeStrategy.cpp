@@ -28,7 +28,7 @@ float CastTimeMultiplier::GetValue(Action* action)
         else if (spellId && pSpellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
             return 1.0f;
 
-        uint32 castTime = GetSpellCastTime(pSpellInfo, bot);
+        uint32 castTime = pSpellInfo->GetCastTime(bot);
         if (spellId && castTime >= 3000)
             return 0.0f;
 

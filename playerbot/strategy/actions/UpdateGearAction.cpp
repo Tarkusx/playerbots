@@ -16,7 +16,7 @@ bool UpdateGearAction::Execute(Event& event)
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 
     // Get bot class and spec
-    const uint8 cls = bot->getClass();
+    const uint8 cls = bot->GetClass();
     uint8 spec = AiFactory::GetPlayerSpecTab(bot);
 
     // Spec is overridden by bot role
@@ -129,7 +129,7 @@ bool UpdateGearAction::isUseful()
     {
         // Only for max level random bots that are playing with a real player
         Player* master = GetMaster();
-        if (master && master->isRealPlayer() && bot->IsInGroup(master) && sRandomPlayerbotMgr.IsRandomBot(bot))
+        if (master && master->isRealPlayer() && PlayerbotsCompatibility::IsInGroup(bot, master) && sRandomPlayerbotMgr.IsRandomBot(bot))
         {
             return bot->GetLevel() >= DEFAULT_MAX_LEVEL;
         }
@@ -202,7 +202,7 @@ void UpdateGearAction::EnchantItem(Item* item)
     if (item)
     {
         int tab = AiFactory::GetPlayerSpecTab(bot);
-        uint32 tempId = uint32((uint32)bot->getClass() * (uint32)10);
+        uint32 tempId = uint32((uint32)bot->GetClass() * (uint32)10);
         uint8 spec = tempId += (uint32)tab;
 
         if (enchants.empty())
@@ -227,7 +227,7 @@ void UpdateGearAction::EnchantItem(Item* item)
 
         for (const auto& enchant : enchants)
         {
-            if (enchant.ClassId == bot->getClass() && enchant.SpecId == spec)
+            if (enchant.ClassId == bot->GetClass() && enchant.SpecId == spec)
             {
                 ai->EnchantItemT(enchant.SpellId, enchant.SlotId, item);
             }

@@ -11,6 +11,8 @@
 #include "RandomPlayerbotFactory.h"
 #include "SystemConfig.h"
 #include "Social/SocialMgr.h"
+#include "Guild/Guild.h"
+#include "Guild/GuildMgr.h"
 #include "Guilds/GuildMgr.h"
 
 #ifndef MANGOSBOT_ZERO
@@ -212,7 +214,7 @@ uint8 RandomPlayerbotFactory::GetRandomClass(uint8 useRace, BotRoles role)
 
 bool RandomPlayerbotFactory::isRaceForTeam(uint8 race, Team team)
 {
-    if (team == Team::TEAM_BOTH_ALLOWED)
+    if (team == TEAM_BOTH_ALLOWED)
         return true;
 
     uint32 raceBit = 1 << (race - 1);
@@ -287,60 +289,12 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
     if (name.empty())
         return false;
 
-    std::vector<uint8> skinColors, facialHairTypes;
-    std::vector<std::pair<uint8,uint8>> faces, hairs;
-    for (CharSectionsMap::const_iterator itr = sCharSectionMap.begin(); itr != sCharSectionMap.end(); ++itr)
-    {
-        CharSectionsEntry const* entry = itr->second;
-        if (entry->Race != race || entry->Gender != gender)
-            continue;
-
-#ifndef MANGOSBOT_TWO
-        switch (entry->BaseSection)
-        {
-        case SECTION_TYPE_SKIN:
-            skinColors.push_back(entry->ColorIndex);
-            break;
-        case SECTION_TYPE_FACE:
-            faces.push_back(std::pair<uint8,uint8>(entry->VariationIndex, entry->ColorIndex));
-            break;
-        case SECTION_TYPE_FACIAL_HAIR:
-            facialHairTypes.push_back(entry->ColorIndex);
-            break;
-        case SECTION_TYPE_HAIR:
-            hairs.push_back(std::pair<uint8,uint8>(entry->VariationIndex, entry->ColorIndex));
-            break;
-        }
-#else
-        switch (entry->BaseSection)
-        {
-        case SECTION_TYPE_SKIN:
-            skinColors.push_back(entry->Color);
-            break;
-        case SECTION_TYPE_FACE:
-            faces.push_back(std::pair<uint8, uint8>(entry->VariationIndex, entry->Color));
-            break;
-        case SECTION_TYPE_FACIAL_HAIR:
-            facialHairTypes.push_back(entry->Color);
-            break;
-        case SECTION_TYPE_HAIR:
-            hairs.push_back(std::pair<uint8, uint8>(entry->VariationIndex, entry->Color));
-            break;
-        }
-#endif
-    }
-
-    uint8 skinColor = skinColors[urand(0, skinColors.size() - 1)];
-    std::pair<uint8,uint8> face = faces[urand(0, faces.size() - 1)];
-    std::pair<uint8,uint8> hair = hairs[urand(0, hairs.size() - 1)];
-
-	bool excludeCheck = (race == RACE_TAUREN) || (gender == GENDER_FEMALE && race != RACE_NIGHTELF && race != RACE_UNDEAD);
-#ifndef MANGOSBOT_TWO
-	uint8 facialHair = excludeCheck ? 0 : facialHairTypes[urand(0, facialHairTypes.size() - 1)];
-#else
-	uint8 facialHair = 0;
-#endif
-	//TODO vector crash on cmangos TWO when creating one of the first bot characters, need a fix
+    // Turtle does not expose the old CharSections DBC map used upstream for random appearance selection.
+    // Use default cosmetic values instead.
+    uint8 skinColor = 0;
+    std::pair<uint8, uint8> face = std::make_pair<uint8, uint8>(0, 0);
+    std::pair<uint8, uint8> hair = std::make_pair<uint8, uint8>(0, 0);
+    uint8 facialHair = 0;
 
 	WorldSession* session = new WorldSession(accountId, NULL, SEC_PLAYER,
 
@@ -354,8 +308,6 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
         0, LOCALE_enUS, "", 0);
 #endif
 
-    session->SetNoAnticheat();
-
     Player* player = new Player(session);
     if (!player || !session)
     {
@@ -367,7 +319,7 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
 	        face.first,
 	        hair.first,
 	        hair.second, // hairColor,
-	        facialHair, 0))
+	        facialHair))
     {
         player->DeleteFromDB(player->GetObjectGuid(), accountId, true, true);
         delete session;
@@ -377,7 +329,7 @@ bool RandomPlayerbotFactory::CreateRandomBot(uint8 cls, uint8 inputRace)
         return false;
     }
 
-    player->setCinematic(2);
+    player->SetCinematic(2);
     player->SetAtLoginFlag(AT_LOGIN_NONE);
     //player->SetSemaphoreTeleportFar(true); //Fake teleport to delay sql save
     //player->SaveToDB();
@@ -992,7 +944,7 @@ void RandomPlayerbotFactory::CreateRandomBots()
     for (auto player : players)
     {
         WorldSession* session = player->GetSession();
-        session->LogoutPlayer();
+        session->LogoutPlayer(true);
         sObjectAccessor.RemoveObject(player);
         delete player;
         delete session;

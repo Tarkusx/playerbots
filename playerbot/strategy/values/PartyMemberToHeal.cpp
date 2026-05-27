@@ -18,7 +18,7 @@ public:
 uint32 getIncomingdamage(Unit const* pTarget)
 {
     uint32 damage = 0;
-    for (auto const& pAttacker : pTarget->getAttackers())
+    for (auto const& pAttacker : pTarget->GetAttackers())
         if (pAttacker->CanReachWithMeleeAttack(pTarget))
             damage += uint32((pAttacker->GetFloatValue(UNIT_FIELD_MINDAMAGE) + pAttacker->GetFloatValue(UNIT_FIELD_MAXDAMAGE)) / 2);
 
@@ -84,7 +84,7 @@ Unit* PartyMemberToHeal::Calculate()
             bool isTank = ai->IsTank(player);
 
             // do not heal dueling members
-            if (player->duel && player->duel->opponent)
+            if (player->m_duel && player->m_duel->opponent)
             {
                 continue;
             }
@@ -109,7 +109,7 @@ Unit* PartyMemberToHeal::Calculate()
                 }
             }
 
-            if (isTank && bot->IsInGroup(player))
+            if (isTank && PlayerbotsCompatibility::IsInGroup(bot, player))
             {
                 tankTargets.push_back(player);
             }
@@ -204,7 +204,7 @@ std::vector<Player*> PartyMemberToHeal::GetPartyMembers()
         for(const ObjectGuid& focusHealTarget : focusHealTargets)
         {
             Player* player = (Player*)ai->GetUnit(focusHealTarget);
-            if (player && player->IsInGroup(bot) && ai->IsSafe(player))
+            if (player && PlayerbotsCompatibility::IsInGroup(player, bot) && ai->IsSafe(player))
             {
                 partyMembers.push_back(player);
             }
@@ -293,7 +293,7 @@ Unit* PartyMemberToRemoveRoots::Calculate()
             Player* player = gref->getSource();
             if (sServerFacade.IsAlive(player))
             {
-                if (player->duel && player->duel->opponent)
+                if (player->m_duel && player->m_duel->opponent)
                     continue;
 
                 if (player->HasAuraType(SPELL_AURA_MOD_ROOT) || player->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED))

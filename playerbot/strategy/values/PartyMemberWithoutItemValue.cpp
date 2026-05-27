@@ -29,7 +29,7 @@ public:
         if (!(member->IsInSameGroupWith(ai->GetBot()) || member->IsInSameRaidWith(ai->GetBot())))
 #endif
 #ifdef CMANGOS
-        if (!member->IsInGroup(ai->GetBot()))
+        if (!PlayerbotsCompatibility::IsInGroup(member, ai->GetBot()))
 #endif
             return false;
 
@@ -72,7 +72,7 @@ public:
         if (!member)
             return false;
 
-        return member->getClass() != CLASS_MAGE;
+        return member->GetClass() != CLASS_MAGE;
     }
 
 };
@@ -92,7 +92,7 @@ public:
         if (!member)
             return false;
 
-        uint8 cls = member->getClass();
+        uint8 cls = member->GetClass();
         return cls == CLASS_DRUID ||
                 cls == CLASS_HUNTER ||
                 cls == CLASS_PALADIN ||

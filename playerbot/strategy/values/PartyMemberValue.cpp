@@ -20,7 +20,7 @@ Unit* PartyMemberValue::FindPartyMember(std::list<Player*>* party, FindPlayerPre
         if (ignoreTanks && ai->IsTank(player))
             continue;
 
-        if (bot->GetGroup() && !player->IsInGroup(bot) && !CanFreeMoveValue::CanFreeMoveTo(ai, player))
+        if (bot->GetGroup() && !PlayerbotsCompatibility::IsInGroup(player, bot) && !CanFreeMoveValue::CanFreeMoveTo(ai, player))
             continue;
 
         if (Check(player) && predicate.Check(player))

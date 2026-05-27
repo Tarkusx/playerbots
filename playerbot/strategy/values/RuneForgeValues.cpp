@@ -4,7 +4,7 @@
 #include "playerbot/strategy/Value.h"
 #include "playerbot/strategy/values/ValueContext.h"
 #include "Globals/SharedDefines.h"
-#include "Server/DBCStructure.h"
+#include "Database/DBCStructure.h"
 #include "Spells/SpellMgr.h"
 
 using namespace ai;

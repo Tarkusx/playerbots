@@ -240,7 +240,7 @@ bool PossibleAttackTargetsValue::IsTapped(Unit* target, Player* player)
             if (master && victim == master) //Target is attacking master.
                 return true;
 
-            if (player->IsInGroup(victim)) //Target is attacking groupmember.
+            if (PlayerbotsCompatibility::IsInGroup(player, victim)) //Target is attacking groupmember.
                 return true;
 
             if (!creature->HasLootRecipient()) //Target is untapped.

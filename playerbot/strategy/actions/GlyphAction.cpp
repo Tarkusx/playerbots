@@ -158,7 +158,7 @@ void GlyphAction::Set(uint32 itemId, uint8 wantedSlotId, std::ostringstream& msg
     }
 #endif
 
-    if (glyphProto->AllowableClass != bot->getClassMask())
+    if (glyphProto->AllowableClass != bot->GetClassMask())
     {
         msg << BOT_TEXT2("%glyph is not a valid glyph for this class", placeholders);
         return;

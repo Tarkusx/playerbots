@@ -1,6 +1,8 @@
 #pragma once
 #define DT_POLYREF64 1
 
+#include <random>
+
 #include "Globals/ObjectMgr.h"
 #include "Spells/SpellMgr.h"
 #include "World/World.h"
@@ -59,45 +61,45 @@ namespace ai
         WorldPosition() : WorldLocation(0,0,0,0,0) {}
         WorldPosition(const WorldLocation& loc) : WorldLocation(loc) {}
         WorldPosition(const WorldPosition& pos) : WorldLocation(pos) {}
-        WorldPosition(const std::string str) {char p; std::stringstream  out(str); out >> mapid >> p >> coord_x >> p >> coord_y >> p >> coord_z >> p >> orientation; }
-        WorldPosition(const uint32 mapid, const float x, const float y, const float z = 0, float orientation = 0) : WorldLocation(mapid, x, y, z, orientation) {}
-        WorldPosition(const uint32 mapId, const Position& pos) : WorldLocation(mapId, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetPositionO()) {}
+        WorldPosition(const std::string str) {char p; std::stringstream  out(str); out >> mapId >> p >> x >> p >> y >> p >> z >> p >> o; }
+        WorldPosition(const uint32 mapId, const float x, const float y, const float z = 0, float o = 0) : WorldLocation(mapId, x, y, z, o) {}
+        WorldPosition(const uint32 mapId, const Position& pos) : WorldLocation(mapId, pos.x, pos.y, pos.z, pos.o) {}
         WorldPosition(const WorldObject* wo) { if (wo) { set(WorldLocation(wo->GetMapId(), wo->GetPositionX(), wo->GetPositionY(), wo->GetPositionZ(), wo->GetOrientation())); } }
-        WorldPosition(const CreatureDataPair* cdPair) { if (cdPair) { set(WorldLocation(cdPair->second.mapid, cdPair->second.posX, cdPair->second.posY, cdPair->second.posZ, cdPair->second.orientation)); } }
-        WorldPosition(const GameObjectDataPair* cdPair) { if (cdPair) { set(WorldLocation(cdPair->second.mapid, cdPair->second.posX, cdPair->second.posY, cdPair->second.posZ, cdPair->second.orientation)); } }
+        WorldPosition(const CreatureDataPair* cdPair) { if (cdPair) { set(PlayerbotsCompatibility::GetSpawnLocation(cdPair)); } }
+        WorldPosition(const GameObjectDataPair* cdPair) { if (cdPair) { set(PlayerbotsCompatibility::GetSpawnLocation(cdPair)); } }
         WorldPosition(const uint32 mapId, const GuidPosition& guidP, uint32 instanceId);
         WorldPosition(const std::vector<WorldPosition*>& list, const WorldPositionConst conType);
         WorldPosition(const std::vector<WorldPosition>& list, const WorldPositionConst conType);
-        WorldPosition(const uint32 mapid, const GridPair grid) : WorldLocation(mapid, (int32(grid.x_coord) - CENTER_GRID_ID - 0.5)* SIZE_OF_GRIDS + CENTER_GRID_OFFSET, (int32(grid.y_coord) - CENTER_GRID_ID - 0.5)* SIZE_OF_GRIDS + CENTER_GRID_OFFSET, 0, 0) {}
-        WorldPosition(const uint32 mapid, const CellPair cell) : WorldLocation(mapid, (int32(cell.x_coord) - CENTER_GRID_CELL_ID - 0.5)* SIZE_OF_GRID_CELL + CENTER_GRID_CELL_OFFSET, (int32(cell.y_coord) - CENTER_GRID_CELL_ID - 0.5)* SIZE_OF_GRID_CELL + CENTER_GRID_CELL_OFFSET, 0, 0) {}
-        WorldPosition(const uint32 mapid, const mGridPair grid) : WorldLocation(mapid, (32 - grid.first)* SIZE_OF_GRIDS, (32 - grid.second)* SIZE_OF_GRIDS, 0, 0) {}
-        WorldPosition(const SpellTargetPosition* pos) : WorldLocation(pos->target_mapId, pos->target_X, pos->target_Y, pos->target_Z) {}
+        WorldPosition(const uint32 mapId, const GridPair grid) : WorldLocation(mapId, (int32(grid.x_coord) - CENTER_GRID_ID - 0.5)* SIZE_OF_GRIDS + CENTER_GRID_OFFSET, (int32(grid.y_coord) - CENTER_GRID_ID - 0.5)* SIZE_OF_GRIDS + CENTER_GRID_OFFSET, 0, 0) {}
+        WorldPosition(const uint32 mapId, const CellPair cell) : WorldLocation(mapId, (int32(cell.x_coord) - CENTER_GRID_CELL_ID - 0.5)* SIZE_OF_GRID_CELL + CENTER_GRID_CELL_OFFSET, (int32(cell.y_coord) - CENTER_GRID_CELL_ID - 0.5)* SIZE_OF_GRID_CELL + CENTER_GRID_CELL_OFFSET, 0, 0) {}
+        WorldPosition(const uint32 mapId, const mGridPair grid) : WorldLocation(mapId, (32 - grid.first)* SIZE_OF_GRIDS, (32 - grid.second)* SIZE_OF_GRIDS, 0, 0) {}
+        WorldPosition(const SpellTargetPosition* pos) : WorldLocation(pos->mapId, pos->x, pos->y, pos->z) {}
         WorldPosition(const TaxiNodesEntry* pos) : WorldLocation(pos->map_id, pos->x, pos->y, pos->z) {}
-        WorldPosition(const WorldSafeLocsEntry* pos) : WorldLocation(pos->map_id, pos->x, pos->y, pos->z, pos->o) {}
+        WorldPosition(const WorldSafeLocsEntry* pos) : WorldLocation(pos->map_id, pos->x, pos->y, pos->z, 0.0f) {}
         WorldPosition(const PlayerInfo* pos) : WorldLocation(pos->mapId,pos->positionX, pos->positionY, pos->positionZ, pos->orientation) {}
         WorldPosition(const Vector3& pos, const uint32 mapId = 0, float o = 0) : WorldLocation(mapId, pos.x, pos.y, pos.z, o) {}
 
         //Setters
-        void set(const WorldLocation& pos) { mapid = pos.mapid; coord_x = pos.coord_x; coord_y = pos.coord_y; coord_z = pos.coord_z; orientation = pos.orientation; }
-        void set(const WorldPosition& pos) { mapid = pos.mapid; coord_x = pos.coord_x; coord_y = pos.coord_y; coord_z = pos.coord_z; orientation = pos.orientation; }
+        void set(const WorldLocation& pos) { mapId = pos.mapId; x = pos.x; y = pos.y; z = pos.z; o = pos.o; }
+        void set(const WorldPosition& pos) { mapId = pos.mapId; x = pos.x; y = pos.y; z = pos.z; o = pos.o; }
         void set(const WorldObject* wo) { set(WorldLocation(wo->GetMapId(), wo->GetPositionX(), wo->GetPositionY(), wo->GetPositionZ(), wo->GetOrientation())); }
         void set(const ObjectGuid& guid, const uint32 mapId, const uint32 instanceId);
-        void setMapId(const uint32 id) { mapid = id; }
-        void setX(const float x) { coord_x = x; }
-        void setY(const float y) { coord_y = y; }
-        void setZ(const float z) { coord_z = z; }
-        void setO(const float o) {orientation = o;}
+        void setMapId(const uint32 id) { mapId = id; }
+        void setX(const float x) { this->x = x; }
+        void setY(const float y) { this->y = y; }
+        void setZ(const float z) { this->z = z; }
+        void setO(const float o) { this->o = o; }
 
         //Operators
-        operator bool() const { return  coord_x != 0 || coord_y != 0 || coord_z != 0; }
-        bool operator==(const WorldPosition& p1) const { return mapid == p1.mapid && coord_x == p1.coord_x && coord_y == p1.coord_y && coord_z == p1.coord_z && orientation == p1.orientation; }
-        bool operator!=(const WorldPosition& p1) const { return mapid != p1.mapid || coord_x != p1.coord_x || coord_y != p1.coord_y || coord_z != p1.coord_z || orientation != p1.orientation; }
+        operator bool() const { return  x != 0 || y != 0 || z != 0; }
+        bool operator==(const WorldPosition& p1) const { return mapId == p1.mapId && x == p1.x && y == p1.y && z == p1.z && o == p1.o; }
+        bool operator!=(const WorldPosition& p1) const { return mapId != p1.mapId || x != p1.x || y != p1.y || z != p1.z || o != p1.o; }
         
-        WorldPosition& operator+=(const WorldPosition& p1) { coord_x += p1.coord_x; coord_y += p1.coord_y; coord_z += p1.coord_z; return *this; }
-        WorldPosition& operator-=(const WorldPosition& p1) { coord_x -= p1.coord_x; coord_y -= p1.coord_y; coord_z -= p1.coord_z; return *this; }
+        WorldPosition& operator+=(const WorldPosition& p1) { x += p1.x; y += p1.y; z += p1.z; return *this; }
+        WorldPosition& operator-=(const WorldPosition& p1) { x -= p1.x; y -= p1.y; z -= p1.z; return *this; }
 
-        WorldPosition& operator*=(const float s) { coord_x *= s; coord_y *= s; coord_z *= s; return *this; }
-        WorldPosition& operator/=(const float s) { coord_x /= s; coord_y /= s; coord_z /= s; return *this; }
+        WorldPosition& operator*=(const float s) { x *= s; y *= s; z *= s; return *this; }
+        WorldPosition& operator/=(const float s) { x /= s; y /= s; z /= s; return *this; }
 
         WorldPosition operator+(const WorldPosition& p1) const { WorldPosition p(*this); p += p1; return p; }
         WorldPosition operator-(const WorldPosition& p1) const { WorldPosition p(*this); p -= p1; return p; }
@@ -105,38 +107,38 @@ namespace ai
         WorldPosition operator*(const float s) const { WorldPosition p(*this); p *= s; return p; }
         WorldPosition operator/(const float s) const { WorldPosition p(*this); p /= s; return p; }
 
-        float operator*(const WorldPosition& p1) const { return (coord_x * coord_x) + (coord_y * coord_y) + (coord_z * coord_z); }
+        float operator*(const WorldPosition& p1) const { return (x * x) + (y * y) + (z * z); }
 
         float projectOnSegment(const WorldPosition& p1, const WorldPosition& p2) const;
         
 
         //Getters
-        uint32 getMapId() const { return mapid; }
-        float getX() const { return coord_x; }
-        float getY() const { return coord_y; }
-        float getZ() const { return coord_z; }
-        float getO() const { return orientation; }
+        uint32 getMapId() const { return mapId; }
+        float getX() const { return x; }
+        float getY() const { return y; }
+        float getZ() const { return z; }
+        float getO() const { return o; }
         G3D::Vector3 getVector3() const;
         std::string print(uint8 precision = 2, bool onlyXyz = false) const;
-        virtual std::string to_string() const { char p = '|'; std::stringstream out; out << mapid << p << coord_x << p << coord_y << p << coord_z << p << orientation; return out.str(); };
+        virtual std::string to_string() const { char p = '|'; std::stringstream out; out << mapId << p << x << p << y << p << z << p << o; return out.str(); };
 
         static void printWKT(const std::vector<WorldPosition>& points, std::ostringstream& out, const uint32 dim = 0, const bool loop = false);
         void printWKT(std::ostringstream& out) const { printWKT({ *this }, out); }
 
-        bool isOverworld() const { return mapid == 0 || mapid == 1 || mapid == 530 || mapid == 571 || mapid == 609; }
-        bool isBg() const { return mapid == 30 || mapid == 489 || mapid == 529 || mapid == 566 || mapid == 607 || mapid == 628; }
-        bool isArena() const { return mapid == 559 || mapid == 572 || mapid == 562 || mapid == 617 || mapid == 618; }
-        bool isInstance() const { return !isOverworld() || mapid == 609;}
-        bool isInWater() const { return getTerrain() ? getTerrain()->IsInWater(coord_x, coord_y, coord_z) : false; };
-        bool isUnderWater() const { return getTerrain() ? getTerrain()->IsUnderWater(coord_x, coord_y, coord_z) : false; };
+        bool isOverworld() const { return mapId == 0 || mapId == 1 || mapId == 530 || mapId == 571 || mapId == 609; }
+        bool isBg() const { return mapId == 30 || mapId == 489 || mapId == 529 || mapId == 566 || mapId == 607 || mapId == 628; }
+        bool isArena() const { return mapId == 559 || mapId == 572 || mapId == 562 || mapId == 617 || mapId == 618; }
+        bool isInstance() const { return !isOverworld() || mapId == 609;}
+        bool isInWater() const { return getTerrain() ? getTerrain()->IsInWater(x, y, z) : false; };
+        bool isUnderWater() const { return getTerrain() ? getTerrain()->IsUnderWater(x, y, z) : false; };
         bool setAtWaterSurface();
         bool isUnderground() const;
-        float getWaterLevel() const { return getTerrain() ? getTerrain()->GetWaterLevel(coord_x, coord_y, coord_z) : -200000.0f; };
-        float getGroundLevel() const { float ground = 0.0f; getTerrain()->GetWaterLevel(coord_x, coord_y, coord_z, &ground); return ground; };
+        float getWaterLevel() const { return getTerrain() ? getTerrain()->GetWaterLevel(x, y, z) : -200000.0f; };
+        float getGroundLevel() const { float ground = 0.0f; getTerrain()->GetWaterLevel(x, y, z, &ground); return ground; };
 
-        WorldPosition relPoint(const WorldPosition& center) const { return WorldPosition(mapid, coord_x - center.coord_x, coord_y - center.coord_y, coord_z - center.coord_z, orientation); }
-        WorldPosition offset(const WorldPosition& center) const { return WorldPosition(mapid, coord_x + center.coord_x, coord_y + center.coord_y, coord_z + center.coord_z, orientation); }
-        float size() const { return sqrt(pow(coord_x, 2.0) + pow(coord_y, 2.0) + pow(coord_z, 2.0)); }
+        WorldPosition relPoint(const WorldPosition& center) const { return WorldPosition(mapId, x - center.x, y - center.y, z - center.z, o); }
+        WorldPosition offset(const WorldPosition& center) const { return WorldPosition(mapId, x + center.x, y + center.y, z + center.z, o); }
+        float size() const { return sqrt(pow(x, 2.0) + pow(y, 2.0) + pow(z, 2.0)); }
 
         //Slow distance function using possible map transfers.
         float distance(const WorldPosition& to) const;
@@ -163,26 +165,26 @@ namespace ai
         bool IsWithinDist(const WorldPosition& other, float dist2compare) const { return sqDistance(other) < dist2compare * dist2compare; }
 
         //Quick square distance in 2d plane.
-        float sqDistance2d(const WorldPosition& to) const { return (coord_x - to.coord_x) * (coord_x - to.coord_x) + (coord_y - to.coord_y) * (coord_y - to.coord_y); };
+        float sqDistance2d(const WorldPosition& to) const { return (x - to.x) * (x - to.x) + (y - to.y) * (y - to.y); };
 
         //Quick square distance calculation without map check. Used for getting the minimum distant points.
-        float sqDistance(const WorldPosition& to) const { return (coord_x - to.coord_x) * (coord_x - to.coord_x) + (coord_y - to.coord_y) * (coord_y - to.coord_y) + (coord_z - to.coord_z) * (coord_z - to.coord_z); };
+        float sqDistance(const WorldPosition& to) const { return (x - to.x) * (x - to.x) + (y - to.y) * (y - to.y) + (z - to.z) * (z - to.z); };
 
         //Returns the closest point of the list. Fast but only works for the same map.
         WorldPosition* closestSq(const std::vector<WorldPosition*>& list) const { return *std::min_element(list.begin(), list.end(), [this](WorldPosition* i, WorldPosition* j) {return sqDistance(*i) < sqDistance(*j); }); }
         WorldPosition closestSq(const std::vector<WorldPosition>& list) const { return *std::min_element(list.begin(), list.end(), [this](WorldPosition i, WorldPosition j) {return sqDistance(i) < sqDistance(j); }); }
 
-        float getAngleTo(const WorldPosition& endPos) const { float ang = atan2(endPos.coord_y - coord_y, endPos.coord_x - coord_x); return (ang >= 0) ? ang : 2 * M_PI_F + ang; };
+        float getAngleTo(const WorldPosition& endPos) const { float ang = atan2(endPos.y - y, endPos.x - x); return (ang >= 0) ? ang : 2 * M_PI_F + ang; };
         float getAngleBetween(const WorldPosition& dir1, const WorldPosition& dir2) const { return abs(getAngleTo(dir1) - getAngleTo(dir2)); };
 
-        void rotateXY(const float angle) { float nx = cos(angle) * coord_x - sin(angle) * coord_y, ny = sin(angle) * coord_x + cos(angle) * coord_y; coord_x = nx; coord_y = ny; }
+        void rotateXY(const float angle) { float nx = cos(angle) * x - sin(angle) * y, ny = sin(angle) * x + cos(angle) * y; x = nx; y = ny; }
 
         WorldPosition limit(const WorldPosition& center, const float maxDistance) { WorldPosition pos(*this); pos -= center; float size = pos.size(); if (size > maxDistance) { pos /= pos.size(); pos *= maxDistance; pos += center; } return pos; }
 
         WorldPosition lastInRange(const std::vector<WorldPosition>& list, const float minDist = -1, const float maxDist = -1) const;
         WorldPosition firstOutRange(const std::vector<WorldPosition>& list, const float minDist = -1, const float maxDist = -1) const;
 
-        float mSign(const WorldPosition* p1, const WorldPosition* p2) const { return(coord_x - p2->coord_x) * (p1->coord_y - p2->coord_y) - (p1->coord_x - p2->coord_x) * (coord_y - p2->coord_y); }
+        float mSign(const WorldPosition* p1, const WorldPosition* p2) const { return(x - p2->x) * (p1->y - p2->y) - (p1->x - p2->x) * (y - p2->y); }
         bool isInside(const WorldPosition* p1, const WorldPosition* p2, const WorldPosition* p3) const;
 
         void distancePartition(const std::vector<float>& distanceLimits, WorldPosition* to, std::vector<std::vector<WorldPosition*>>& partition) const;
@@ -214,60 +216,60 @@ namespace ai
         }
 
         //Map functions. Player independent.
-        const MapEntry* getMapEntry() const { return sMapStore.LookupEntry(mapid); }
+        const MapEntry* getMapEntry() const { return sMapStorage.LookupEntry<MapEntry>(mapId); }
         uint32 getFirstInstanceId() const { for (auto& map : sMapMgr.Maps()) { if (map.second->GetId() == getMapId()) return map.second->GetInstanceId(); }; return 0; }
 
-        InstanceTemplate const* getInstanceTemplate() { return sObjectMgr.GetInstanceTemplate(mapid); }
-        Map* getMap(uint32 instanceId) const { if (!*this) return nullptr; loadMapAndVMap(instanceId); return sMapMgr.FindMap(mapid, instanceId ? instanceId : (getMapEntry()->Instanceable() ? getFirstInstanceId() : 0)); }
+        MapEntry const* getInstanceTemplate() { return getMapEntry(); }
+        Map* getMap(uint32 instanceId) const { if (!*this) return nullptr; loadMapAndVMap(instanceId); return sMapMgr.FindMap(mapId, instanceId ? instanceId : (getMapEntry()->Instanceable() ? getFirstInstanceId() : 0)); }
         const TerrainInfo* getTerrain() const { return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetTerrain() : sTerrainMgr.LoadTerrain(getMapId()); }
         bool isDungeon() { return getMapEntry()->IsDungeon(); }
-        bool isCity() { return GetArea() && GetArea()->flags & (AREA_FLAG_CITY | AREA_FLAG_SLAVE_CAPITAL); }
+        bool isCity() { return GetArea() && GetArea()->Flags & (AREA_FLAG_CITY | AREA_FLAG_SLAVE_CAPITAL); }
         float getVisibilityDistance() { return getMap(0) ? getMap(0)->GetVisibilityDistance() : (isOverworld() ? World::GetMaxVisibleDistanceOnContinents() : World::GetMaxVisibleDistanceInInstances()); }
 
         bool IsInStaticLineOfSight(WorldPosition pos, float heightMod = 0.5f) const;
 #if defined(MANGOSBOT_TWO) || MAX_EXPANSION == 2
-        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapid == pos.mapid && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->IsInLineOfSight(coord_x, coord_y, coord_z + heightMod, pos.coord_x, pos.coord_y, pos.coord_z + heightMod, 0, true); }
-        bool GetHitPosition(WorldPosition& pos) const { return getMap(getFirstInstanceId())->GetHitPosition(coord_x, coord_y, coord_z, pos.coord_x, pos.coord_y, pos.coord_z,0, 0.0f);};
+        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapId == pos.mapId && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(x, y, z + heightMod, pos.x, pos.y, pos.z + heightMod, true); }
+        bool GetHitPosition(WorldPosition& pos) const { return getMap(getFirstInstanceId())->GetLosHitPosition(x, y, z, pos.x, pos.y, pos.z, 0.0f);};
 #else
-        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapid == pos.mapid && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->IsInLineOfSight(coord_x, coord_y, coord_z + heightMod, pos.coord_x, pos.coord_y, pos.coord_z + heightMod, true); }
-        bool GetHitPosition(WorldPosition& pos) { return getMap(getFirstInstanceId())->GetHitPosition(coord_x, coord_y, coord_z, pos.coord_x, pos.coord_y, pos.coord_z, 0.0f);};
+        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapId == pos.mapId && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(x, y, z + heightMod, pos.x, pos.y, pos.z + heightMod, true); }
+        bool GetHitPosition(WorldPosition& pos) { return getMap(getFirstInstanceId())->GetLosHitPosition(x, y, z, pos.x, pos.y, pos.z, 0.0f);};
 #endif
 
 
-        bool isOutside() const { WorldPosition high(*this); high.setZ(coord_z + 500.0f); return IsInLineOfSight(high); }
+        bool isOutside() const { WorldPosition high(*this); high.setZ(z + 500.0f); return IsInLineOfSight(high); }
         bool canFly() const;
 
 #if defined(MANGOSBOT_TWO) || MAX_EXPANSION == 2
-        const float getHeight(bool swim = false) const { if(getMap(getFirstInstanceId())) return getMap(getFirstInstanceId())->GetHeight(0, coord_x, coord_y, coord_z, swim); return 0.0;}
-        float GetHeightInRange(float maxSearchDist = 4.0f) const { float z = coord_z;  return getMap(getFirstInstanceId()) ? (getMap(getFirstInstanceId())->GetHeightInRange(0, coord_x, coord_y, z, maxSearchDist) ? z : coord_z) : coord_z; }
+        const float getHeight(bool swim = false) const { if(getMap(getFirstInstanceId())) return getMap(getFirstInstanceId())->GetHeight(0, x, y, z, swim); return 0.0;}
+        float GetHeightInRange(float maxSearchDist = 4.0f) const { float height = z; return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetHeight(x, y, height, true, maxSearchDist) : height; }
 #else
-        float getHeight(bool swim = false) const { return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetHeight(coord_x, coord_y, coord_z, swim) : coord_z; }
-        float GetHeightInRange(float maxSearchDist = 4.0f) const { float z = coord_z;  return getMap(getFirstInstanceId()) ? (getMap(getFirstInstanceId())->GetHeightInRange(coord_x, coord_y, z, maxSearchDist) ? z : coord_z) : coord_z; }
+        float getHeight(bool swim = false) const { return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetHeight(x, y, z, swim) : z; }
+        float GetHeightInRange(float maxSearchDist = 4.0f) const { float height = z; return getMap(getFirstInstanceId()) ? getMap(getFirstInstanceId())->GetHeight(x, y, height, true, maxSearchDist) : height; }
 #endif
 
-        float currentHeight() const { return coord_z - getHeight(); }
+        float currentHeight() const { return z - getHeight(); }
 
         std::set<GenericTransport*> getTransports(uint32 entry = 0);
         void CalculatePassengerPosition(GenericTransport* transport);
         void CalculatePassengerOffset(GenericTransport* transport);
 
         static float GetTransporFloorOffset(uint32 entry);
-        void SetTranpotHeightToFloor(uint32 entry) { coord_z += GetTransporFloorOffset(entry); }
+        void SetTranpotHeightToFloor(uint32 entry) { z += GetTransporFloorOffset(entry); }
         bool isOnTransport(GenericTransport* transport);
         bool SetOnTransport(GenericTransport* transport, int32 startHeight = 10, int32 endHeight = -1);
         WorldPosition RandomPointOnTrans(GenericTransport* transport, uint32 radius, Player* botForPath, std::vector<WorldPosition>& path);
         WorldPosition RandomPointOnTrans(GenericTransport* transport, uint32 radius = 10);
 
-        GridPair getGridPair() const { return MaNGOS::ComputeGridPair(coord_x, coord_y); };
+        GridPair getGridPair() const { return MaNGOS::ComputeGridPair(x, y); };
         std::vector<GridPair> getGridPairs(const WorldPosition& secondPos) const;
         static std::vector<WorldPosition> fromGridPair(const GridPair& gridPair, uint32 mapId);
 
-        CellPair getCellPair() const { return MaNGOS::ComputeCellPair(coord_x, coord_y); }
+        CellPair getCellPair() const { return MaNGOS::ComputeCellPair(x, y); }
         std::vector<WorldPosition> fromCellPair(const CellPair& cellPair) const;
         std::vector<WorldPosition> gridFromCellPair(const CellPair& cellPair) const;
 
         mGridPair getmGridPair() const {
-            return std::make_pair((int)(32 - coord_x / SIZE_OF_GRIDS), (int)(32 - coord_y / SIZE_OF_GRIDS)); }
+            return std::make_pair((int)(32 - x / SIZE_OF_GRIDS), (int)(32 - y / SIZE_OF_GRIDS)); }
 
         std::vector<mGridPair> getmGridPairs(const WorldPosition& secondPos) const;
         static std::vector<WorldPosition> frommGridPair(const mGridPair& gridPair, uint32 mapId);
@@ -290,16 +292,16 @@ namespace ai
 
         //Display functions
         WorldPosition getDisplayLocation() const;
-        float getDisplayX() const { return getDisplayLocation().coord_y * -1.0; }
-        float getDisplayY() const { return getDisplayLocation().coord_x; }
+        float getDisplayX() const { return getDisplayLocation().y * -1.0; }
+        float getDisplayY() const { return getDisplayLocation().x; }
 
-        bool isValid() const { return MaNGOS::IsValidMapCoord(coord_x, coord_y, coord_z, orientation); };
+        bool isValid() const { return MaNGOS::IsValidMapCoord(x, y, z, o); };
         virtual uint16 getAreaFlag() const {
             loadVMap();
-            return isValid() && isVmapLoaded() ? sTerrainMgr.GetAreaFlag(getMapId(), coord_x, coord_y, coord_z) : 0; };
+            return isValid() && isVmapLoaded() ? sTerrainMgr.GetAreaFlag(getMapId(), x, y, z) : 0; };
         AreaTableEntry const* GetArea() const;
         std::string getAreaName(const bool fullName = true, const bool zoneName = false) const;
-        std::string getAreaOverride() const { if (!getTerrain()) return "";  AreaNameInfo nameInfo = getTerrain()->GetAreaName(coord_x, coord_y, coord_z, 0); return nameInfo.wmoNameOverride ? nameInfo.wmoNameOverride : ""; }
+        std::string getAreaOverride() const { return ""; }
         int32 getAreaLevel() const;
 
         bool HasAreaFlag(const AreaFlags flag = AREA_FLAG_CAPITAL) const;
@@ -335,25 +337,25 @@ namespace ai
     inline ByteBuffer& operator<<(ByteBuffer& b, WorldPosition& guidP)
     {
         b << guidP.getMapId();
-        b << guidP.coord_x;
-        b << guidP.coord_y;
-        b << guidP.coord_z;
-        b << guidP.orientation;
+        b << guidP.x;
+        b << guidP.y;
+        b << guidP.z;
+        b << guidP.o;
         return b;
     }
 
     inline ByteBuffer& operator>>(ByteBuffer& b, WorldPosition& g)
     {
-        uint32 mapid;
-        float coord_x;
-        float coord_y;
-        float coord_z;
-        float orientation;
-        b >> mapid;
-        b >> coord_x;
-        b >> coord_y;
-        b >> coord_z;
-        b >> orientation;
+        uint32 mapId;
+        float x;
+        float y;
+        float z;
+        float o;
+        b >> mapId;
+        b >> x;
+        b >> y;
+        b >> z;
+        b >> o;
 
         return b;
     }
@@ -404,11 +406,11 @@ namespace std
                 seed ^= h + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             };
 
-            combine(std::hash<uint32_t> {}(p.mapid));
-            combine(std::hash<float> {}(p.coord_x));
-            combine(std::hash<float> {}(p.coord_y));
-            combine(std::hash<float> {}(p.coord_z));
-            combine(std::hash<float> {}(p.orientation));
+            combine(std::hash<uint32_t> {}(p.mapId));
+            combine(std::hash<float> {}(p.x));
+            combine(std::hash<float> {}(p.y));
+            combine(std::hash<float> {}(p.z));
+            combine(std::hash<float> {}(p.o));
 
             return seed;
         }

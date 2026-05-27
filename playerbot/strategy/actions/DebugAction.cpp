@@ -29,7 +29,7 @@
 #ifdef GenerateBotTests
 #include "playerbot/strategy/tests/TestRegistry.h"
 #endif
-#include "MotionGenerators/MoveMap.h"
+#include "MoveMap.h"
 
 using namespace ai;
 using namespace MaNGOS;
@@ -1132,26 +1132,28 @@ void DebugAction::addAura(uint32 spellId, Unit* target)
     if (!spellInfo)
         return;
 
-    if (!IsSpellAppliesAura(spellInfo, (1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
-        !IsSpellHaveEffect(spellInfo, SPELL_EFFECT_PERSISTENT_AREA_AURA))
+    if (!spellInfo->IsSpellAppliesAura((1 << EFFECT_INDEX_0) | (1 << EFFECT_INDEX_1) | (1 << EFFECT_INDEX_2)) &&
+        !spellInfo->HasEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
     {
         return;
     }
 
-    SpellAuraHolder* holder = CreateSpellAuraHolder(spellInfo, target, target);
+    SpellAuraHolder* holder = CreateSpellAuraHolder(spellInfo, target, target, target);
+    if (!holder)
+        return;
 
     for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
         uint8 eff = spellInfo->Effect[i];
         if (eff >= MAX_SPELL_EFFECTS)
             continue;
-        if (IsAreaAuraEffect(eff) ||
+        if (Spells::IsAreaAuraEffect(eff) ||
             eff == SPELL_EFFECT_APPLY_AURA ||
             eff == SPELL_EFFECT_PERSISTENT_AREA_AURA)
         {
             int32 basePoints = spellInfo->CalculateSimpleValue(SpellEffectIndex(i));
             int32 damage = 0; // no damage cos caster doesnt exist
-            Aura* aur = CreateAura(spellInfo, SpellEffectIndex(i), &damage, &basePoints, holder, target);
+            Aura* aur = CreateAura(spellInfo, SpellEffectIndex(i), &damage, holder, target, target);
             holder->AddAura(aur, SpellEffectIndex(i));
         }
     }
@@ -1225,7 +1227,7 @@ bool DebugAction::HandleArea(Event& event, Player* requester, const std::string&
     AreaTableEntry const* area = point.GetArea();
     std::ostringstream out;
     out << point.getAreaName(true, false); 
-    out << "," << area->team << " (" << (area->team != FACTION_GROUP_MASK_ALLIANCE ? (area->team != FACTION_GROUP_MASK_HORDE ? "neutral" : "horde") : "alliance") << ")";
+    out << "," << area->Team << " (" << (area->Team != FACTION_GROUP_MASK_ALLIANCE ? (area->Team != FACTION_GROUP_MASK_HORDE ? "neutral" : "horde") : "alliance") << ")";
     ai->TellPlayerNoFacing(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
     return true;
 }
@@ -1272,12 +1274,12 @@ bool DebugAction::HandleMonsterTalk(Event& event, Player* requester, const std::
 
 bool DebugAction::HandleGY(Event& event, Player* requester, const std::string& text)
 {
-    for (uint32 i = 0; i < sMapStore.GetNumRows(); ++i)
+    for (uint32 i = 0; i < sMapStorage.GetNumRows(); ++i)
     {
-        if (!sMapStore.LookupEntry(i))
+        if (!sMapStorage.LookupEntry<MapEntry>(i))
             continue;
 
-        uint32 mapId = sMapStore.LookupEntry(i)->MapID;
+        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->MapID;
 
         Map* map = sMapMgr.FindMap(mapId);
 
@@ -2603,12 +2605,12 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
         out << "Zone: " << areaId;
         if (area)
         {
-            out << " (" << area->area_name[0] << ")";
-            if (area->zone)
+            out << " (" << PlayerbotsCompatibility::GetAreaName(area, 0) << ")";
+            if (area->ZoneId)
             {
-                const AreaTableEntry* zone = GetAreaEntryByAreaID(area->zone);
+                const AreaTableEntry* zone = GetAreaEntryByAreaID(area->ZoneId);
                 if (zone)
-                    out << " Zone: " << zone->area_name[0];
+                    out << " Zone: " << PlayerbotsCompatibility::GetAreaName(zone, 0);
             }
         }
         ai->TellPlayer(requester, out.str());
@@ -2999,7 +3001,7 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
                 std::string areaName = "Unknown";
                 if (area)
                 {
-                    areaName = area->area_name[0];
+                    areaName = PlayerbotsCompatibility::GetAreaName(area, 0);
                 }
                 
                 std::ostringstream nodeOut;
@@ -3166,8 +3168,8 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
         uint32 area = sServerFacade.GetAreaId(bot);
         if (const AreaTableEntry* areaEntry = GetAreaEntryByAreaID(area))
         {
-            if (AreaTableEntry const* zoneEntry = areaEntry->zone ? GetAreaEntryByAreaID(areaEntry->zone) : areaEntry)
-                out << " |" << zoneEntry->area_name[0] << "|";
+            if (AreaTableEntry const* zoneEntry = areaEntry->ZoneId ? GetAreaEntryByAreaID(areaEntry->ZoneId) : areaEntry)
+                out << " |" << PlayerbotsCompatibility::GetAreaName(zoneEntry, 0) << "|";
         }
         ai->TellPlayer(requester, out.str());
         return true;
@@ -3271,15 +3273,15 @@ bool DebugAction::HandleNPC(Event& event, Player* requester, const std::string& 
 
     guidP.printWKT(out);
 
-    out << "[a:" << guidP.GetArea()->area_name[0]; 
+    out << "[a:" << PlayerbotsCompatibility::GetAreaName(guidP.GetArea(), 0); 
 
     if (guidP.GetArea() && guidP.getAreaLevel())
         out << " level: " << guidP.getAreaLevel();
-    if (guidP.GetArea()->zone && GetAreaEntryByAreaID(guidP.GetArea()->zone))
+    if (guidP.GetArea()->ZoneId && GetAreaEntryByAreaID(guidP.GetArea()->ZoneId))
     {
-        out << " z:" << GetAreaEntryByAreaID(guidP.GetArea()->zone)->area_name[0];
-        if (sTravelMgr.GetAreaLevel(guidP.GetArea()->zone))
-            out << " level: " << sTravelMgr.GetAreaLevel(guidP.GetArea()->zone);
+        out << " z:" << PlayerbotsCompatibility::GetAreaName(GetAreaEntryByAreaID(guidP.GetArea()->ZoneId), 0);
+        if (sTravelMgr.GetAreaLevel(guidP.GetArea()->ZoneId))
+            out << " level: " << sTravelMgr.GetAreaLevel(guidP.GetArea()->ZoneId);
     }
 
     out << "] ";
@@ -5116,7 +5118,7 @@ bool DebugAction::HandleCombat(Event& event, Player* requester, const std::strin
     bool isInCombat = bot->IsInCombat();
     ai->TellPlayer(requester, std::string("IsInCombat(): ") + (isInCombat ? "true" : "false"));
 
-    ai->TellPlayer(requester, "CMaNGOS attackers: " + std::to_string(bot->getAttackers().size()));
+    ai->TellPlayer(requester, "CMaNGOS attackers: " + std::to_string(bot->GetAttackers().size()));
 
     Unit* victim = bot->GetVictim();
     ai->TellPlayer(requester, std::string("victim: ") + (victim ? victim->GetName() : "none"));

@@ -103,7 +103,7 @@ namespace
 
     std::string GetLogsDir()
     {
-        std::string logsDir = sConfig.GetStringDefault("LogsDir");
+        std::string logsDir = sConfig.GetStringDefault("LogsDir", "");
         if (!logsDir.empty() && logsDir.back() != '/' && logsDir.back() != '\\')
             logsDir.push_back('/');
 
@@ -914,7 +914,7 @@ void LogAnalysis::AnalyseTestResults()
 
 void LogAnalysis::AnalysePid()
 {
-    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir", "");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -1004,7 +1004,7 @@ void LogAnalysis::AnalysePid()
 
 void LogAnalysis::AnalyseEvents()
 {
-    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir", "");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -1069,7 +1069,7 @@ void LogAnalysis::AnalyseEvents()
 
 void LogAnalysis::AnalyseQuests()
 {
-    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir", "");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -1151,7 +1151,7 @@ void LogAnalysis::AnalyseQuests()
 
 void LogAnalysis::AnalyseCounts()
 {
-    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir", "");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))

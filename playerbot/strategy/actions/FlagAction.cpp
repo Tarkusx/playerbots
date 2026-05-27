@@ -37,7 +37,7 @@ bool FlagAction::Execute(Event& event)
         SheathState currentSheathe = bot->GetSheath();
         if (setFlag || (toggleFlag && currentSheathe == SHEATH_STATE_UNARMED))
         {
-            if (bot->getClass() == CLASS_HUNTER)
+            if (bot->GetClass() == CLASS_HUNTER)
                 bot->SetSheath(SHEATH_STATE_RANGED);
             else
                 bot->SetSheath(SHEATH_STATE_MELEE);

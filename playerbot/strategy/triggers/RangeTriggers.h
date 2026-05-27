@@ -21,7 +21,7 @@ namespace ai
                 if (ai->HasStrategy("follow", BotState::BOT_STATE_COMBAT) ||
                     ai->HasStrategy("guard", BotState::BOT_STATE_COMBAT) ||
                     ai->HasStrategy("wander", BotState::BOT_STATE_COMBAT))
-                    if(bot->getClass() != CLASS_HUNTER || sServerFacade.GetDistance2d(bot, target) > 5.0f)
+                    if(bot->GetClass() != CLASS_HUNTER || sServerFacade.GetDistance2d(bot, target) > 5.0f)
                         return false;                   
 
                 const bool canMove = !PossibleAttackTargetsValue::HasBreakableCC(target, bot) && !PossibleAttackTargetsValue::HasUnBreakableCC(target, bot);
@@ -440,7 +440,7 @@ namespace ai
                 if (!ai->HasStrategy("stay", ai->GetState()))
                 {
                     // Do not move if currently being targeted
-                    const bool isBeingTargeted = !bot->getAttackers().empty();
+                    const bool isBeingTargeted = !bot->GetAttackers().empty();
                     if (!isBeingTargeted)
                     {
                         Unit* target = AI_VALUE(Unit*, "current target");

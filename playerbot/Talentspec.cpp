@@ -1,8 +1,9 @@
 #include "playerbot/playerbot.h"
 #include "Talentspec.h"
 #include "playerbot/ServerFacade.h"
-#include "Server/DBCStructure.h"
-#include "Guilds/GuildMgr.h"
+#include "Database/DBCStructure.h"
+#include "Guild/Guild.h"
+#include "Guild/GuildMgr.h"
 
 using namespace std::placeholders;
 
@@ -118,11 +119,11 @@ void TalentSpec::ApplyTalents(Player* bot, std::ostringstream* out)
 
             if (bot->HasSpell(spellId) && entry.rank - 1 != rank)
             {
-                bot->removeSpell(spellId, false, false);
+                bot->RemoveSpell(spellId, false, false);
             }
             else if (!bot->HasSpell(spellId) && entry.rank - 1 == rank)
             {
-                bot->learnSpell(spellId, false);
+                bot->LearnSpell(spellId, false);
             }
         }
 
@@ -137,7 +138,7 @@ void TalentSpec::SetPublicNote(Player* bot)
         Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
         MemberSlot* member = guild->GetMemberSlot(bot->GetObjectGuid());
         if (guild->HasRankRight(member->RankId, GR_RIGHT_EPNOTE))
-            member->SetPNOTE(ChatHelper::specName(bot) + " (" + std::to_string(spec.GetTalentPoints(0)) + "/" + std::to_string(spec.GetTalentPoints(1)) + "/" + std::to_string(spec.GetTalentPoints(2)) + ")");
+            member->SetPublicNote(ChatHelper::specName(bot) + " (" + std::to_string(spec.GetTalentPoints(0)) + "/" + std::to_string(spec.GetTalentPoints(1)) + "/" + std::to_string(spec.GetTalentPoints(2)) + ")");
     }
 }
 
@@ -379,7 +380,7 @@ std::string TalentSpec::formatSpec(uint8 cls)
 //Removes talentpoints to match the level
 void TalentSpec::CropTalents(Player* bot)
 {
-    if (points <= bot->CalculateTalentsPoints())
+    if (points <= PlayerbotsCompatibility::CalculateTalentPoints(bot))
         return;
 
     SortTalents(talents, SORT_BY_POINTS_TREE);
@@ -388,8 +389,8 @@ void TalentSpec::CropTalents(Player* bot)
 
     for (auto& entry : talents)
     {
-        if (points + entry.rank > (int)bot->CalculateTalentsPoints())
-            entry.rank = std::max(0, (int)(bot->CalculateTalentsPoints() - points));
+        if (points + entry.rank > (int)PlayerbotsCompatibility::CalculateTalentPoints(bot))
+            entry.rank = std::max(0, (int)(PlayerbotsCompatibility::CalculateTalentPoints(bot) - points));
         points += entry.rank;
     }
 
@@ -429,7 +430,7 @@ bool TalentSpec::isEarlierVersionOf(TalentSpec& newSpec)
 void TalentSpec::ShiftTalents(TalentSpec* currentSpec, Player* bot)
 {    
 
-    if (points >= bot->CalculateTalentsPoints()) //We have no more points to spend. Better reset and crop
+    if (points >= PlayerbotsCompatibility::CalculateTalentPoints(bot)) //We have no more points to spend. Better reset and crop
     {
         CropTalents(bot);
         return;
@@ -453,8 +454,8 @@ void TalentSpec::ShiftTalents(TalentSpec* currentSpec, Player* bot)
 
     for (auto& entry : deltaList)
     {
-        if (entry.rank + points > bot->CalculateTalentsPoints()) //Running out of points. Only apply what we have left.
-            entry.rank = std::max(0, int(bot->CalculateTalentsPoints() - points));
+        if (entry.rank + points > PlayerbotsCompatibility::CalculateTalentPoints(bot)) //Running out of points. Only apply what we have left.
+            entry.rank = std::max(0, int(PlayerbotsCompatibility::CalculateTalentPoints(bot) - points));
 
         for (auto& subentry : talents)
             if (entry.entry == subentry.entry)

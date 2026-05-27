@@ -224,7 +224,7 @@ namespace ai
             if (target && target->IsPlayer())
             {
                 Player* player = (Player*)target;
-                if (bot->IsInGroup(player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
+                if (PlayerbotsCompatibility::IsInGroup(bot, player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
                 {
                     return BuffTrigger::IsActive();
                 }
@@ -255,7 +255,7 @@ namespace ai
             if (target && target->IsPlayer())
             {
                 Player* player = (Player*)target;
-                if (bot->IsInGroup(player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
+                if (PlayerbotsCompatibility::IsInGroup(bot, player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
                 {
                     return BuffTrigger::IsActive();
                 }
@@ -286,7 +286,7 @@ namespace ai
             if (target && target->IsPlayer())
             {
                 Player* player = (Player*)target;
-                if (bot->IsInGroup(player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
+                if (PlayerbotsCompatibility::IsInGroup(bot, player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
                 {
                     return BuffTrigger::IsActive();
                 }
@@ -317,7 +317,7 @@ namespace ai
             if (target && target->IsPlayer())
             {
                 Player* player = (Player*)target;
-                if (bot->IsInGroup(player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
+                if (PlayerbotsCompatibility::IsInGroup(bot, player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
                 {
                     return BuffTrigger::IsActive();
                 }
@@ -348,7 +348,7 @@ namespace ai
             if (target && target->IsPlayer())
             {
                 Player* player = (Player*)target;
-                if (bot->IsInGroup(player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
+                if (PlayerbotsCompatibility::IsInGroup(bot, player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
                 {
                     return BuffTrigger::IsActive();
                 }
@@ -379,7 +379,7 @@ namespace ai
             if (target && target->IsPlayer())
             {
                 Player* player = (Player*)target;
-                if (bot->IsInGroup(player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
+                if (PlayerbotsCompatibility::IsInGroup(bot, player) && ai->GetBuffedCount((Player*)GetTarget(), spell) < 4)
                 {
                     return BuffTrigger::IsActive();
                 }

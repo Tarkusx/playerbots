@@ -116,7 +116,7 @@ bool MountValue::IsValidLocation(Player* bot)
         uint32 zone, area;
         bot->GetZoneAndAreaId(zone, area);
         uint32 v_map = GetVirtualMapForMapAndZone(bot->GetMapId(), zone);
-        MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
+        MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(v_map);
         if (!mapEntry || mapEntry->addon < 1 || !mapEntry->IsContinent())
             return false;
 #endif
@@ -283,7 +283,7 @@ std::string MountListValue::Format()
 uint32 MountSkillTypeValue::Calculate()
 {
 #ifdef MANGOSBOT_ZERO
-    switch (bot->getRace())
+    switch (bot->GetRace())
     {
     case RACE_HUMAN:
         return SKILL_RIDING_HORSE;

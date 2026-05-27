@@ -38,9 +38,7 @@ private:
     PerformanceData& data;
     std::string name;
     PerformanceStack* stack;
-#ifdef CMANGOS
     std::chrono::milliseconds started;
-#endif
 };
 
 struct VectorStringHash
@@ -62,14 +60,14 @@ using performanceMetricMap = std::map<PerformanceMetric, performanceMap>;
 using performanceInstanceMap = std::map<uint32, performanceMetricMap>;
 using performanceMapMap = std::map<uint32, performanceInstanceMap>;
 
-class PerformanceMonitor
+class PlayerbotPerformanceMonitor
 {
     public:
-        PerformanceMonitor();
-        virtual ~PerformanceMonitor();
-        static PerformanceMonitor& instance()
+        PlayerbotPerformanceMonitor();
+        virtual ~PlayerbotPerformanceMonitor();
+        static PlayerbotPerformanceMonitor& instance()
         {
-            static PerformanceMonitor instance;
+            static PlayerbotPerformanceMonitor instance;
             return instance;
         }
 
@@ -86,7 +84,7 @@ class PerformanceMonitor
 };
 
 
-#define sPerformanceMonitor PerformanceMonitor::instance()
+#define sPerformanceMonitor PlayerbotPerformanceMonitor::instance()
 
 #endif
 

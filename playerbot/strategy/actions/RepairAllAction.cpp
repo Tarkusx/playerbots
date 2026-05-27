@@ -17,10 +17,10 @@ bool RepairAllAction::Execute(Event& event)
             continue;
 
 #ifdef MANGOS
-        if(bot->hasUnitState(UNIT_STAT_DIED))
+        if(bot->HasUnitState(UNIT_STAT_DIED))
 #endif
 #ifdef CMANGOS
-        if (bot->hasUnitState(UNIT_STAT_FEIGN_DEATH))
+        if (bot->HasUnitState(UNIT_STAT_FEIGN_DEATH))
 #endif
             bot->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
 

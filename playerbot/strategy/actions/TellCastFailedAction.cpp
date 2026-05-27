@@ -44,11 +44,7 @@ bool TellCastFailedAction::Execute(Event& event)
     default:
         out << "cannot cast";
     }
-    int32 castTime = GetSpellCastTime(pSpellInfo
-#ifdef CMANGOS
-            , bot
-#endif
-    );
+    int32 castTime = pSpellInfo ? pSpellInfo->GetCastTime(bot) : 0;
     if (castTime >= 2000)
         ai->TellError(requester, out.str());
     return true;

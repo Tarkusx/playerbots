@@ -89,9 +89,9 @@ CreatureDataPair const* BgMasterValue::NearestBm(bool allowDead)
             continue;
 
         //Is the area hostile?
-        if (area->team == 4 && bot->GetTeam() == ALLIANCE)
+        if (area->Team == 4 && bot->GetTeam() == ALLIANCE)
             continue;
-        if (area->team == 2 && bot->GetTeam() == HORDE)
+        if (area->Team == 2 && bot->GetTeam() == HORDE)
             continue;
 
         if (!allowDead)

@@ -164,7 +164,7 @@ namespace ai
             travelTarget->SetStatus(TravelStatus::TRAVEL_STATUS_EXPIRED);
             travelTarget->SetExpireIn(1000);
 
-            PlayerInfo const* defaultPlayerInfo = sObjectMgr.GetPlayerInfo(bot->getRace(), bot->getClass());
+            PlayerInfo const* defaultPlayerInfo = sObjectMgr.GetPlayerInfo(bot->GetRace(), bot->GetClass());
             if (defaultPlayerInfo)
             {
                 sLog.outDetail("Repop: Teleporting bot #%d %s:%d <%s> to spawn", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());

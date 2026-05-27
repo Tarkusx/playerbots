@@ -55,7 +55,7 @@ bool EnemyPlayersValue::IsValid(Unit* target, Player* player)
             // Check that the target is not a mind controlled ally
             if (target->HasAuraType(SPELL_AURA_MOD_CHARM) || target->HasAuraType(SPELL_AURA_MOD_POSSESS))
             {
-                if (player && player->IsInGroup(target))
+                if (player && PlayerbotsCompatibility::IsInGroup(player, target))
                 {
                     return false;
                 }
@@ -107,9 +107,9 @@ bool HasEnemyPlayersValue::Calculate()
 Unit* EnemyPlayerValue::Calculate()
 {
     // Prioritize the duel opponent
-    if(bot->duel && bot->duel->opponent && !sServerFacade.IsFriendlyTo(bot->duel->opponent, bot))
+    if(bot->m_duel && bot->m_duel->opponent && !sServerFacade.IsFriendlyTo(bot->m_duel->opponent, bot))
     {
-        return bot->duel->opponent;
+        return bot->m_duel->opponent;
     }
 
     Unit* bestEnemyPlayer = nullptr;
@@ -181,11 +181,11 @@ float EnemyPlayerValue::GetMaxAttackDistance(Player* bot)
         if (!bg)
             return 40.0f;
 
-        BattleGroundTypeId bgType = bg->GetTypeId();
+        BattleGroundTypeId bgType = bg->GetTypeID();
 
 #ifdef MANGOSBOT_TWO
         if (bgType == BATTLEGROUND_RB)
-            bgType = bg->GetTypeId(true);
+            bgType = bg->GetTypeID(true);
 
         if (bgType == BATTLEGROUND_IC)
         {

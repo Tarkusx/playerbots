@@ -173,12 +173,12 @@ namespace ai
 	class EntryTravelDestination : public TravelDestination
 	{
 	public:
-		EntryTravelDestination(TravelDestinationPurpose purpose, int32 entry) : TravelDestination(), purpose(purpose), entry(entry) { if (entry > 0) creatureInfo = ObjectMgr::GetCreatureTemplate(entry); else goInfo = ObjectMgr::GetGameObjectInfo(-1 * entry); }
+			EntryTravelDestination(TravelDestinationPurpose purpose, int32 entry) : TravelDestination(), purpose(purpose), entry(entry) { if (entry > 0) creatureInfo = sObjectMgr.GetCreatureTemplate(entry); else goInfo = sObjectMgr.GetGameObjectInfo(-1 * entry); }
 		virtual int32 GetEntry() const override { return entry; }
 		virtual GameObjectInfo const* GetGoInfo() const { return goInfo; }
 		virtual CreatureInfo const* GetCreatureInfo() const { return creatureInfo; }
 		virtual TravelDestinationPurpose GetPurpose() const override { return purpose; }
-		bool HasNpcFlag(uint32 flag) { if(GetCreatureInfo() && (GetCreatureInfo()->NpcFlags & flag)) return true; return false; }
+			bool HasNpcFlag(uint32 flag) { if(GetCreatureInfo() && (GetCreatureInfo()->npc_flags & flag)) return true; return false; }
 
 		virtual std::string GetShortName() const override;
 	private:
@@ -249,7 +249,7 @@ namespace ai
 	{
 	public:
 		ZoneTravelDestination(TravelDestinationPurpose purpose, uint32 /*id*/, int32 entry) : EntryTravelDestination(purpose, entry) {
-			SetExpireFast(); SetCooldownShort(); if (auto area = GetArea()) { title = area->area_name[0]; level = area->area_level; }
+			SetExpireFast(); SetCooldownShort(); if (auto area = GetArea()) { title = PlayerbotsCompatibility::GetAreaName(area, 0); level = area->AreaLevel; }
 		}
 	protected:
 		virtual std::string GetZoneName() const { return title; }
@@ -505,4 +505,3 @@ namespace ai
 }
 
 #define sTravelMgr MaNGOS::Singleton<TravelMgr>::Instance()
-

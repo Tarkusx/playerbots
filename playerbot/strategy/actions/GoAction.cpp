@@ -254,10 +254,10 @@ inline bool TellStuck(PlayerbotAI* ai, Player* requester)
             return true;
         }
 
-        if (bot->duel && bot->duel->startTime - time(0) > 5 * MINUTE)
+        if (bot->m_duel && bot->m_duel->startTime - time(0) > 5 * MINUTE)
         {
             out << "Stuck in a dual for ";
-            out << uint32((bot->duel->startTime - time(0)) / MINUTE);
+            out << uint32((bot->m_duel->startTime - time(0)) / MINUTE);
             out << " minutes";
             ai->TellPlayerNoFacing(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_TALK, false);
 

@@ -157,7 +157,7 @@ namespace ai
         {
             BotRoles role = PlayerbotAI::IsTank(player, false) ? BOT_ROLE_TANK : PlayerbotAI::IsHeal(player, false) ? BOT_ROLE_HEALER :
                                                                                                                       BOT_ROLE_DPS;
-            uint8 cls = (Classes)player->getClass();
+            uint8 cls = (Classes)player->GetClass();
 
             if (allowedClassNr[0][role] > 0)
                 allowedClassNr[0][role]--;
@@ -180,7 +180,7 @@ namespace ai
                 continue;
 
             BotRoles role = PlayerbotAI::IsTank(player, false) ? BOT_ROLE_TANK : PlayerbotAI::IsHeal(player, false) ? BOT_ROLE_HEALER : BOT_ROLE_DPS;
-            uint8 cls = (Classes)player->getClass();
+            uint8 cls = (Classes)player->GetClass();
 
             if (allowedClassNr[0][role] > 0)
                 allowedClassNr[0][role]--;
@@ -223,7 +223,7 @@ namespace ai
         std::unordered_map<uint8, std::unordered_map<BotRoles, uint32>> allowedClassNr = AllowedClassRoleNr(5);
 
         BotRoles role = ai->IsTank(requester, false) ? BOT_ROLE_TANK : (ai->IsHeal(requester, false) ? BOT_ROLE_HEALER : BOT_ROLE_DPS);
-        Classes cls = (Classes)requester->getClass();
+        Classes cls = (Classes)requester->GetClass();
 
         if (!Qualified::isValidNumberString(param))
            param = "5";
@@ -251,7 +251,7 @@ namespace ai
         allowedClassNr = AllowedClassRoleNr(requester, stoi(param));  
 
         role = ai->IsTank(bot, false) ? BOT_ROLE_TANK : (ai->IsHeal(bot, false) ? BOT_ROLE_HEALER : BOT_ROLE_DPS);
-        cls = (Classes)bot->getClass();
+        cls = (Classes)bot->GetClass();
 
         if (allowedClassNr[0][role] == 0)
             return false;

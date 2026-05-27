@@ -1,15 +1,12 @@
 
+#ifndef PLAYERBOT_RUNTIME_BOOTSTRAP
+#define PLAYERBOT_RUNTIME_BOOTSTRAP 1
+#endif
+
 #include "playerbot/PlayerbotAIConfig.h"
 #include "playerbot/playerbot.h"
-#include "RandomPlayerbotFactory.h"
 #include "Accounts/AccountMgr.h"
-#include "playerbot/PlayerbotFactory.h"
-#include "RandomItemMgr.h"
 #include "World/WorldState.h"
-#include "playerbot/PlayerbotHelpMgr.h"
-#include "playerbot/strategy/actions/CheatAction.h"
-
-#include "playerbot/TravelMgr.h"
 
 #include <iostream>
 #include <numeric>
@@ -18,7 +15,14 @@
 #include <regex>
 #include <fstream>
 #include <sstream>
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
+#include "RandomPlayerbotFactory.h"
+#include "playerbot/PlayerbotFactory.h"
+#include "RandomItemMgr.h"
+#include "playerbot/PlayerbotHelpMgr.h"
+#include "playerbot/TravelMgr.h"
 #include "PlayerbotLoginMgr.h"
+#endif
 
 std::vector<std::string> ConfigAccess::GetValues(const std::string& name) const
 {
@@ -33,8 +37,111 @@ std::vector<std::string> ConfigAccess::GetValues(const std::string& name) const
 
 INSTANTIATE_SINGLETON_1(PlayerbotAIConfig);
 
+namespace
+{
+std::vector<std::string> splitLocal(std::string const& s, char delim)
+{
+    std::vector<std::string> elems;
+    std::stringstream ss(s);
+    std::string item;
+
+    while (std::getline(ss, item, delim))
+        elems.push_back(item);
+
+    return elems;
+}
+
+BotCheatMask ParseCheatMask(std::string cheat)
+{
+    BotCheatMask cheatMask = BotCheatMask::none;
+    for (auto const& cheatName : splitLocal(cheat, ','))
+    {
+        for (int i = 0; i < log2((uint32)BotCheatMask::maxMask); i++)
+        {
+            if (sPlayerbotAIConfig.BotCheatMaskName[i] == cheatName)
+                cheatMask = BotCheatMask(uint32(cheatMask) | uint32(BotCheatMask(1 << i)));
+        }
+    }
+
+    return cheatMask;
+}
+
+bool IsAvailableRaceForClass(uint8 cls, uint8 race)
+{
+    if (race == RACE_GOBLIN)
+        return false;
+#ifdef MANGOSBOT_TWO
+    else if (cls == 10)
+#else
+    else if (cls == 10 || cls == 6)
+#endif
+        return false;
+
+    switch (cls)
+    {
+        case CLASS_WARRIOR:
+#ifdef MANGOSBOT_ZERO
+            return race == RACE_HUMAN || race == RACE_NIGHTELF || race == RACE_GNOME || race == RACE_DWARF || race == RACE_ORC || race == RACE_UNDEAD || race == RACE_TAUREN || race == RACE_TROLL;
+#else
+            return race == RACE_HUMAN || race == RACE_NIGHTELF || race == RACE_GNOME || race == RACE_DWARF || race == RACE_ORC || race == RACE_UNDEAD || race == RACE_TAUREN || race == RACE_TROLL || race == RACE_DRAENEI || race == RACE_BLOODELF;
+#endif
+        case CLASS_PALADIN:
+            return race == RACE_HUMAN || race == RACE_DWARF
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_DRAENEI || race == RACE_BLOODELF
+#endif
+                ;
+        case CLASS_ROGUE:
+            return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF || race == RACE_GNOME || race == RACE_ORC || race == RACE_UNDEAD || race == RACE_TROLL
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_BLOODELF
+#endif
+                ;
+        case CLASS_PRIEST:
+            return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF || race == RACE_TROLL || race == RACE_UNDEAD
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_DRAENEI || race == RACE_BLOODELF
+#endif
+                ;
+        case CLASS_MAGE:
+            return race == RACE_HUMAN || race == RACE_GNOME || race == RACE_UNDEAD || race == RACE_TROLL
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_DRAENEI || race == RACE_BLOODELF
+#endif
+                ;
+        case CLASS_WARLOCK:
+            return race == RACE_HUMAN || race == RACE_GNOME || race == RACE_UNDEAD || race == RACE_ORC
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_BLOODELF
+#endif
+                ;
+        case CLASS_SHAMAN:
+            return race == RACE_ORC || race == RACE_TAUREN || race == RACE_TROLL
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_DRAENEI
+#endif
+                ;
+        case CLASS_HUNTER:
+            return race == RACE_DWARF || race == RACE_NIGHTELF || race == RACE_ORC || race == RACE_TAUREN || race == RACE_TROLL
+#ifndef MANGOSBOT_ZERO
+                || race == RACE_DRAENEI || race == RACE_BLOODELF
+#endif
+                ;
+        case CLASS_DRUID:
+            return race == RACE_NIGHTELF || race == RACE_TAUREN;
+#ifdef MANGOSBOT_TWO
+        case CLASS_DEATH_KNIGHT:
+            return race == RACE_NIGHTELF || race == RACE_TAUREN || race == RACE_HUMAN || race == RACE_ORC || race == RACE_UNDEAD || race == RACE_TROLL || race == RACE_BLOODELF || race == RACE_DRAENEI || race == RACE_GNOME || race == RACE_DWARF;
+#endif
+        default:
+            return false;
+    }
+}
+}
+
 PlayerbotAIConfig::PlayerbotAIConfig()
 : enabled(false)
+, runtimeBootstrapped(false)
 {
 }
 
@@ -42,7 +149,7 @@ template <class T>
 void LoadList(std::string value, T &list)
 {
     list.clear();
-    std::vector<std::string> ids = split(value, ',');
+    std::vector<std::string> ids = splitLocal(value, ',');
     for (std::vector<std::string>::iterator i = ids.begin(); i != ids.end(); i++)
     {
         std::string string = *i;
@@ -59,7 +166,7 @@ template <class T>
 void LoadListString(std::string value, T& list)
 {
     list.clear();
-    std::vector<std::string> strings = split(value, ',');
+    std::vector<std::string> strings = splitLocal(value, ',');
     for (std::vector<std::string>::iterator i = strings.begin(); i != strings.end(); i++)
     {
         std::string string = *i;
@@ -85,11 +192,11 @@ inline ParsedUrl parseUrl(const std::string& url) {
     return parsed;
 }
 
-bool PlayerbotAIConfig::Initialize()
+bool PlayerbotAIConfig::LoadConfig()
 {
     sLog.outString("Initializing AI Playerbot by ike3, based on the original Playerbot by blueboy");
 
-    if (!config.SetSource(_D_AIPLAYERBOT_CONFIG, "PlayerBots_"))
+    if (!config.SetSource(_D_AIPLAYERBOT_CONFIG.c_str()))
     {
         sLog.outString("AI Playerbot is Disabled. Unable to open configuration file aiplayerbot.conf");
         return false;
@@ -294,7 +401,7 @@ bool PlayerbotAIConfig::Initialize()
     for (auto& value : criteriaValues)
     {
         loginCriteria.push_back({});
-        LoadListString<std::vector<std::string> >(config.GetStringDefault(value, ""), loginCriteria.back());
+        LoadListString<std::vector<std::string> >(config.GetStringDefault(value.c_str(), ""), loginCriteria.back());
     }
 
     if (criteriaValues.empty())
@@ -363,7 +470,8 @@ bool PlayerbotAIConfig::Initialize()
 
     for (uint32 level = 1; level <= DEFAULT_MAX_LEVEL; ++level)
     {
-        levelProbability[level] = config.GetIntDefault("AiPlayerbot.LevelProbability." + std::to_string(level), 100);
+        std::string key = "AiPlayerbot.LevelProbability." + std::to_string(level);
+        levelProbability[level] = config.GetIntDefault(key.c_str(), 100);
     }
 
     sLog.outString("Loading Race/Class probabilities");
@@ -371,14 +479,14 @@ bool PlayerbotAIConfig::Initialize()
     classRaceProbabilityTotal = 0;
 
     useFixedClassRaceCounts = config.GetBoolDefault("AiPlayerbot.ClassRace.UseFixedClassRaceCounts", false);
-    RandomPlayerbotFactory factory(0);
 
     for (uint32 race = 1; race < MAX_RACES; ++race)
     {
         //Set race defaults
         if (race > 0)
         {
-            int rProb = config.GetIntDefault("AiPlayerbot.ClassRaceProb.0." + std::to_string(race), 100);
+            std::string raceKey = "AiPlayerbot.ClassRaceProb.0." + std::to_string(race);
+            int rProb = config.GetIntDefault(raceKey.c_str(), 100);
 
             for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
             {
@@ -390,7 +498,8 @@ bool PlayerbotAIConfig::Initialize()
     //Class overrides
     for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
     {
-        int cProb = config.GetIntDefault("AiPlayerbot.ClassRaceProb." + std::to_string(cls), -1);
+        std::string classKey = "AiPlayerbot.ClassRaceProb." + std::to_string(cls);
+        int cProb = config.GetIntDefault(classKey.c_str(), -1);
 
         if (cProb >= 0)
         {
@@ -406,11 +515,12 @@ bool PlayerbotAIConfig::Initialize()
     {
         for (uint32 cls = 1; cls < MAX_CLASSES; ++cls)
         {
-            int rcProb = config.GetIntDefault("AiPlayerbot.ClassRaceProb." + std::to_string(cls) + "." + std::to_string(race), -1);
+            std::string classRaceKey = "AiPlayerbot.ClassRaceProb." + std::to_string(cls) + "." + std::to_string(race);
+            int rcProb = config.GetIntDefault(classRaceKey.c_str(), -1);
             if (rcProb >= 0)
                 classRaceProbability[cls][race] = rcProb;
 
-            if (!factory.isAvailableRace(cls, race))
+            if (!IsAvailableRaceForClass(cls, race))
                 classRaceProbability[cls][race] = 0;
             else
                 classRaceProbabilityTotal += classRaceProbability[cls][race];
@@ -444,9 +554,9 @@ bool PlayerbotAIConfig::Initialize()
 	        for (uint32 race = 1; race < MAX_RACES; ++race)
 	        {
 		    std::string key = "AiPlayerbot.ClassRaceProb." + std::to_string(cls) + "." + std::to_string(race);
-		    int count = config.GetIntDefault(key, -1);
+                    int count = config.GetIntDefault(key.c_str(), -1);
 
-		    if (count >= 0 && factory.isAvailableRace(cls, race))
+		    if (count >= 0 && IsAvailableRaceForClass(cls, race))
 		    {
 		        fixedClassRaceCounts[{cls, race}] = count;
 		    }
@@ -455,9 +565,9 @@ bool PlayerbotAIConfig::Initialize()
         }
     }
 
-    botCheatMask = uint32(CheatAction::GetCheatMask(config.GetStringDefault("AiPlayerbot.BotCheats", "taxi,item,breath")));
+    botCheatMask = uint32(ParseCheatMask(config.GetStringDefault("AiPlayerbot.BotCheats", "taxi,item,breath")));
 
-    rndBotCheatMask = uint32(CheatAction::GetCheatMask(config.GetStringDefault("AiPlayerbot.RndBotCheats", "taxi,item,breath")));    
+    rndBotCheatMask = uint32(ParseCheatMask(config.GetStringDefault("AiPlayerbot.RndBotCheats", "taxi,item,breath")));    
 
     LoadListString<std::list<std::string>>(config.GetStringDefault("AiPlayerbot.AllowedLogFiles", ""), allowedLogFiles);
     LoadListString<std::list<std::string>>(config.GetStringDefault("AiPlayerbot.DebugFilter", "add gathering loot,check values,emote,check mount state,jump"), debugFilter);
@@ -474,7 +584,7 @@ bool PlayerbotAIConfig::Initialize()
 
         for (auto value : values)
         {
-            std::vector<std::string> ids = split(value, '.');
+            std::vector<std::string> ids = splitLocal(value, '.');
             std::vector<uint32> params = { 0,0,0,0,0,0 };
 
             //Extract faction, class, spec, minlevel, maxlevel
@@ -484,7 +594,7 @@ bool PlayerbotAIConfig::Initialize()
 
             //Get list of buffs for this combination.
             std::list<uint32> buffs;
-            LoadList<std::list<uint32>>(config.GetStringDefault(value, ""), buffs);
+            LoadList<std::list<uint32>>(config.GetStringDefault(value.c_str(), ""), buffs);
 
             //Store buffs for later application.
             for (auto buff : buffs)
@@ -774,6 +884,21 @@ bool PlayerbotAIConfig::Initialize()
         }
     }
 
+    sLog.outString("AI Playerbot configuration loaded.");
+    return true;
+}
+
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
+bool PlayerbotAIConfig::BootstrapRuntime()
+{
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
+    if (runtimeBootstrapped)
+    {
+        sLog.outString("AI Playerbot runtime bootstrap already initialized.");
+        return true;
+    }
+
+    sLog.outString("AI Playerbot runtime bootstrap started.");
     sLog.outString("Loading free bots.");
     selfBotLevel = BotSelfBotLevel(config.GetIntDefault("AiPlayerbot.SelfBotLevel", uint32(BotSelfBotLevel::GM_ONLY)));
     LoadListString<std::list<std::string>>(config.GetStringDefault("AiPlayerbot.ToggleAlwaysOnlineAccounts", ""), toggleAlwaysOnlineAccounts);
@@ -800,6 +925,7 @@ bool PlayerbotAIConfig::Initialize()
     ItemUsageValue::PopulateSoldByVendorItemIds();
     ItemUsageValue::PopulateReagentItemIdsForCraftableItemIds();
 
+    sLog.outString("Random bot creation started.");
     RandomPlayerbotFactory::CreateRandomBots();
     PlayerbotFactory::Init();
     sRandomItemMgr.Init();
@@ -825,9 +951,34 @@ bool PlayerbotAIConfig::Initialize()
     sLog.outString("        AI Playerbot initialized       ");
     sLog.outString("---------------------------------------");
     sLog.outString();
+    sLog.outString("AI Playerbot runtime bootstrap completed.");
+    runtimeBootstrapped = true;
 
     return true;
+#else
+    sLog.outString("AI Playerbot runtime bootstrap is unavailable in this build.");
+    return false;
+#endif
 }
+
+bool PlayerbotAIConfig::Initialize()
+{
+    if (!LoadConfig())
+        return false;
+    return BootstrapRuntime();
+}
+#else
+bool PlayerbotAIConfig::BootstrapRuntime()
+{
+    sLog.outString("AI Playerbot runtime bootstrap is unavailable in this build.");
+    return false;
+}
+
+bool PlayerbotAIConfig::Initialize()
+{
+    return LoadConfig();
+}
+#endif
 
 bool PlayerbotAIConfig::IsInRandomAccountList(uint32 id)
 {
@@ -929,6 +1080,7 @@ void PlayerbotAIConfig::SetValue(std::string name, std::string value)
         out >> iterationsPerTick;
 }
 
+#if PLAYERBOT_RUNTIME_BOOTSTRAP
 void PlayerbotAIConfig::loadFreeAltBotAccounts()
 {
     bool allCharsOnline = (selfBotLevel == BotSelfBotLevel::ALWAYS_ACTIVE);
@@ -1021,7 +1173,7 @@ bool PlayerbotAIConfig::openLog(std::string fileName, char const* mode, bool has
     if (fileOpen) //close log file
         fclose(file);
 
-    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir", "");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -1074,8 +1226,8 @@ void PlayerbotAIConfig::logEvent(PlayerbotAI* ai, std::string eventName, std::st
         out << std::fixed << std::setprecision(2);
         WorldPosition(bot).printWKT(out);
 
-        out << std::to_string(bot->getRace()) << ",";
-        out << std::to_string(bot->getClass()) << ",";
+        out << std::to_string(bot->GetRace()) << ",";
+        out << std::to_string(bot->GetClass()) << ",";
         float subLevel = ai->GetLevelFloat();
 
         out << subLevel << ",";
@@ -1244,6 +1396,7 @@ void PlayerbotAIConfig::LoadTalentSpecs()
 
     }
 }
+#endif
 
 void PlayerbotAIConfig::LoadLLMDefaultPrompts(const std::string& fileName)
 {

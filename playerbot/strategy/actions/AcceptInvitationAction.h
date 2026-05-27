@@ -28,7 +28,7 @@ namespace ai
                 return false;
             }
             
-            if (bot->isAFK())
+            if (bot->IsAFK())
                 bot->ToggleAFK();
 
             WorldPacket p;

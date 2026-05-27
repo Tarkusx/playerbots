@@ -6,7 +6,7 @@
 #include "Database/DatabaseEnv.h"
 #include "PlayerbotAI.h"
 
-#include "MotionGenerators/TargetedMovementGenerator.h"
+#include "Movement/TargetedMovementGenerator.h"
 
 ServerFacade::ServerFacade() {}
 ServerFacade::~ServerFacade() {}
@@ -16,26 +16,12 @@ float ServerFacade::GetDistance2d(Unit *unit, WorldObject* wo)
     if (!unit || !wo)
         return false;
 
-    float dist =
-#ifdef MANGOS
-    unit->GetDistance2d(wo);
-#endif
-#ifdef CMANGOS
-    sqrt(unit->GetDistance2d(wo->GetPositionX(), wo->GetPositionY(), DIST_CALC_NONE));
-#endif
-    return round(dist * 10.0f) / 10.0f;
+    return round(unit->GetDistance2dToCenter(wo) * 10.0f) / 10.0f;
 }
 
 float ServerFacade::GetDistance2d(Unit *unit, float x, float y)
 {
-    float dist =
-#ifdef MANGOS
-    unit->GetDistance2d(x, y);
-#endif
-#ifdef CMANGOS
-    sqrt(unit->GetDistance2d(x, y, DIST_CALC_NONE));
-#endif
-    return round(dist * 10.0f) / 10.0f;
+    return round(unit->GetDistance2dToCenter(x, y) * 10.0f) / 10.0f;
 }
 
 bool ServerFacade::IsDistanceLessThan(float dist1, float dist2)
@@ -151,17 +137,27 @@ FactionTemplateEntry const* ServerFacade::GetFactionTemplateEntry(Unit *unit)
 
 Unit* ServerFacade::GetChaseTarget(Unit* target)
 {
-    return static_cast<ChaseMovementGenerator const*>(target->GetMotionMaster()->GetCurrent())->GetCurrentTarget();
+    return static_cast<ChaseMovementGenerator<Player> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget();
 }
 
 float ServerFacade::GetChaseAngle(Unit* target)
 {
-    return static_cast<ChaseMovementGenerator const*>(target->GetMotionMaster()->GetCurrent())->GetAngle();
+    Unit* chaseTarget = GetChaseTarget(target);
+    if (!chaseTarget)
+        return 0.0f;
+
+    float angle = target->GetAngle(chaseTarget) - chaseTarget->GetOrientation();
+    while (angle < 0.0f)
+        angle += 2.0f * M_PI_F;
+    while (angle >= 2.0f * M_PI_F)
+        angle -= 2.0f * M_PI_F;
+    return angle;
 }
 
 float ServerFacade::GetChaseOffset(Unit* target)
 {
-    return static_cast<ChaseMovementGenerator const*>(target->GetMotionMaster()->GetCurrent())->GetOffset();
+    Unit* chaseTarget = GetChaseTarget(target);
+    return chaseTarget ? target->GetDistance2dToCenter(chaseTarget) : 0.0f;
 }
 
 bool ServerFacade::isMoving(Unit *unit)

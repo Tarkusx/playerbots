@@ -10,7 +10,7 @@ PlayerbotTextMgr::PlayerbotTextMgr()
 {
     for (uint8 i = 1; i < MAX_LOCALE; ++i)
     {
-        botTextLocalePriority[sObjectMgr.GetStorageLocaleIndexFor(LocaleConstant(i))] = 0;
+        botTextLocalePriority[sObjectMgr.GetOrNewIndexForLocale(LocaleConstant(i))] = 0;
     }
 }
 
@@ -53,7 +53,7 @@ void PlayerbotTextMgr::LoadBotTexts()
             uint32 replyType = fields[3].GetUInt32();
             for (uint8 i = 1; i < MAX_LOCALE; ++i)
             {
-                text_locale[sObjectMgr.GetStorageLocaleIndexFor(LocaleConstant(i))] = fields[i + 3].GetString();
+                text_locale[sObjectMgr.GetOrNewIndexForLocale(LocaleConstant(i))] = fields[i + 3].GetString();
             }
             botTexts[name].push_back(BotTextEntry(name, text, text_locale, sayType, replyType));
             count++;
@@ -220,7 +220,7 @@ int32 PlayerbotTextMgr::GetLocalePriority()
 
     for (uint8 i = 1; i < MAX_LOCALE; ++i)
     {
-        int32 locale_idx = sObjectMgr.GetStorageLocaleIndexFor(LocaleConstant(i));
+        int32 locale_idx = sObjectMgr.GetOrNewIndexForLocale(LocaleConstant(i));
         if (locale_idx == -1)
             continue;
 
@@ -238,6 +238,6 @@ void PlayerbotTextMgr::ResetLocalePriority()
 {
     for (uint8 i = 1; i < MAX_LOCALE; ++i)
     {
-        botTextLocalePriority[sObjectMgr.GetStorageLocaleIndexFor(LocaleConstant(i))] = 0;
+        botTextLocalePriority[sObjectMgr.GetOrNewIndexForLocale(LocaleConstant(i))] = 0;
     }
 }

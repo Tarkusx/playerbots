@@ -278,7 +278,7 @@ bool CastCustomSpellAction::Execute(Event& event)
 
 bool CastCustomSpellAction::CastSummonPlayer(Player* requester, std::string command)
 {
-    if (bot->getClass() == CLASS_WARLOCK)
+    if (bot->GetClass() == CLASS_WARLOCK)
     {
         if (command.find("summon") != std::string::npos)
         {

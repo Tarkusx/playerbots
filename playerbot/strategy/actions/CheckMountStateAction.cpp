@@ -266,10 +266,10 @@ bool CheckMountStateAction::isUseful()
     if (bot->IsTaxiFlying())
         return false;
 
-    if (bot->getClass() == CLASS_ROGUE && bot->InBattleGround() && (ai->HasAura("stealth", bot) || ai->HasAura("sprint", bot)))
+    if (bot->GetClass() == CLASS_ROGUE && bot->InBattleGround() && (ai->HasAura("stealth", bot) || ai->HasAura("sprint", bot)))
         return false;
 
-    if (bot->getClass() == CLASS_DRUID && bot->InBattleGround() && (ai->HasAura("prowl", bot) || ai->HasAura("dash", bot)))
+    if (bot->GetClass() == CLASS_DRUID && bot->InBattleGround() && (ai->HasAura("prowl", bot) || ai->HasAura("dash", bot)))
         return false;
 
 #ifndef MANGOSBOT_ZERO
@@ -320,7 +320,7 @@ bool CheckMountStateAction::CanFly() const
     uint32 zone, area;
     bot->GetZoneAndAreaId(zone, area);
     uint32 v_map = GetVirtualMapForMapAndZone(bot->GetMapId(), zone);
-    MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
+    MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(v_map);
     if (!mapEntry || mapEntry->addon < 1 || !mapEntry->IsContinent())
         return false;
 #endif
@@ -374,7 +374,7 @@ bool CheckMountStateAction::CanMountInBg() const
 
 float CheckMountStateAction::GetAttackDistance() const
 {
-    switch (bot->getClass())
+    switch (bot->GetClass())
     {
     case CLASS_WARRIOR:
     case CLASS_PALADIN:

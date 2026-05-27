@@ -89,7 +89,7 @@ void RpgHelper::resetFacing(GuidPosition guidPosition)
     if (unit->IsMoving())
         return;
 
-    CreatureData* data = guidPosition.GetCreatureData();
+    CreatureData const* data = guidPosition.GetCreatureData();
 
     if (data)
     {
@@ -200,7 +200,7 @@ bool RpgTaxiAction::Execute(Event& event)
         return false;
     }
 #ifdef MANGOSBOT_TWO                
-    bot->OnTaxiFlightEject(true);
+    bot->GetMotionMaster()->MovementExpired();
 #endif
     if (!bot->ActivateTaxiPathTo({ entry->from, entry->to }, flightMaster, 0))
     {
@@ -251,7 +251,7 @@ bool RpgHealAction::Execute(Event& event)
 
     rpg->BeforeExecute();
     
-    switch (bot->getClass())
+    switch (bot->GetClass())
     {
     case CLASS_PRIEST:
         retVal = ai->DoSpecificAction("lesser heal on party", Event(), true);
@@ -850,7 +850,7 @@ bool RpgDuelAction::isUseful()
 
     // Players can only fight a duel with each other outside (=not inside dungeons and not in capital cities)
     AreaTableEntry const* casterAreaEntry = GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot));
-    if (casterAreaEntry && !(casterAreaEntry->flags & AREA_FLAG_DUEL))
+    if (casterAreaEntry && !(casterAreaEntry->Flags & AREA_FLAG_DUEL))
     {
         // Dueling isn't allowed here
         return false;

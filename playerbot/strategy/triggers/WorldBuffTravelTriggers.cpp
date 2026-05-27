@@ -358,7 +358,7 @@ bool WorldBuffTravelDMPortalCastTrigger::IsActive()
     if (step != static_cast<uint8>(WorldBuffTravelStep::STEP_DM_PORTAL))
         return false;
 
-    if (bot->getClass() != CLASS_MAGE)
+    if (bot->GetClass() != CLASS_MAGE)
         return false;
 
     if (!HasAllDMTributeBuffs(bot))
@@ -394,7 +394,7 @@ bool WorldBuffTravelPortalStepTrigger::IsActive()
     if (step != static_cast<uint8>(WorldBuffTravelStep::STEP_PORTAL_HOME))
         return false;
 
-    if (bot->getClass() != CLASS_MAGE)
+    if (bot->GetClass() != CLASS_MAGE)
         return false;
 
     if (!DoAllGroupMembersHaveSongflower(bot))

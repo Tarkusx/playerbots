@@ -9,9 +9,11 @@
 #include "PlayerbotTextMgr.h"
 #include "BotState.h"
 #include "PlayerTalentSpec.h"
+#include <future>
 #include <stack>
 #include "strategy/IterateItemsMask.h"
 #include "RandomPlayerbotMgr.h"
+#include "Chat.h"
 
 class Player;
 class PlayerbotMgr;

@@ -259,22 +259,22 @@ bool RpgRepairTrigger::IsActive()
 bool RpgTrainTrigger::IsTrainerOf(CreatureInfo const* cInfo, Player* pPlayer)
 {
 
-    switch (cInfo->TrainerType)
+    switch (cInfo->trainer_type)
     {
     case TRAINER_TYPE_CLASS:
-        if (pPlayer->getClass() != cInfo->TrainerClass)
+        if (pPlayer->GetClass() != cInfo->trainer_class)
         {
             return false;
         }
         break;
     case TRAINER_TYPE_PETS:
-        if (pPlayer->getClass() != CLASS_HUNTER)
+        if (pPlayer->GetClass() != CLASS_HUNTER)
         {
             return false;
         }
         break;
     case TRAINER_TYPE_MOUNTS:
-        if (cInfo->TrainerRace && pPlayer->getRace() != cInfo->TrainerRace)
+        if (cInfo->trainer_race && pPlayer->GetRace() != cInfo->trainer_race)
         {
             // Allowed to train if exalted
             if (FactionTemplateEntry const* faction_template = sFactionTemplateStore.LookupEntry(cInfo->Faction))
@@ -286,7 +286,7 @@ bool RpgTrainTrigger::IsTrainerOf(CreatureInfo const* cInfo, Player* pPlayer)
         }
         break;
     case TRAINER_TYPE_TRADESKILLS:
-        if (cInfo->TrainerSpell && !pPlayer->HasSpell(cInfo->TrainerSpell))
+        if (cInfo->trainer_spell && !pPlayer->HasSpell(cInfo->trainer_spell))
         {
             return false;
         }
@@ -315,7 +315,7 @@ bool RpgTrainTrigger::IsActive()
     // check present spell in trainer spell list
     TrainerSpellData const* cSpells = sObjectMgr.GetNpcTrainerSpells(guidP.GetEntry());
 
-    uint32 trainerId = cInfo->TrainerTemplateId;
+    uint32 trainerId = cInfo->trainer_id;
     TrainerSpellData const* tSpells = trainerId ? sObjectMgr.GetNpcTrainerTemplateSpells(trainerId) : nullptr;
 
     if (!cSpells && !tSpells)
@@ -339,10 +339,7 @@ bool RpgTrainTrigger::IsActive()
         if (!tSpell)
             continue;
 
-        uint32 reqLevel = 0;
-
-        reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
-        TrainerSpellState state = bot->GetTrainerSpellState(tSpell, reqLevel);
+        TrainerSpellState state = bot->GetTrainerSpellState(tSpell);
         if (state != TRAINER_SPELL_GREEN)
             continue;
 
@@ -352,72 +349,22 @@ bool RpgTrainTrigger::IsActive()
             continue;
 
 #ifdef MANGOSBOT_ZERO
-        if (tSpell->learnedSpell)
+        if (uint32 learnedSpell = PlayerbotsCompatibility::GetTrainerLearnedSpellId(tSpell))
         {
-            bool learned = true;
-            if (bot->HasSpell(tSpell->learnedSpell))
-            {
-                learned = false;
-            }
-            else
-            {
-                for (int j = 0; j < 3; ++j)
-                {
-                    if (pSpellInfo->Effect[j] == SPELL_EFFECT_LEARN_SPELL)
-                    {
-                        learned = false;
-                        uint32 learnedSpell = pSpellInfo->EffectTriggerSpell[j];
-
-                        if (!bot->HasSpell(learnedSpell))
-                        {
-                            learned = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (!learned)
+            if (bot->HasSpell(learnedSpell))
                 continue;
         }
 #else
-        if (!tSpell->learnedSpell.empty())
+        if (uint32 learnedSpell = PlayerbotsCompatibility::GetTrainerLearnedSpellId(tSpell))
         {
-            bool anySpellLearned = false;
-            for (auto& learnedSpell : tSpell->learnedSpell)
-            {
-                bool learned = true;
-                if (bot->HasSpell(learnedSpell))
-                {
-                    learned = false;
-                }
-                else
-                {
-                    for (int j = 0; j < 3; ++j)
-                    {
-                        if (pSpellInfo->Effect[j] == SPELL_EFFECT_LEARN_SPELL)
-                        {
-                            learned = false;
-                            uint32 learnedSpell = pSpellInfo->EffectTriggerSpell[j];
-
-                            if (!bot->HasSpell(learnedSpell))
-                            {
-                                learned = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (learned)
-                    anySpellLearned = true;
-            }
-            if (!anySpellLearned)
+            if (bot->HasSpell(learnedSpell))
                 continue;
         }
 #endif
 
         NeedMoneyFor budgetType = NeedMoneyFor::spells;
 
-        switch (cInfo->TrainerType)
+        switch (cInfo->trainer_type)
         {
         case TRAINER_TYPE_CLASS:
             budgetType = NeedMoneyFor::spells;
@@ -794,7 +741,7 @@ bool RpgDuelTrigger::IsActive()
     if (ai->HasRealPlayerMaster())
     {
         // do not auto duel if master is not afk
-        if (ai->GetMaster() && !ai->GetMaster()->isAFK())
+        if (ai->GetMaster() && !ai->GetMaster()->IsAFK())
             return false;
     }
 
@@ -819,11 +766,11 @@ bool RpgDuelTrigger::IsActive()
         return false;
 
     // caster or target already have requested duel
-    if (bot->duel || player->duel || !player->GetSocial() || player->GetSocial()->HasIgnore(bot->GetObjectGuid()))
+    if (bot->m_duel || player->m_duel || !player->GetSocial() || player->GetSocial()->HasIgnore(bot->GetObjectGuid()))
         return false;
 
     AreaTableEntry const* targetAreaEntry = GetAreaEntryByAreaID(sServerFacade.GetAreaId(player));
-    if (targetAreaEntry && !(targetAreaEntry->flags & AREA_FLAG_DUEL))
+    if (targetAreaEntry && !(targetAreaEntry->Flags & AREA_FLAG_DUEL))
     {
         // Dueling isn't allowed here
         return false;

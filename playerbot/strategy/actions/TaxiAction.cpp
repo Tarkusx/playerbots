@@ -1,7 +1,7 @@
 
 #include "playerbot/playerbot.h"
 #include "TaxiAction.h"
-#include "Server/DBCStructure.h"
+#include "Database/DBCStructure.h"
 #include "playerbot/strategy/values/LastMovementValue.h"
 
 using namespace ai;
@@ -69,7 +69,7 @@ bool TaxiAction::Execute(Event& event)
             TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(path);
             if (!entry) return false;
 #ifdef MANGOSBOT_TWO                
-            bot->OnTaxiFlightEject(true);
+            bot->GetMotionMaster()->MovementExpired();
 #endif
             bool didTaxi =  bot->ActivateTaxiPathTo({ entry->from, entry->to }, npc, 0);
 #ifdef MANGOSBOT_TWO
@@ -78,7 +78,7 @@ bool TaxiAction::Execute(Event& event)
             return didTaxi;
         }
 #ifdef MANGOSBOT_TWO                
-        bot->OnTaxiFlightEject(true);
+        bot->GetMotionMaster()->MovementExpired();
 #endif
         if (!movement.taxiNodes.empty() && !bot->ActivateTaxiPathTo(movement.taxiNodes, npc))
         {

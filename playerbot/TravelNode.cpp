@@ -6,13 +6,12 @@
 
 #include "Globals/ObjectMgr.h"
 #include "PlayerbotAI.h"
-#include "MotionGenerators/MoveMapSharedDefines.h"
 #include "MotionGenerators/PathFinder.h"
 #include "Entities/Transports.h"
 #include "strategy/values/BudgetValues.h"
 #include "strategy/values/LastMovementValue.h"
 #include "playerbot/ServerFacade.h"
-#include "MotionGenerators/MoveMap.h"
+#include "MoveMap.h"
 #include "strategy/values/HazardsValue.h"
 
 using namespace ai;
@@ -268,7 +267,7 @@ bool TravelNode::isAreaTriggerTarget(uint32 areaTriggerId)
         if (!at)
             continue;
 
-        WorldPosition outPos = WorldPosition(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
+        WorldPosition outPos = WorldPosition(at->mapid, at->x, at->y, at->z, at->box_orientation);
 
         if (*getPosition() == outPos)
             return true;
@@ -2064,12 +2063,12 @@ void TravelNodeMap::manageNodes(Unit* bot, bool mapFull)
 void TravelNodeMap::LoadMaps()
 {
     sLog.outError("Trying to load all maps and tiles for node generation. Please ignore any maps that could not be loaded.");
-    for (uint32 i = 0; i < sMapStore.GetNumRows(); ++i)
+    for (uint32 i = 0; i < sMapStorage.GetNumRows(); ++i)
     {
-        if (!sMapStore.LookupEntry(i))
+        if (!sMapStorage.LookupEntry<MapEntry>(i))
             continue;
 
-        uint32 mapId = sMapStore.LookupEntry(i)->MapID;
+        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->MapID;
         if (mapId == 0 || mapId == 1 || mapId == 530 || mapId == 571)
         {
 #ifndef MANGOSBOT_TWO
@@ -2085,12 +2084,12 @@ void TravelNodeMap::LoadMaps()
     }
 
 #ifndef MANGOSBOT_TWO
-    for (uint32 i = 0; i < sMapStore.GetNumRows(); ++i)
+    for (uint32 i = 0; i < sMapStorage.GetNumRows(); ++i)
     {
-        if (!sMapStore.LookupEntry(i))
+        if (!sMapStorage.LookupEntry<MapEntry>(i))
             continue;
 
-        uint32 mapId = sMapStore.LookupEntry(i)->MapID;
+        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->MapID;
 
         for (const auto& entry : boost::filesystem::directory_iterator(sWorld.GetDataPath() + "mmaps"))
         {
@@ -2128,28 +2127,28 @@ void TravelNodeMap::generateNpcNodes()
 
         uint32 flagMask = UNIT_NPC_FLAG_INNKEEPER | UNIT_NPC_FLAG_FLIGHTMASTER | UNIT_NPC_FLAG_SPIRITHEALER | UNIT_NPC_FLAG_SPIRITGUIDE;
 
-        if (cInfo->NpcFlags & flagMask)
+        if (cInfo->npc_flags & flagMask)
         {
             std::string nodeName = guidP.getAreaName(false);
 
-            if (cInfo->NpcFlags & UNIT_NPC_FLAG_INNKEEPER)
+            if (cInfo->npc_flags & UNIT_NPC_FLAG_INNKEEPER)
                 nodeName += " innkeeper";
-            else if (cInfo->NpcFlags & UNIT_NPC_FLAG_FLIGHTMASTER)
+            else if (cInfo->npc_flags & UNIT_NPC_FLAG_FLIGHTMASTER)
                 nodeName += " flightMaster";
-            else if (cInfo->NpcFlags & UNIT_NPC_FLAG_SPIRITHEALER)
+            else if (cInfo->npc_flags & UNIT_NPC_FLAG_SPIRITHEALER)
                 nodeName += " spirithealer";
-            else if (cInfo->NpcFlags & UNIT_NPC_FLAG_SPIRITGUIDE)
+            else if (cInfo->npc_flags & UNIT_NPC_FLAG_SPIRITGUIDE)
                 nodeName += " spiritguide";
 
             TravelNode* node = sTravelNodeMap.addNode(guidP, nodeName, true, true);
         }
-        else if (cInfo->Rank == 3)
+        else if (cInfo->rank == 3)
         {
             std::string nodeName = cInfo->Name;
 
             sTravelNodeMap.addNode(guidP, nodeName, true, true);
         }
-        else if (cInfo->Rank == 1 && !guidP.isOverworld())
+        else if (cInfo->rank == 1 && !guidP.isOverworld())
         {
             if (bossMap.find(cInfo->Entry) == bossMap.end())
                 bossMap[cInfo->Entry] = guidP;
@@ -2229,7 +2228,7 @@ void TravelNodeMap::generateAreaTriggerNodes()
 
         WorldPosition inPos = WorldPosition(atEntry->mapid, atEntry->x, atEntry->y, atEntry->z - 4.0f, 0);
 
-        WorldPosition outPos = WorldPosition(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
+        WorldPosition outPos = WorldPosition(at->mapid, at->x, at->y, at->z, at->box_orientation);
 
         std::string nodeName;
 
@@ -2257,7 +2256,7 @@ void TravelNodeMap::generateAreaTriggerNodes()
 
         WorldPosition inPos = WorldPosition(atEntry->mapid, atEntry->x, atEntry->y, atEntry->z - 4.0f, 0);
 
-        WorldPosition outPos = WorldPosition(at->target_mapId, at->target_X, at->target_Y, at->target_Z, at->target_Orientation);
+        WorldPosition outPos = WorldPosition(at->mapid, at->x, at->y, at->z, at->box_orientation);
 
         std::string nodeName;
 

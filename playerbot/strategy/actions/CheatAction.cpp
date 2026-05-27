@@ -7,7 +7,7 @@ using namespace ai;
 bool CheatAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    if (requester && requester->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
+    if (requester && requester->GetSession()->GetSecurity() >= SEC_MODERATOR)
     {
         std::string param = event.getParam();
         uint32 cheatMask = (uint32)ai->GetCheat();

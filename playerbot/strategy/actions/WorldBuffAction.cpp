@@ -35,7 +35,7 @@ std::vector<uint32> WorldBuffAction::NeedWorldBuffs(Unit* unit)
         if (wb.factionId != 0 && wb.factionId != factionId)
             continue;
 
-        if (wb.classId != 0 && wb.classId != unit->getClass())
+        if (wb.classId != 0 && wb.classId != unit->GetClass())
             continue;
 
         if (plr && wb.specId != 0 && wb.specId != (AiFactory::GetPlayerSpecTab(plr) + 1))

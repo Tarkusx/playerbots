@@ -10,7 +10,7 @@ namespace ai
 
         virtual void ExternalEvent(WorldPacket &packet, Player* owner = NULL) override
         {
-            this->packet = packet;
+            this->packet = WorldPacket(packet);
             this->owner = owner;
             triggered = true;
         }

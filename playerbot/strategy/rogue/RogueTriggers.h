@@ -57,7 +57,7 @@ namespace ai
                 (ai->GetBot()->IsInSameGroupWith((Player*)GetTarget()) || ai->GetBot()->IsInSameRaidWith((Player*)GetTarget())) &&
 #endif
 #ifdef CMANGOS
-                (ai->GetBot()->IsInGroup((Player*)GetTarget(), true) || ai->GetBot()->IsInGroup((Player*)GetTarget()))
+                (PlayerbotsCompatibility::IsInGroup(ai->GetBot(), (Player*)GetTarget(), true) || PlayerbotsCompatibility::IsInGroup(ai->GetBot(), (Player*)GetTarget()))
 #endif               
                 ;
         }

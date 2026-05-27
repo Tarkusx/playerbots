@@ -73,7 +73,7 @@ void TestRegistry::GenerateBossWalkTest()
             if (!mapEntry->IsDungeon())
                 continue;
 
-            const InstanceTemplate* instanceTemplate = point->getInstanceTemplate();
+            MapEntry const* instanceTemplate = point->getInstanceTemplate();
             if (!instanceTemplate)
                 continue;
 
@@ -191,7 +191,7 @@ void TestRegistry::GenerateBossEncounterTest()
             if (!mapEntry->IsDungeon())
                 continue;
 
-            const InstanceTemplate* instanceTemplate = point->getInstanceTemplate();
+            MapEntry const* instanceTemplate = point->getInstanceTemplate();
             if (!instanceTemplate)
                 continue;
 

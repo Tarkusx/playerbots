@@ -42,7 +42,7 @@ namespace ai
                 UpdateMovementState();
 
                 // Ignore movement if too far
-                const float distanceToTarget = bot->GetDistance(target, false, DIST_CALC_COMBAT_REACH);
+                const float distanceToTarget = bot->GetCombatDistance(target);
                 float chaseDist = range;
                 const bool inLos = bot->IsWithinLOSInMap(target, true);
                 const bool isFriend = sServerFacade.IsFriendlyTo(bot, target);
@@ -101,7 +101,7 @@ namespace ai
                         if (bot->IsWithinLOSInMap(target, true))
                         {
                             // Check if the bot is already on the range required
-                            return bot->GetDistance(target, true, DIST_CALC_COMBAT_REACH) > range;
+                            return bot->GetCombatDistance(target) > range;
                         }
 
                         return true;

@@ -25,7 +25,7 @@ LfgRoles LfgJoinAction::GetRoles()
     }
 
     int spec = AiFactory::GetPlayerSpecTab(bot);
-    switch (bot->getClass())
+    switch (bot->GetClass())
     {
     case CLASS_DRUID:
         if (spec == 2)
@@ -119,10 +119,10 @@ bool LfgJoinAction::JoinLFG()
             AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(bot->GetAreaId());
             if (areaEntry)
             {
-                if (areaEntry->zone)
-                    areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+                if (areaEntry->ZoneId)
+                    areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-                if (areaEntry && areaEntry->flags & AREA_FLAG_CAPITAL)
+                if (areaEntry && areaEntry->Flags & AREA_FLAG_CAPITAL)
                     inCity = true;
             }
 
@@ -258,10 +258,10 @@ bool LfgJoinAction::JoinLFG()
 
     /*AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(bot->GetZoneId());
     // check if area has no parent zone
-    if (areaEntry && !areaEntry->zone)
+    if (areaEntry && !areaEntry->ZoneId)
     {
-        zoneLFG = areaEntry->ID;
-        zoneName = areaEntry->area_name[0];
+        zoneLFG = areaEntry->Id;
+        zoneName = PlayerbotsCompatibility::GetAreaName(areaEntry, 0);
     }*/
 
     // only use lfg zone if current quest leads there
@@ -269,20 +269,20 @@ bool LfgJoinAction::JoinLFG()
     {
         AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(questZoneLFG);
         // check if area has no parent zone
-        if (areaEntry && !areaEntry->zone)
+        if (areaEntry && !areaEntry->ZoneId)
         {
-            zoneLFG = areaEntry->ID;
-            zoneName = areaEntry->area_name[0];
+            zoneLFG = areaEntry->Id;
+            zoneName = PlayerbotsCompatibility::GetAreaName(areaEntry, 0);
         }
     }
     else if (!bot->IsTaxiFlying())
     {
         AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(bot->GetZoneId());
         // check if area has no parent zone
-        if (areaEntry && !areaEntry->zone)
+        if (areaEntry && !areaEntry->ZoneId)
         {
-            zoneLFG = areaEntry->ID;
-            zoneName = areaEntry->area_name[0];
+            zoneLFG = areaEntry->Id;
+            zoneName = PlayerbotsCompatibility::GetAreaName(areaEntry, 0);
         }
     }
 
@@ -391,10 +391,10 @@ bool LfgJoinAction::JoinLFG()
                     AreaTableEntry const* areaEntry = GetAreaEntryByAreaFlagAndMap(targetAreaFlag, location->mapid);
                     if (areaEntry)
                     {
-                        if (areaEntry->zone)
-                            areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+                        if (areaEntry->ZoneId)
+                            areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-                        if (areaEntry && !areaEntry->zone)
+                        if (areaEntry && !areaEntry->ZoneId)
                         {
                             for (uint32 i = 0; i < sLFGDungeonStore.GetNumRows(); ++i)
                             {
@@ -416,7 +416,7 @@ bool LfgJoinAction::JoinLFG()
                                         continue;
 
                                     // check by zone name, doesn't work for some dungeons
-                                    if (dungeon->name[0] == areaEntry->area_name[0])
+                                    if (dungeon->name[0] == PlayerbotsCompatibility::GetAreaName(areaEntry, 0))
                                     {
                                         lfgType = LFG_TYPE_DUNGEON;
                                         lfgName = dungeon->name[0];
@@ -451,10 +451,10 @@ bool LfgJoinAction::JoinLFG()
                                                     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(bot->GetAreaId());
                                                     if (areaEntry)
                                                     {
-                                                        if (areaEntry->zone)
-                                                            areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+                                                        if (areaEntry->ZoneId)
+                                                            areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-                                                        if (areaEntry && areaEntry->flags & AREA_FLAG_CAPITAL)
+                                                        if (areaEntry && areaEntry->Flags & AREA_FLAG_CAPITAL)
                                                             inCity = true;
                                                     }
 
@@ -512,10 +512,10 @@ bool LfgJoinAction::JoinLFG()
                     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(bot->GetAreaId());
                     if (areaEntry)
                     {
-                        if (areaEntry->zone)
-                            areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+                        if (areaEntry->ZoneId)
+                            areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-                        if (areaEntry && areaEntry->flags & AREA_FLAG_CAPITAL)
+                        if (areaEntry && areaEntry->Flags & AREA_FLAG_CAPITAL)
                             inCity = true;
                     }
 
@@ -634,10 +634,10 @@ bool LfgJoinAction::JoinLFG()
                     AreaTableEntry const* areaEntry = GetAreaEntryByAreaID(bot->GetAreaId());
                     if (areaEntry)
                     {
-                        if (areaEntry->zone)
-                            areaEntry = GetAreaEntryByAreaID(areaEntry->zone);
+                        if (areaEntry->ZoneId)
+                            areaEntry = GetAreaEntryByAreaID(areaEntry->ZoneId);
 
-                        if (areaEntry && areaEntry->flags & AREA_FLAG_CAPITAL)
+                        if (areaEntry && areaEntry->Flags & AREA_FLAG_CAPITAL)
                             inCity = true;
                     }
 
@@ -1065,7 +1065,7 @@ bool LfgLeaveAction::Execute(Event& event)
     AreaTableEntry const* area = GetAreaEntryByAreaID(qInfo.areaId);
     if (area)
     {
-        sLog.outDetail("Bot #%d %s:%d <%s>: leaves LFG queue to %s after %u minutes", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), area->area_name[0], (qInfo.timeInLFG / 60000));
+        sLog.outDetail("Bot #%d %s:%d <%s>: leaves LFG queue to %s after %u minutes", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), PlayerbotsCompatibility::GetAreaName(area, 0), (qInfo.timeInLFG / 60000));
         sWorld.GetLFGQueue().RemovePlayerFromQueue(bot->GetObjectGuid(), PLAYER_CLIENT_LEAVE);
     }
 #endif
@@ -1206,7 +1206,7 @@ bool LfgJoinAction::isUseful()
 
     LfgRoles botRoles = sLFGMgr.CalculateTalentRoles(bot);
 
-    LfgRolePriority prio = sLFGMgr.GetPriority((Classes)bot->getClass(), (LfgRoles)botRoles);
+    LfgRolePriority prio = sLFGMgr.GetPriority((Classes)bot->GetClass(), (LfgRoles)botRoles);
     if (prio < LFG_PRIORITY_NORMAL)
         return false;
 

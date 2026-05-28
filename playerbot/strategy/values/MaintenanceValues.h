@@ -243,7 +243,7 @@ namespace ai
         {
             Player* master = ai->GetMaster();
 
-            float mpMissingPct = 100.0f - bot->GetPowerPercent();
+            float mpMissingPct = 100.0f - bot->GetPowerPercent(POWER_MANA);
             float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
             float drinkDuration = multiplier * (mpMissingPct / 100.0f);
 

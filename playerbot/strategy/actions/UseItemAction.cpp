@@ -100,7 +100,7 @@ bool BotUseItemSpell::OpenLockCheck()
                         return false;
 
                     // check if its in use only when cast is finished (called from spell::cast() with strict = false)
-                    if (go->IsInUse())
+                    if (GameObjectIsInUse(go))
                         return false;
 
                     if (go->HasFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE))
@@ -781,7 +781,7 @@ bool UseAction::UseGameObject(Player* requester, Event& event, GameObject* gameO
     }
 
     ObjectGuid guid = gameObject->GetObjectGuid();
-    if (!sServerFacade.isSpawned(gameObject) || gameObject->IsInUse() || gameObject->GetGoState() != GO_STATE_READY)
+    if (!sServerFacade.isSpawned(gameObject) || GameObjectIsInUse(gameObject) || gameObject->GetGoState() != GO_STATE_READY)
     {
         std::ostringstream out; out << "I can't use " << chat->formatGameobject(gameObject);
         ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
@@ -915,7 +915,7 @@ bool UseAction::UseGameObject(Player* requester, Event& event, GameObject* gameO
 
     std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
     *packet << guid;
-    bot->GetSession()->QueuePacket(std::move(packet));
+    bot->GetSession()->QueuePacket(packet.release());
     
     std::ostringstream out; out << "Using " << chat->formatGameobject(gameObject);
     ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
@@ -993,7 +993,7 @@ bool UseAction::OpenItem(Player* requester, Item* item)
         std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_OPEN_ITEM, 2));
         *packet << item->GetBagSlot();
         *packet << item->GetSlot();
-        bot->GetSession()->QueuePacket(std::move(packet)); // queue the packet to get around race condition
+        bot->GetSession()->QueuePacket(packet.release()); // queue the packet to get around race condition
         return true;
 }
 

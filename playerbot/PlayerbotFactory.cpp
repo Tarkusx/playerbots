@@ -5402,7 +5402,7 @@ void PlayerbotFactory::LoadEnchantContainer()
                         {
                             *packet << gem_guids[i];
                         }
-                        bot->GetSession()->QueuePacket(std::move(packet));
+                        bot->GetSession()->QueuePacket(packet.release());
                         }
                     }
             }

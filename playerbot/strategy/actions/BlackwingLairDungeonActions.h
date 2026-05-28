@@ -135,7 +135,7 @@ namespace ai
 
                 std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
                 *packet << go->GetObjectGuid();
-                bot->GetSession()->QueuePacket(std::move(packet));
+                bot->GetSession()->QueuePacket(packet.release());
 
                 if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
                 {

@@ -169,10 +169,12 @@ bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auct
     if (!auctionHouse)
         return false;
 
-    AuctionHouseObject::AuctionEntryMap const& map = auctionHouse->GetAuctions();
+    AuctionHouseObject::AuctionEntryMap const* mapPtr = auctionHouse->GetAuctions();
 
-    if (map.empty())
+    if (!mapPtr || mapPtr->empty())
         return false;
+
+    AuctionHouseObject::AuctionEntryMap const& map = *mapPtr;
 
     AuctionEntry* auction = nullptr;
 
@@ -240,7 +242,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auct
             case ItemUsage::ITEM_USAGE_AH:
             {
                 auto pmo = sPerformanceMonitor.start(PERF_MON_VALUE, "IsWorthBuyingFromAhToResellAtAH", ai);
-                bool isWorthBuyingFromAhToResellAtAH = ItemUsageValue::IsWorthBuyingFromAhToResellAtAH(sObjectMgr.GetItemPrototype(auction->itemTemplate), totalCost, auction->itemCount);
+                bool isWorthBuyingFromAhToResellAtAH = ItemUsageValue::IsWorthBuyingFromAhToResellAtAH(sObjectMgr.GetItemPrototype(auction->itemTemplate), totalCost, GetAuctionItemCount(auction));
                 pmo.reset();
 
                 if (!isWorthBuyingFromAhToResellAtAH)
@@ -250,7 +252,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auct
             }
             case ItemUsage::ITEM_USAGE_VENDOR:
                 //basically if AH price is lower than vendor sell price then it's worth it
-                if (totalCost / auction->itemCount >= (int32)sObjectMgr.GetItemPrototype(auction->itemTemplate)->SellPrice)
+                if (totalCost / GetAuctionItemCount(auction) >= (int32)sObjectMgr.GetItemPrototype(auction->itemTemplate)->SellPrice)
                     continue;
                 power = 1000;
                 break;
@@ -327,7 +329,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auct
          
             ItemUsage usage = AI_VALUE2(ItemUsage, "item usage", ItemQualifier(auction).GetQualifier());
 
-            std::string reason = ItemUsageValue::ReasonForNeed(usage, auction, auction->itemCount, bot);            
+            std::string reason = ItemUsageValue::ReasonForNeed(usage, auction, GetAuctionItemCount(auction), bot);            
 
             bidItems = BidItem(requester, auction, price, auctioneer, price == currentBuyoutPrice, reason);
 
@@ -361,10 +363,10 @@ bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auct
         if (!proto)
             continue;
 
-        if(!proto->Name1)
+        if(proto->Name1.empty())
             continue;
 
-        if (!strstri(proto->Name1, text.c_str()))
+        if (!strstri(proto->Name1.c_str(), text.c_str()))
             continue;
 
         if (price && auction->bid + 5 > price)
@@ -372,7 +374,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auct
 
         uint32 cost = std::min(auction->buyout, uint32(std::max(auction->bid, auction->startbid) * frand(1.05f, 1.25f)));
 
-        uint32 power = auction->itemCount;
+        uint32 power = GetAuctionItemCount(auction);
         power *= 1000;
         power /= cost;
 
@@ -415,7 +417,7 @@ bool AhBidAction::BidItem(Player* requester, AuctionEntry* auction, uint32 price
 
     uint32 oldMoney = bot->GetMoney();
     ItemQualifier itemQualifier(auction);
-    uint32 count = auction->itemCount;
+    uint32 count = GetAuctionItemCount(auction);
 
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(auction->itemTemplate);
 

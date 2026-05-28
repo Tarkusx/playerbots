@@ -1887,11 +1887,7 @@ bool DebugAction::HandleOnTrans(Event& event, Player* requester, const std::stri
     bot->GetMotionMaster()->Clear();
 
     std::vector<G3D::Vector3> pointPath = transPos.toPointsArray(path);
-#ifndef MANGOSBOT_TWO
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false, false);
-#else
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false);
-#endif  
+    MovePath(bot, pointPath, FORCED_MOVEMENT_RUN, false, false);  
 
     return true;
 }
@@ -1930,11 +1926,7 @@ bool DebugAction::HandleOffTrans(Event& event, Player* requester, const std::str
 
     std::vector<G3D::Vector3> pointPath = exitPos.toPointsArray(path);
 
-#ifndef MANGOSBOT_TWO
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false, false);
-#else
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false);
-#endif  
+    MovePath(bot, pointPath, FORCED_MOVEMENT_RUN, false, false);  
 
     return true;
 }
@@ -3510,7 +3502,7 @@ bool DebugAction::HandleGO(Event& event, Player* requester, const std::string& t
         if (state == GO_STATE_ACTIVE_ALTERNATIVE)
             out << "GO_STATE_ACTIVE_ALTERNATIVE";
 
-        out << (object->IsInUse() ? ", in use" : ", not in use");
+        out << (GameObjectIsInUse(object) ? ", in use" : ", not in use");
 
         LootState lootState = object->GetLootState();
 

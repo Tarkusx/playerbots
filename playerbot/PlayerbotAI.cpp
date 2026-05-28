@@ -4457,8 +4457,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     if (bot->IsFlying() || bot->IsTaxiFlying())
         return false;
 
-	//bot->clearUnitState(UNIT_STAT_CHASE);
-	//bot->clearUnitState(UNIT_STAT_FOLLOW);
+	//bot->ClearUnitState(UNIT_STAT_CHASE);
+	//bot->ClearUnitState(UNIT_STAT_FOLLOW);
 
 	bool failWithDelay = false;
     if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
@@ -4687,8 +4687,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId, GameObject* goTarget, Item* itemTarg
     if (bot->IsFlying() || bot->IsTaxiFlying())
         return false;
 
-    //bot->clearUnitState(UNIT_STAT_CHASE);
-    //bot->clearUnitState(UNIT_STAT_FOLLOW);
+    //bot->ClearUnitState(UNIT_STAT_CHASE);
+    //bot->ClearUnitState(UNIT_STAT_FOLLOW);
 
     bool failWithDelay = false;
     if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
@@ -5162,8 +5162,8 @@ bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target, float projectil
 
     MotionMaster& mm = *vehicle->GetMotionMaster();
 
-    //bot->clearUnitState(UNIT_STAT_CHASE);
-    //bot->clearUnitState(UNIT_STAT_FOLLOW);
+    //bot->ClearUnitState(UNIT_STAT_CHASE);
+    //bot->ClearUnitState(UNIT_STAT_FOLLOW);
 
     //ObjectGuid oldSel = bot->GetSelectionGuid();
     //bot->SetSelectionGuid(target->GetObjectGuid());
@@ -8149,7 +8149,7 @@ void PlayerbotAI::ImbueItem(Item* item, uint32 targetFlag, ObjectGuid targetGUID
       *packet << targetGUID.WriteAsPacked();
 
 #ifdef CMANGOS
-   bot->GetSession()->QueuePacket(std::move(packet));
+   bot->GetSession()->QueuePacket(packet.release());
 #endif
 #ifdef MANGOS
    bot->GetSession()->QueuePacket(packet);

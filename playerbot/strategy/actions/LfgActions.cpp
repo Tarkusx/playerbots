@@ -1021,7 +1021,7 @@ bool LfgAcceptAction::Execute(Event& event)
 
         sLog.outDetail("Bot #%d %s:%d <%s> accepts LFG proposal %d", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), id);
         ai->GetAiObjectContext()->GetValue<uint32>("lfg proposal")->Set(0);
-        bot->clearUnitState(UNIT_STAT_ALL_STATE);
+        bot->ClearUnitState(UNIT_STAT_ALL_STATE);
         /*WorldPacket p(CMSG_LFG_PROPOSAL_RESULT);
         p << id;
         p << uint8(1);
@@ -1145,7 +1145,7 @@ bool LfgTeleportAction::Execute(Event& event)
         p >> out;
     }
 
-    bot->clearUnitState(UNIT_STAT_ALL_STATE);
+    bot->ClearUnitState(UNIT_STAT_ALL_STATE);
     sLFGMgr.TeleportPlayer(bot, out, false);
 #endif
     return true;

@@ -662,8 +662,8 @@ namespace ai
                 if (bot->IsNonMeleeSpellCasted(true))
                     return false;
 
-                bot->clearUnitState(UNIT_STAT_CHASE);
-                bot->clearUnitState(UNIT_STAT_FOLLOW);
+                bot->ClearUnitState(UNIT_STAT_CHASE);
+                bot->ClearUnitState(UNIT_STAT_FOLLOW);
 
                 if (ai->GetBot()->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
                 {
@@ -677,7 +677,7 @@ namespace ai
                     return false;
                 }
 
-                bot->addUnitState(UNIT_STAND_STATE_SIT);
+                bot->AddUnitState(UNIT_STAND_STATE_SIT);
                 ai->InterruptSpell();
 
                 float drinkDuration = AI_VALUE(float, "drink duration");
@@ -739,8 +739,8 @@ namespace ai
                 if (bot->IsNonMeleeSpellCasted(true))
                     return false;
 
-                bot->clearUnitState(UNIT_STAT_CHASE);
-                bot->clearUnitState(UNIT_STAT_FOLLOW);
+                bot->ClearUnitState(UNIT_STAT_CHASE);
+                bot->ClearUnitState(UNIT_STAT_FOLLOW);
 
                 if (ai->GetBot()->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
                 {
@@ -754,7 +754,7 @@ namespace ai
                     return false;
                 }
 
-                bot->addUnitState(UNIT_STAND_STATE_SIT);
+                bot->AddUnitState(UNIT_STAND_STATE_SIT);
                 ai->InterruptSpell();
 
                 float eatDuration = AI_VALUE(float, "eat duration");

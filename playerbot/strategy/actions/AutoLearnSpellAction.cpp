@@ -64,7 +64,7 @@ void AutoLearnSpellAction::LearnSpells(std::ostringstream* out)
 
 void AutoLearnSpellAction::LearnTrainerSpells(std::ostringstream* out)
 {
-    bot->learnDefaultSpells();
+    bot->LearnDefaultSpells();
 
     for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
     {
@@ -85,7 +85,7 @@ void AutoLearnSpellAction::LearnTrainerSpells(std::ostringstream* out)
 
         uint32 trainerId = co->trainer_id;
         if (!trainerId)
-            trainerId = co->Entry;
+            trainerId = co->entry;
 
         TrainerSpellData const* trainer_spells = sObjectMgr.GetNpcTrainerTemplateSpells(trainerId);
         if (!trainer_spells)

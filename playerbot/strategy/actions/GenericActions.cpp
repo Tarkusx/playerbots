@@ -570,7 +570,7 @@ bool SetPetAction::Execute(Event& event)
             {
                 //std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_PET_ABANDON, 8));
                 //*packet << pet->GetObjectGuid();
-                //bot->GetSession()->QueuePacket(std::move(packet));
+                //bot->GetSession()->QueuePacket(packet.release());
 
                 // Send pet action packet
                 const ObjectGuid& petGuid = pet->GetObjectGuid();

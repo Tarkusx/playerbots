@@ -1,6 +1,7 @@
 #pragma once
 #include "GenericActions.h"
 #include "Guilds/GuildMgr.h"
+#include "Guilds/Guild.h"
 
 namespace ai
 {
@@ -12,7 +13,7 @@ namespace ai
         virtual bool isUseful() override { return false; }
     
     protected:
-        virtual WorldPacket GetPacket(Player* player) { WorldPacket data(Opcodes(opcode), 8); data << player->GetName(); return data; }
+        virtual WorldPacket GetPacket(Player* player) { WorldPacket data(opcode, 8); data << player->GetName(); return data; }
         virtual void SendPacket(WorldPacket data, Event event) {};
         virtual void SendPacket(WorldPacket data) { Event event = Event();  SendPacket(data, event); };
         virtual Player* GetPlayer(Event event);
@@ -41,7 +42,7 @@ namespace ai
         virtual bool isUseful() override { return !bot->GetGuildId(); }
     
     protected:
-        virtual WorldPacket GetPacket(Player* player) override { WorldPacket data(Opcodes(opcode), 8); data << bot->GetName(); return data; }
+        virtual WorldPacket GetPacket(Player* player) override { WorldPacket data(opcode, 8); data << bot->GetName(); return data; }
         virtual void SendPacket(WorldPacket data, Event event) override { if(GetPlayer(event)) GetPlayer(event)->GetSession()->HandleGuildInviteOpcode(data); };
         virtual bool PlayerIsValid(Player* member) override { return !bot->GetGuildId() && member->GetGuildId() && sGuildMgr.GetGuildById(member->GetGuildId())->HasRankRight(member->GetRank(), GR_RIGHT_INVITE) && !GuildIsFull(member->GetGuildId()); };
     };

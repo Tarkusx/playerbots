@@ -159,7 +159,7 @@ bool UseFishingBobberAction::Execute(Event& event)
 
         std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
         *packet << obj->GetObjectGuid();
-        bot->GetSession()->QueuePacket(std::move(packet));
+        bot->GetSession()->QueuePacket(packet.release());
 
         std::ostringstream out; out << "Opening " << chat->formatGameobject(obj);
         ai->TellPlayerNoFacing(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);

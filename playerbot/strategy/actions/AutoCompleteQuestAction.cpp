@@ -32,7 +32,7 @@ bool AutoCompleteQuestAction::Execute(Event& event)
     // Check the bot's quest log for any active quests from the list
     for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
-        uint32 questId = bot->GetQuestSlotQuestId(slot);
+        uint32 questId = PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot);
         if (!questId)
             continue;
 
@@ -92,9 +92,9 @@ bool AutoCompleteQuestAction::Execute(Event& event)
             }
             else if (creature > 0)
             {
-                if (CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(creature))
+                if (CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(creature))
                     for (uint16 z = 0; z < creaturecount; ++z)
-                        bot->KilledMonster(cInfo, nullptr);
+                        bot->KilledMonster(cInfo, ObjectGuid());
             }
             else if (creature < 0)
             {

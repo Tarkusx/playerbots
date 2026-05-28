@@ -58,7 +58,7 @@ bool BGJoinAction::Execute(Event& event)
             return false;
 
 #ifndef MANGOSBOT_TWO
-        bracketId = sBattleGroundMgr.GetBattleGroundBracketIdFromLevel(bgTypeId, bot->GetLevel());
+        bracketId = GetBGBracketIdFromLevel(bgTypeId, bot->GetLevel());
 #endif
 #ifdef MANGOSBOT_TWO
         uint32 mapId = bg->GetMapId();
@@ -331,7 +331,7 @@ bool BGJoinAction::canJoinBg(Player* player, BattleGroundQueueTypeId queueTypeId
 
     // check bracket
 #ifndef MANGOSBOT_TWO
-    if (sBattleGroundMgr.GetBattleGroundBracketIdFromLevel(bgTypeId, bot->GetLevel()) != bracketId)
+    if (GetBGBracketIdFromLevel(bgTypeId, bot->GetLevel()) != bracketId)
         return false;
 #endif
 #ifdef MANGOSBOT_TWO
@@ -657,7 +657,7 @@ bool BGJoinAction::JoinQueue(uint32 type)
     bracketId = pvpDiff->GetBracketId();
 #endif
 #ifndef MANGOSBOT_TWO
-    bracketId = sBattleGroundMgr.GetBattleGroundBracketIdFromLevel(bgTypeId, bot->GetLevel());
+    bracketId = GetBGBracketIdFromLevel(bgTypeId, bot->GetLevel());
 #endif
 
     uint32 BracketSize = bg->GetMaxPlayers();
@@ -1194,7 +1194,7 @@ bool BGStatusAction::Execute(Event& event)
     BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(_bgTypeId);
     if (!bg)
         return false;
-    bracketId = sBattleGroundMgr.GetBattleGroundBracketIdFromLevel(_bgTypeId, bot->GetLevel());
+    bracketId = GetBGBracketIdFromLevel(_bgTypeId, bot->GetLevel());
 #endif
 #ifdef MANGOSBOT_TWO
     BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(_bgTypeId);

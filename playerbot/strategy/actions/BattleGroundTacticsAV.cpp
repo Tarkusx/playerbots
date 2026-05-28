@@ -160,7 +160,7 @@ bool BGTactics::SelectAvObjectiveAlliance(WorldLocation& objectiveLocation)
             {
                 if (WorldLocation icebloodGarrison; sRandomPlayerbotMgr.GetNamedLocation("AV_ICEBLOOD_GARRISON_WAITING_ALLIANCE", icebloodGarrison))
                 {
-                    uint32 attackCount = getDefendersCount(Position(icebloodGarrison.coord_x, icebloodGarrison.coord_y, icebloodGarrison.coord_z, icebloodGarrison.orientation), 10.0f, false);
+                    uint32 attackCount = getDefendersCount(Position(icebloodGarrison.coord_x, icebloodGarrison.coord_y, icebloodGarrison.coord_z, icebloodGarrison.o), 10.0f, false);
 
                     // Prepare to attack Captain
                     if (attackCount < 5 && !sServerFacade.IsInCombat(pGalvangar))
@@ -321,7 +321,7 @@ bool BGTactics::SelectAvObjectiveHorde(WorldLocation& objectiveLocation)
             {
                 if (WorldLocation stoneheartOutpost; sRandomPlayerbotMgr.GetNamedLocation("AV_STONEHEART_OUTPOST_WAITING_HORDE", stoneheartOutpost))
                 {
-                    uint32 attackCount = getDefendersCount(Position(stoneheartOutpost.coord_x, stoneheartOutpost.coord_y, stoneheartOutpost.coord_z, stoneheartOutpost.orientation), 10.0f, false);
+                    uint32 attackCount = getDefendersCount(Position(stoneheartOutpost.coord_x, stoneheartOutpost.coord_y, stoneheartOutpost.coord_z, stoneheartOutpost.o), 10.0f, false);
 
                     // Prepare to attack Captain
                     if (attackCount < 5 && !sServerFacade.IsInCombat(pBalinda))
@@ -469,7 +469,7 @@ bool BGTactics::CheckFlagAv()
         if (f == FlagEntries.end())
             continue;
 
-        if (!sServerFacade.isSpawned(go) || go->IsInUse() || go->GetGoState() != GO_STATE_READY)
+        if (!sServerFacade.isSpawned(go) || GameObjectIsInUse(go) || go->GetGoState() != GO_STATE_READY)
             continue;
 
         if (!bot->CanInteract(go))

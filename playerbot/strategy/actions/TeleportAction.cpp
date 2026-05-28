@@ -35,7 +35,7 @@ bool TeleportAction::Execute(Event& event)
 
         std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
         *packet << *i;
-        bot->GetSession()->QueuePacket(std::move(packet));
+        bot->GetSession()->QueuePacket(packet.release());
         return true;
     }
 

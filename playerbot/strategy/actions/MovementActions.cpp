@@ -381,11 +381,7 @@ bool MovementAction::MoveOnTransport(PlayerbotAI* ai, GenericTransport* transpor
     bot->GetMotionMaster()->Clear();
 
     std::vector<G3D::Vector3> pointPath = transPos.toPointsArray(path);
-#ifndef MANGOSBOT_TWO
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false, false);
-#else
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false);
-#endif
+    MovePath(bot, pointPath, FORCED_MOVEMENT_RUN, false, false);
 
     return true;
 }
@@ -428,11 +424,7 @@ bool MovementAction::MoveOffTransport(PlayerbotAI* ai, WorldPosition exitPos, bo
     bot->GetMotionMaster()->Clear();
 
     std::vector<G3D::Vector3> pointPath = exitPos.toPointsArray(path);
-#ifndef MANGOSBOT_TWO
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false, false);
-#else
-    bot->GetMotionMaster()->MovePath(pointPath, FORCED_MOVEMENT_RUN, false);
-#endif
+    MovePath(bot, pointPath, FORCED_MOVEMENT_RUN, false, false);
 
     return true;
 }
@@ -765,7 +757,7 @@ bool MovementAction::HandleSpecialMovement(TravelPath& path)
 
             std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
             *packet << *i;
-            bot->GetSession()->QueuePacket(std::move(packet));
+            bot->GetSession()->QueuePacket(packet.release());
             return true;
         }
 
@@ -1615,7 +1607,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
 
                     std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
                     *packet << *i;
-                    bot->GetSession()->QueuePacket(std::move(packet));
+                    bot->GetSession()->QueuePacket(packet.release());
                     return true;
                 }
 
@@ -2631,11 +2623,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
             mm.Clear(false, true);
 
             std::vector<G3D::Vector3> pointsArray = WorldPosition().toPointsArray(path);
-#ifndef MANGOSBOT_TWO  
-            mm.MovePath(pointsArray, FORCED_MOVEMENT_RUN, false, false);
-#else
-            mm.MovePath(pointsArray, FORCED_MOVEMENT_RUN, false);
-#endif
+            MovePath(bot, pointsArray, FORCED_MOVEMENT_RUN, false, false);
             WaitForReach(distance);
             return true;
         }
@@ -3523,7 +3511,7 @@ bool JumpAction::Execute(ai::Event &event)
             {
                 jumpPoint = jumpPosition;
                 requiredSpeed = jumpPosition.getO();
-                jumpPoint.orientation = dest.getO();
+                jumpPoint.o = dest.getO();
             }
 
             dest = spellPosition;
@@ -3625,7 +3613,7 @@ bool JumpAction::Execute(ai::Event &event)
                     WorldPosition jumpPosition = AI_VALUE2(WorldPosition, "RTSC saved location", "jump point");
                     if (!jumpPosition)
                     {
-                        jumpPoint.orientation = requiredSpeed;
+                        jumpPoint.o = requiredSpeed;
                         SET_AI_VALUE2(WorldPosition, "RTSC saved location", "jump point", jumpPoint);
                         return true;
                     }

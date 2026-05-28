@@ -9,7 +9,7 @@ namespace ai
     class BotUseItemSpell : public Spell
     {
     public:
-        BotUseItemSpell(WorldObject* caster, SpellEntry const* info, uint32 triggeredFlags, ObjectGuid originalCasterGUID = ObjectGuid(), SpellEntry const* triggeredBy = nullptr, bool itemCheats = false) : Spell(caster, info, triggeredFlags, originalCasterGUID, triggeredBy), itemCheats(itemCheats) {};
+        BotUseItemSpell(WorldObject* caster, SpellEntry const* info, uint32 triggeredFlags, ObjectGuid originalCasterGUID = ObjectGuid(), SpellEntry const* triggeredBy = nullptr, bool itemCheats = false) : Spell(static_cast<Unit*>(caster), info, triggeredFlags != 0, originalCasterGUID, triggeredBy), itemCheats(itemCheats) {};
 
         static BotUseItemSpell* Create(WorldObject* caster, SpellEntry const* info, uint32 triggeredFlags, ObjectGuid originalCasterGUID = ObjectGuid(), SpellEntry const* triggeredBy = nullptr, bool itemCheats = false)
         {
@@ -124,7 +124,7 @@ namespace ai
                 {
                     for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
                     {
-                        _Spell const& spellData = proto->Spells[i];
+                        _ItemSpell const& spellData = proto->Spells[i];
                         if (spellData.SpellId)
                         {
                             // wrong triggering type
@@ -140,8 +140,8 @@ namespace ai
                             const SpellEntry* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
                             if (spellInfo)
                             {
-                                bot->RemoveSpellCooldown(*spellInfo, false);
-                                bot->AddCooldown(*spellInfo, proto, false);
+                                bot->RemoveSpellCooldown(spellInfo->Id, false);
+                                bot->AddSpellCooldown(spellInfo->Id, proto->ItemId, time(nullptr) + spellInfo->GetRecoveryTime() / IN_MILLISECONDS);
                                 break;
                             }
                         }
@@ -247,7 +247,7 @@ namespace ai
                 {
                     for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
                     {
-                        _Spell const& spellData = proto->Spells[i];
+                        _ItemSpell const& spellData = proto->Spells[i];
                         if (spellData.SpellId)
                         {
                             // wrong triggering type
@@ -263,8 +263,8 @@ namespace ai
                             const SpellEntry* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
                             if (spellInfo)
                             {
-                                bot->RemoveSpellCooldown(*spellInfo, false);
-                                bot->AddCooldown(*spellInfo, proto, false);
+                                bot->RemoveSpellCooldown(spellInfo->Id, false);
+                                bot->AddSpellCooldown(spellInfo->Id, proto->ItemId, time(nullptr) + spellInfo->GetRecoveryTime() / IN_MILLISECONDS);
                                 break;
                             }
                         }
@@ -690,7 +690,7 @@ namespace ai
 
                 ai->CastSpell(24355, bot);
                 SetDuration(drinkDuration);
-                bot->RemoveSpellCooldown(*pSpellInfo);
+                bot->RemoveSpellCooldown(pSpellInfo->Id);
 
                 // Eat and drink at the same time
 
@@ -700,7 +700,7 @@ namespace ai
                     if (pSpellInfo2)
                     {
                         ai->AddAura(bot, 24005);
-                        bot->RemoveSpellCooldown(*pSpellInfo2);
+                        bot->RemoveSpellCooldown(pSpellInfo2->Id);
                     }
                 }
 
@@ -767,7 +767,7 @@ namespace ai
 
                 ai->CastSpell(24005, bot);
                 SetDuration(eatDuration);
-                bot->RemoveSpellCooldown(*pSpellInfo);
+                bot->RemoveSpellCooldown(pSpellInfo->Id);
 
                 // Eat and drink at the same time
                 if (AI_VALUE(bool, "should drink"))
@@ -776,7 +776,7 @@ namespace ai
                     if (pSpellInfo2)
                     {
                         ai->AddAura(bot, 24355);
-                        bot->RemoveSpellCooldown(*pSpellInfo2);
+                        bot->RemoveSpellCooldown(pSpellInfo2->Id);
                     }
                 }
 

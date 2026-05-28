@@ -9,8 +9,8 @@ bool WaitForAttackKeepSafeDistanceAction::Execute(Event& event)
 {
     Unit* target = AI_VALUE(Unit*, "current target");
 
-    if (target && !target->IsStopped() && target->GetTarget() && target->GetTarget()->IsStopped())
-        target = target->GetTarget();
+    if (target && !target->IsStopped() && target->GetVictim() && target->GetVictim()->IsStopped())
+        target = target->GetVictim();
 
 
     if (target && target->IsAlive())

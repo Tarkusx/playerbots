@@ -490,7 +490,8 @@ bool SetPetAction::Execute(Event& event)
         }
         else if (command == "attack")
         {
-            if (requester->GetTarget())
+            Player* requesterPlayer = requester->ToPlayer();
+            if (requesterPlayer && requesterPlayer->GetSelectedUnit())
             {
                 constexpr uint32 PET_IMP = 416;
                 constexpr uint32 PHASE_SHIFT = 4511;
@@ -504,7 +505,7 @@ bool SetPetAction::Execute(Event& event)
 
                 // Send pet action packet
                 const ObjectGuid& petGuid = pet->GetObjectGuid();
-                const ObjectGuid& targetGuid = requester->GetTarget()->GetObjectGuid();
+                const ObjectGuid& targetGuid = requesterPlayer->GetSelectedUnit()->GetObjectGuid();
                 const uint8 flag = ACT_COMMAND;
                 const uint32 spellId = COMMAND_ATTACK;
                 const uint32 command = (flag << 24) | spellId;

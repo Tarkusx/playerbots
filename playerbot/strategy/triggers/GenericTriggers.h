@@ -1095,19 +1095,19 @@ namespace ai
 
         virtual bool IsActive() override
         {
-            uint32 disMask = GetDispellMask(DISPEL_DISEASE);
-            uint32 poisMask = GetDispellMask(DISPEL_POISON);
+            uint32 disMask = Spells::GetDispellMask(DISPEL_DISEASE);
+            uint32 poisMask = Spells::GetDispellMask(DISPEL_POISON);
             uint32 bleedType = 1 << (MECHANIC_BLEED - 1);
             for (auto itr : bot->GetSpellAuraHolderMap())
             {
                 SpellEntry const* spell = itr.second->GetSpellProto();
-                if (IsPositiveSpell(spell->Id))
+                if (Spells::IsPositiveSpell(spell->Id))
                     continue;
 
                 if (((1 << spell->Dispel) & disMask) || ((1 << spell->Dispel) & poisMask))
                     return true;
 
-                if (!spell->HasAttribute(SPELL_ATTR_NO_IMMUNITIES) && itr.second->HasMechanicMask(bleedType))
+                if (!spell->HasAttribute(SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY) && itr.second->HasMechanicMask(bleedType))
                     return true;
             }
             return false;

@@ -411,7 +411,7 @@ namespace ai
                         int count = 0;
                         for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
                         {
-                            const _Spell& spellData = poisonProto->Spells[i];
+                            const _ItemSpell& spellData = poisonProto->Spells[i];
                             if (spellData.SpellId)
                             {
                                 const SpellEntry* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
@@ -422,8 +422,8 @@ namespace ai
 
                                     if (spell->ForceSpellStart(&targets) == SPELL_CAST_OK)
                                     {
-                                        bot->RemoveSpellCooldown(*spellInfo, false);
-                                        bot->AddCooldown(*spellInfo, poisonProto, false);
+                                        bot->RemoveSpellCooldown(spellInfo->Id, false);
+                                        bot->AddSpellCooldown(spellInfo->Id, poisonProto->ItemId, time(nullptr) + spellInfo->GetRecoveryTime() / IN_MILLISECONDS);
                                         SetDuration(3000);
                                     }
                                     else

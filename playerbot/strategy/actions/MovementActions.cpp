@@ -632,7 +632,7 @@ bool MovementAction::MinimalMove(PlayerbotAI* ai)
 
     for (auto it = std::next(nextStep); it != path.end(); ++it)
     {
-        time += (nextStep->point.distance(bot) / bot->GetSpeedInMotion()) * 1000;
+        time += (nextStep->point.distance(bot) / bot->GetSpeed(MOVE_RUN)) * 1000;
 
         nextStep = it;
 
@@ -3267,7 +3267,7 @@ bool SetBehindTargetAction::Execute(Event& event)
 
     float angle = GetFollowAngle() / 3 + target->GetOrientation() + M_PI / 2.0f;
 
-    float distance = bot->GetCombinedCombatReach(target, true) * 0.8f;
+    float distance = bot->GetCombatReach(target, true, 0.0f) * 0.8f;
     float x = target->GetPositionX() + cos(target->GetOrientation()) * -1.0f * distance,
         y = target->GetPositionY() + sin(target->GetOrientation()) * -1.0f * distance,
         z = target->GetPositionZ();

@@ -567,7 +567,7 @@ bool CastItemTargetAction::isUseful()
         {
             for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
             {
-                const _Spell& spellData = proto->Spells[i];
+                const _ItemSpell& spellData = proto->Spells[i];
                 if (spellData.SpellId)
                 {
                     if (skipSpells.find(spellData.SpellId) != skipSpells.end())
@@ -605,7 +605,7 @@ bool CastItemTargetAction::isPossible()
 
     for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
     {
-        _Spell const& spellData = proto->Spells[i];
+        _ItemSpell const& spellData = proto->Spells[i];
 
         // no spell
         if (!spellData.SpellId)
@@ -666,7 +666,7 @@ bool CastItemTargetAction::Execute(Event& event)
 
     for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
     {
-        _Spell const& spellData = proto->Spells[i];
+        _ItemSpell const& spellData = proto->Spells[i];
 
         // no spell
         if (!spellData.SpellId)
@@ -710,8 +710,8 @@ bool CastItemTargetAction::Execute(Event& event)
         {
             if (!HasSpellCooldown(itemId))
             {
-                bot->RemoveSpellCooldown(*spellInfo, false);
-                bot->AddCooldown(*spellInfo, proto, false);
+                bot->RemoveSpellCooldown(spellInfo->Id, false);
+                bot->AddSpellCooldown(spellInfo->Id, proto->ItemId, time(nullptr) + spellInfo->GetRecoveryTime() / IN_MILLISECONDS);
             }
         }
 

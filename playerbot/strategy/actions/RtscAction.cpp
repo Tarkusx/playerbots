@@ -22,7 +22,7 @@ bool RTSCAction::Execute(Event& event)
 
 	if (command != "reset" && !requester->HasSpell(RTSC_MOVE_SPELL))
 	{
-		requester->learnSpell(RTSC_MOVE_SPELL, false);
+		requester->LearnSpell(RTSC_MOVE_SPELL, false);
 		ai->TellPlayerNoFacing(requester, "RTS control enabled.");
 		ai->TellPlayerNoFacing(requester, "Aedm (Awesome energetic do move) spell trained.");
 	}
@@ -30,7 +30,7 @@ bool RTSCAction::Execute(Event& event)
 	{
 		if (requester->HasSpell(RTSC_MOVE_SPELL))
 		{
-			requester->removeSpell(RTSC_MOVE_SPELL);
+			requester->RemoveSpell(RTSC_MOVE_SPELL);
 			ai->TellPlayerNoFacing(requester, "RTS control spell removed.");
 		}
 

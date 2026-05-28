@@ -8,9 +8,10 @@
 #include "Entities/GameObject.h"
 #endif
 #ifdef MANGOS
-#include "Object/GameObject.h"
+#include "Objects/GameObject.h"
 #endif
-#include "BattleGround/BattleGroundMgr.h"
+#include "Battlegrounds/BattleGroundMgr.h"
+#include "Spells/SpellMgr.h"
 #include "PlayerbotAIBase.h"
 #include "playerbot/PlayerbotAIConfig.h"
 #include "playerbot/WorldPosition.h"
@@ -133,12 +134,7 @@ class ServerFacade
 
         bool IsInFront(Unit *unit, WorldObject const* target, float distance,  float arc /*= M_PI_F*/)
         {
-#ifdef MANGOS
-            return unit->IsInFront(target, distance, arc);
-#endif
-#ifdef CMANGOS
-            return unit->isInFront(target, distance, arc);
-#endif
+            return unit->IsWithinDist(target, distance) && unit->HasInArc(target, arc);
         }
 
         HostileRefManager& GetHostileRefManager(Unit *unit)
@@ -183,12 +179,7 @@ class ServerFacade
 
         SpellEntry const* LookupSpellInfo(uint32 spellId)
         {
-#ifdef MANGOS
-            return sSpellStore.LookupEntry(spellId);
-#endif
-#ifdef CMANGOS
-            return sSpellTemplate.LookupEntry<SpellEntry>(spellId);
-#endif
+            return sSpellMgr.GetSpellEntry(spellId);
         }
 
         SpellRangeEntry const* LookupSpellRangeEntry(uint32 rangeIndex)
@@ -198,12 +189,7 @@ class ServerFacade
 
         uint32 GetSpellInfoRows()
         {
-#ifdef MANGOS
-            return sSpellStore.GetNumRows();
-#endif
-#ifdef CMANGOS
-            return sSpellTemplate.GetMaxEntry();
-#endif
+            return sSpellMgr.GetMaxSpellId();
         }
 
         bool IsWithinLOSInMap(Player* bot, WorldObject *wo)

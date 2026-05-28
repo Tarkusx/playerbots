@@ -228,10 +228,10 @@ namespace ai
 
         bool IsInStaticLineOfSight(WorldPosition pos, float heightMod = 0.5f) const;
 #if defined(MANGOSBOT_TWO) || MAX_EXPANSION == 2
-        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapId == pos.mapId && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(x, y, z + heightMod, pos.x, pos.y, pos.z + heightMod, true); }
+        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapId == pos.mapId && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(x, y, z + heightMod, pos.x, pos.y, pos.z + heightMod); }
         bool GetHitPosition(WorldPosition& pos) const { return getMap(getFirstInstanceId())->GetLosHitPosition(x, y, z, pos.x, pos.y, pos.z, 0.0f);};
 #else
-        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapId == pos.mapId && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(x, y, z + heightMod, pos.x, pos.y, pos.z + heightMod, true); }
+        bool IsInLineOfSight(WorldPosition pos, float heightMod = 0.5f) const { return mapId == pos.mapId && getMap(getFirstInstanceId()) && getMap(getFirstInstanceId())->isInLineOfSight(x, y, z + heightMod, pos.x, pos.y, pos.z + heightMod); }
         bool GetHitPosition(WorldPosition& pos) { return getMap(getFirstInstanceId())->GetLosHitPosition(x, y, z, pos.x, pos.y, pos.z, 0.0f);};
 #endif
 

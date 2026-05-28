@@ -38,14 +38,14 @@ bool RpgTaxiTrigger::IsActive()
     if (!node)
         return false;
 
-    if (!bot->m_taxi.IsTaximaskNodeKnown(node))
+    if (!bot->GetTaxi().IsTaximaskNodeKnown(node))
         return false;
 
     std::vector<uint32> nodes;
     for (uint32 i = 0; i < sTaxiPathStore.GetNumRows(); ++i)
     {
         TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i);
-        if (entry && entry->from == node && (bot->m_taxi.IsTaximaskNodeKnown(entry->to) || bot->isTaxiCheater()))
+        if (entry && entry->from == node && (bot->GetTaxi().IsTaximaskNodeKnown(entry->to) || bot->isTaxiCheater()))
         {
             return true;
         }
@@ -66,7 +66,7 @@ bool RpgDiscoverTrigger::IsActive()
 
     uint32 node = sObjectMgr.GetNearestTaxiNode(guidP.getX(), guidP.getY(), guidP.getZ(), guidP.getMapId(), bot->GetTeam());
 
-    if (bot->m_taxi.IsTaximaskNodeKnown(node))
+    if (bot->GetTaxi().IsTaximaskNodeKnown(node))
         return false;
 
     return true;

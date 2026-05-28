@@ -1321,7 +1321,7 @@ void PlayerbotAI::Reset(bool full)
     if (bot->IsTaxiFlying())
     {
 #ifdef MANGOS
-        bot->m_taxi.ClearTaxiDestinations();
+        bot->GetTaxi().ClearTaxiDestinations();
 #endif
         bot->GetMotionMaster()->MovementExpired();
     }
@@ -7679,7 +7679,7 @@ void PlayerbotAI::AccelerateRespawn(Creature* creature, float accelMod)
 std::list<Unit*> PlayerbotAI::GetAllHostileUnitsAroundWO(WorldObject* wo, float distanceAround)
 {
     std::list<Unit*> hostileUnits;
-    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(wo, distanceAround);
+    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(wo, bot, distanceAround);
     MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(hostileUnits, u_check);
     Cell::VisitAllObjects(wo, searcher, distanceAround);
 
@@ -7747,8 +7747,8 @@ PlayerbotHolder* PlayerbotAI::GetHolder() const
     if (sRandomPlayerbotMgr.IsRandomBot(bot))
         return &sRandomPlayerbotMgr;
 
-    if (bot->GetMaster())
-        return PlayerbotsCompatibility::GetPlayerbotMgr(static_cast<Player*>(bot->GetMaster()));
+    if (master)
+        return PlayerbotsCompatibility::GetPlayerbotMgr(master);
 
     return PlayerbotsCompatibility::GetPlayerbotMgr(bot);
 }
@@ -8175,11 +8175,7 @@ void PlayerbotAI::EnchantItemT(uint32 spellid, uint8 slot, Item* item)
        return;
 #endif
 
-#ifdef MANGOS
-   SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellid);
-#else
    SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellid);
-#endif
    if (!spellInfo)
       return;
 
@@ -8259,7 +8255,7 @@ bool PlayerbotAI::CanMove()
     {
         return false;
     }
-    if (bot->IsStunned())
+    if (bot->HasUnitState(UNIT_STAT_STUNNED))
     {
         return false;
     }

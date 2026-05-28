@@ -103,7 +103,7 @@ namespace ahbot
         virtual bool Contains(ItemPrototype const* proto) override
         {
             return proto->Class == ITEM_CLASS_TRADE_GOODS ||
-                    proto->Class == ITEM_CLASS_MISC ||
+                    proto->Class == ITEM_CLASS_JUNK ||
                     proto->Class == ITEM_CLASS_REAGENT
 #ifndef MANGOSBOT_ZERO
                 ||

@@ -145,7 +145,7 @@ bool PossibleAttackTargetsValue::HasBreakableCC(Unit* target, Player* player)
 
 bool PossibleAttackTargetsValue::HasUnBreakableCC(Unit* target, Player* player)
 {
-    if (target->IsStunned())
+    if (target->HasUnitState(UNIT_STAT_STUNNED))
     {
         return true;
     }

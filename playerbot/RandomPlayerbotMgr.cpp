@@ -59,10 +59,14 @@ INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 #endif
 
 #ifdef MANGOS
+#include <ace/Task.h>
 class PrintStatsThread: public ACE_Task <ACE_MT_SYNCH>
 {
 public:
-    int svc(void) { sRandomPlayerbotMgr.PrintStats(); return 0; }
+    PrintStatsThread(uint32 requesterGuid) : requesterGuid(requesterGuid) {}
+    int svc(void) { sRandomPlayerbotMgr.PrintStats(requesterGuid); return 0; }
+private:
+    uint32 requesterGuid;
 };
 #endif
 #ifdef CMANGOS
@@ -75,7 +79,7 @@ void PrintStatsThread(uint32 requesterGuid)
 void activatePrintStatsThread(uint32 requesterGuid)
 {
 #ifdef MANGOS
-    PrintStatsThread *thread = new PrintStatsThread();
+    PrintStatsThread *thread = new PrintStatsThread(requesterGuid);
     thread->activate();
 #endif
 #ifdef CMANGOS

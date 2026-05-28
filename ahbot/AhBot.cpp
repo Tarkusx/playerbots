@@ -7,7 +7,7 @@
 #include "Chat/Chat.h"
 #include "AhBotConfig.h"
 #include "AuctionHouse/AuctionHouseMgr.h"
-#include "Server/WorldSession.h"
+#include "WorldSession.h"
 #include "Entities/Player.h"
 #include "Globals/ObjectAccessor.h"
 #include "Entities/ObjectGuid.h"
@@ -16,7 +16,9 @@
 #include "Accounts/AccountMgr.h"
 #include "playerbot/playerbot.h"
 #include "Mails/Mail.h"
-#include "Util/Util.h"
+#include "Util.h"
+#include "MapNodes/MasterPlayer.h"
+#include "ace/Task.h"
 
 #ifdef CMANGOS
 #include <boost/thread/thread.hpp>
@@ -250,10 +252,14 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
 
     int answered = 0;
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
-    const AuctionHouseObject::AuctionEntryMap& auctionEntryMap = auctionHouse->GetAuctions();
+    if (!auctionHouse)
+        return 0;
+    const AuctionHouseObject::AuctionEntryMap* auctionEntryMap = auctionHouse->GetAuctions();
+    if (!auctionEntryMap)
+        return 0;
     int64 availableMoney = GetAvailableMoney(auctionIds[auction]);
 
-    std::vector<AuctionEntry*> entries = LoadAuctions(auctionEntryMap, category, auction);
+    std::vector<AuctionEntry*> entries = LoadAuctions(*auctionEntryMap, category, auction);
     for (std::vector<AuctionEntry*>::iterator itr = entries.begin(); itr != entries.end(); ++itr)
     {
         AuctionEntry *entry = *itr;
@@ -332,7 +338,7 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
         }
 
         uint32 minBid = 0, minBuyout = 0;
-        FindMinPrice(auctionEntryMap, entry, item, &minBid, &minBuyout);
+        FindMinPrice(*auctionEntryMap, entry, item, &minBid, &minBuyout);
 
         if (minBid && entry->bid && minBid < entry->bid)
         {
@@ -371,7 +377,12 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
                     bidder, item->GetProto()->Name1, item->GetCount(), auctionIds[auction], entry->buyout);
 
             entry->bid = entry->buyout;
-            entry->AuctionBidWinning(NULL);
+            sAuctionMgr.SendAuctionSuccessfulMail(entry);
+            sAuctionMgr.SendAuctionWonMail(entry);
+            sAuctionMgr.RemoveAItem(entry->itemGuidLow);
+            auctionHouse->RemoveAuction(entry);
+            entry->DeleteFromDB();
+            delete entry;
         }
         else
         {
@@ -584,8 +595,6 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     auctionEntry->Id = sObjectMgr.GenerateAuctionID();
     auctionEntry->itemGuidLow = item->GetObjectGuid().GetCounter();
     auctionEntry->itemTemplate = item->GetEntry();
-    auctionEntry->itemCount = item->GetCount();
-    auctionEntry->itemRandomPropertyId = item->GetItemRandomPropertyId();
     auctionEntry->owner = owner;
     auctionEntry->startbid = bidPrice;
     auctionEntry->bidder = 0;
@@ -704,12 +713,16 @@ void AhBot::Expire(int auction)
         return;
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
+    if (!auctionHouse)
+        return;
 
-    AuctionHouseObject::AuctionEntryMap const& auctions = auctionHouse->GetAuctions();
-    AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctions.begin();
+    AuctionHouseObject::AuctionEntryMap const* auctions = auctionHouse->GetAuctions();
+    if (!auctions)
+        return;
+    AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctions->begin();
 
     int count = 0;
-    while (itr != auctions.end())
+    while (itr != auctions->end())
     {
         if (IsBotAuction(itr->second->owner))
         {
@@ -733,9 +746,13 @@ void AhBot::PrintStats(int auction)
         return;
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
-    AuctionHouseObject::AuctionEntryMap const& auctions = auctionHouse->GetAuctions();
+    if (!auctionHouse)
+        return;
+    AuctionHouseObject::AuctionEntryMap const* auctions = auctionHouse->GetAuctions();
+    if (!auctions)
+        return;
 
-    sLog.outString("%lu auctions available on auction house %d", auctions.size(), auctionIds[auction]);
+    sLog.outString("%lu auctions available on auction house %d", auctions->size(), auctionIds[auction]);
 }
 
 void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
@@ -768,7 +785,8 @@ void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
     }
 
     sLog.outDetail( "AddToHistory: market price adjust");
-    int count = entry->itemCount ? entry->itemCount : 1;
+    Item* item = sAuctionMgr.GetAItem(entry->itemGuidLow);
+    int count = (item && item->GetCount()) ? item->GetCount() : 1;
     updateMarketPrice(proto->ItemId, entry->buyout / count, entry->auctionHouseEntry->houseId);
 
     uint32 now = time(0);
@@ -837,8 +855,13 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
         result += (now - lastBuyTime) / 3600 / 24 * sAhBotConfig.alwaysAvailableMoney;
     }
 
-    AuctionHouseObject::AuctionEntryMap const& auctionEntryMap = sAuctionMgr.GetAuctionsMap(ahEntry)->GetAuctions();
-    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin(); itr != auctionEntryMap.end(); ++itr)
+    AuctionHouseObject* ahObj = sAuctionMgr.GetAuctionsMap(ahEntry);
+    if (!ahObj)
+        return 0;
+    AuctionHouseObject::AuctionEntryMap const* auctionEntryMap = ahObj->GetAuctions();
+    if (!auctionEntryMap)
+        return 0;
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap->begin(); itr != auctionEntryMap->end(); ++itr)
     {
         AuctionEntry *entry = itr->second;
         if (!IsBotAuction(entry->bidder))
@@ -1092,8 +1115,12 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
         return;
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
-    const AuctionHouseObject::AuctionEntryMap& auctionEntryMap = auctionHouse->GetAuctions();
-    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin(); itr != auctionEntryMap.end(); ++itr)
+    if (!auctionHouse)
+        return;
+    const AuctionHouseObject::AuctionEntryMap* auctionEntryMap = auctionHouse->GetAuctions();
+    if (!auctionEntryMap)
+        return;
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap->begin(); itr != auctionEntryMap->end(); ++itr)
     {
         AuctionEntry *otherEntry = itr->second;
         if (otherEntry->owner == entry->owner && otherEntry->Id != entry->Id && otherEntry->itemTemplate == entry->itemTemplate)
@@ -1182,7 +1209,13 @@ void AhBot::CleanupPropositions()
         uint32 id = fields[0].GetUInt32();
         uint32 receiver = fields[1].GetUInt32();
         Player *player = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, receiver));
-        if (player) player->RemoveMail(id);
+        if (player && player->GetSession())
+        {
+            if (MasterPlayer* masterPlayer = player->GetSession()->GetMasterPlayer())
+            {
+                masterPlayer->RemoveMail(id);
+            }
+        }
         count++;
     } while (result->NextRow());
 

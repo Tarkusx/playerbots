@@ -8,7 +8,7 @@
 #include "Entities/Player.h"
 #endif
 #ifdef MANGOS
-#include "Object/Player.h"
+#include "Objects/Player.h"
 #endif
 #include "strategy/values/ItemUsageValue.h"
 

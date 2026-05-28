@@ -5,7 +5,7 @@
 #include "playerbot/PlayerbotAIBase.h"
 #include "AuctionHouse/AuctionHouseMgr.h"
 #include "Entities/ObjectGuid.h"
-#include "Server/WorldSession.h"
+#include "WorldSession.h"
 
 
 #define MAX_AUCTIONS 3

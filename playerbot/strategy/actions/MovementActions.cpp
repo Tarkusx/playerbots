@@ -284,7 +284,7 @@ bool MovementAction::UseTaxi(PlayerbotAI* ai, uint32 entry, bool needNpc)
             return false;
         }
 
-        if (unit && !bot->m_taxi.IsTaximaskNodeKnown(tEntry->from))
+        if (unit && !bot->GetTaxi().IsTaximaskNodeKnown(tEntry->from))
         {
             bot->GetSession()->SendLearnNewTaxiNode(unit);
 
@@ -876,9 +876,9 @@ void MovementAction::UpdateFlyingState(
 
         Position pos = bot->GetPosition();
 #ifdef MANGOSBOT_TWO
-        if (!bot->GetMap()->IsInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f, bot->GetPhaseMask(), true))
+        if (!bot->GetMap()->isInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f, bot->GetPhaseMask()))
 #else
-        if (!bot->GetMap()->IsInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f, true))
+        if (!bot->GetMap()->isInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f))
 #endif
             needFly = false;
 
@@ -2093,9 +2093,9 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
             // only use in clear LOS betweek points
             Position pos = bot->GetPosition();
 #ifdef MANGOSBOT_TWO
-            if (!bot->GetMap()->IsInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f, bot->GetPhaseMask(), true))
+            if (!bot->GetMap()->isInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f, bot->GetPhaseMask()))
 #else
-            if (!bot->GetMap()->IsInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f, true))
+            if (!bot->GetMap()->isInLineOfSight(pos.x, pos.y, pos.z + 100.f, movePosition.getX(), movePosition.getY(), movePosition.getZ() + 100.f))
 #endif
                 needFly = false;
 

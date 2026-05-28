@@ -2013,7 +2013,13 @@ bool DebugAction::HandleRandomSpot(Event& event, Player* requester, const std::s
     if (bot->GetTransport())
         botPos.CalculatePassengerOffset(bot->GetTransport());
 
-    pathfinder.ComputePathToRandomPoint(botPos.getVector3(), radius);
+    float rx = botPos.getX();
+    float ry = botPos.getY();
+    float rz = botPos.getZ();
+    if (bot->GetMap()->GetWalkRandomPosition(bot->GetTransport(), rx, ry, rz, radius))
+    {
+        pathfinder.calculate(botPos.getVector3(), Vector3(rx, ry, rz), false);
+    }
     PointsArray points = pathfinder.getPath();
     std::vector<WorldPosition> path = botPos.fromPointsArray(points);
 
@@ -4055,7 +4061,7 @@ bool DebugAction::HandleTaxi(Event& event, Player* requester, const std::string&
 {
     for (uint32 i = 1; i < sTaxiNodesStore.GetNumRows(); ++i)
     {
-        if (!bot->m_taxi.IsTaximaskNodeKnown(i))
+        if (!bot->GetTaxi().IsTaximaskNodeKnown(i))
             continue;
 
         TaxiNodesEntry const* taxiNode = sTaxiNodesStore.LookupEntry(i);
@@ -5227,9 +5233,9 @@ bool DebugAction::HandleNodes(Event& event, Player* requester, const std::string
         float dist = pos.distance(*startNode->getPosition());
         
         std::unique_ptr<PathFinder> pathfinder = std::make_unique<PathFinder>(bot);
-        pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
-        pathfinder->setAreaCost(12, 5.0f);
-        pathfinder->setAreaCost(13, 20.0f);
+        // pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
+        // pathfinder->setAreaCost(12, 5.0f);
+        // pathfinder->setAreaCost(13, 20.0f);
         pathfinder->calculate(pos.getVector3(), startNode->getPosition()->getVector3(), false);
         
         PointsArray points = pathfinder->getPath();

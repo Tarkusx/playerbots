@@ -4,7 +4,7 @@
 #include "ConsumableCategory.h"
 #include "TradeCategory.h"
 #include "AhBotConfig.h"
-#include "Server/DBCStructure.h"
+#include "Database/DBCStructure.h"
 #include "Log/Log.h"
 #include "Database/QueryResult.h"
 #include "Database/DatabaseEnv.h"
@@ -146,7 +146,7 @@ bool ItemBag::Add(ItemPrototype const* proto)
     if (sAhBotConfig.ignoreItemIds.find(proto->ItemId) != sAhBotConfig.ignoreItemIds.end())
         return false;
 
-    if (strstri(proto->Name1, "qa") || strstri(proto->Name1, "test") || strstri(proto->Name1, "deprecated"))
+    if (strstri(proto->Name1.c_str(), "qa") || strstri(proto->Name1.c_str(), "test") || strstri(proto->Name1.c_str(), "deprecated"))
         return false;
 
     bool contains = false;
@@ -197,8 +197,12 @@ void InAuctionItemsBag::Load()
         return;
 
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
-    AuctionHouseObject::AuctionEntryMap const& auctionEntryMap = auctionHouse->GetAuctions();
-    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin(); itr != auctionEntryMap.end(); ++itr)
+    if (!auctionHouse)
+        return;
+    AuctionHouseObject::AuctionEntryMap const* auctionEntryMap = auctionHouse->GetAuctions();
+    if (!auctionEntryMap)
+        return;
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap->begin(); itr != auctionEntryMap->end(); ++itr)
     {
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itr->second->itemTemplate);
         if (!proto)

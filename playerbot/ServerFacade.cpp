@@ -117,22 +117,12 @@ bool ServerFacade::IsSpellReady(Player* bot, uint32 spell, uint32 itemId)
 
 bool ServerFacade::IsUnderwater(Unit *unit)
 {
-#ifdef MANGOS
-    return unit->IsUnderWater();
-#endif
-#ifdef CMANGOS
     return unit->IsUnderwater();
-#endif
 }
 
 FactionTemplateEntry const* ServerFacade::GetFactionTemplateEntry(Unit *unit)
 {
-#ifdef MANGOS
-    return unit->getFactionTemplateEntry();
-#endif
-#ifdef CMANGOS
     return unit->GetFactionTemplateEntry();
-#endif
 }
 
 Unit* ServerFacade::GetChaseTarget(Unit* target)

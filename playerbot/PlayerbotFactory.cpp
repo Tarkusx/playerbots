@@ -2365,7 +2365,7 @@ void PlayerbotFactory::ClearSpells()
 
     for (std::list<uint32>::iterator i = spells.begin(); i != spells.end(); ++i)
     {
-        bot->removeSpell(*i, false, false);
+        bot->RemoveSpell(*i, false, false);
     }
 #endif
 #ifdef CMANGOS

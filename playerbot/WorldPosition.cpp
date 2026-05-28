@@ -24,6 +24,48 @@
 using namespace ai;
 using namespace MaNGOS;
 
+#include "Objects/UpdateFields.h"
+
+class PathfindingUnit : public Unit
+{
+public:
+    PathfindingUnit(Map* map, uint32 instanceId) : Unit()
+    {
+        m_currMap = map;
+        m_mapId = map->GetId();
+        m_InstanceId = instanceId;
+        m_valuesCount = UNIT_END;
+        _InitValues();
+        m_floatValues[UNIT_FIELD_BOUNDINGRADIUS] = 0.38f;
+        m_uint32Values[UNIT_FIELD_LEVEL] = 1;
+    }
+
+    uint32 GetShieldBlockValue() const override { return 0; }
+    bool UpdateStats(Stats stat) override { return true; }
+    bool UpdateAllStats() override { return true; }
+    void UpdateResistances(uint32 school) override {}
+    void UpdateArmor() override {}
+    void UpdateMaxHealth() override {}
+    void UpdateMaxPower(Powers power) override {}
+    void UpdateManaRegen() override {}
+    void UpdateAttackPowerAndDamage(bool ranged = false) override {}
+    void UpdateDamagePhysical(WeaponAttackType attType) override {}
+    bool CanWalk() const override { return true; }
+    bool CanFly() const override { return false; }
+    bool CanSwim() const override { return true; }
+    bool IsVisibleInGridForPlayer(Player const* pl) const override { return false; }
+
+    // Object virtual overrides
+    char const* GetName() const override { return "PathfindingUnit"; }
+    bool IsVisibleForInState(WorldObject const* pDetector, WorldObject const* viewPoint, bool inVisibleList) const override { return false; }
+};
+
+class HackMap : public Map
+{
+public:
+    std::set<Transport*> const& GetTransportsHack() const { return _transports; }
+};
+
 WorldPosition::WorldPosition(const uint32 mapId, const GuidPosition& guidP, uint32 instanceId)
 {
     if (guidP.mapId !=0 || guidP.x != 0 || guidP.y != 0 || guidP.z !=0) {
@@ -340,7 +382,7 @@ bool WorldPosition::IsInStaticLineOfSight(WorldPosition pos, float heightMod) co
     float dstY = pos.y;
     float dstZ = pos.z + heightMod;
 
-    return VMAP::VMapFactory::createOrGetVMapManager()->isInLineOfSight(mapId, srcX, srcY, srcZ, dstX, dstY, dstZ, true);
+    return VMAP::VMapFactory::createOrGetVMapManager()->isInLineOfSight(mapId, srcX, srcY, srcZ, dstX, dstY, dstZ);
 }
 
 bool WorldPosition::canFly() const
@@ -460,7 +502,7 @@ std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName)
     {
         MapEntry const* map = sMapStorage.LookupEntry<MapEntry>(getMapId());
         if (map)
-            return map->name[0];
+            return map->name;
     }
 
     AreaTableEntry const* area = GetArea();
@@ -539,7 +581,7 @@ bool WorldPosition::HasFaction(const Team team) const
 std::set<GenericTransport*> WorldPosition::getTransports(uint32 entry)
 {
     std::set<GenericTransport*> transports;
-    for (auto transport : getMap(getFirstInstanceId())->GetTransports()) //Boats&Zeppelins.
+    for (auto transport : ((HackMap*)getMap(getFirstInstanceId()))->GetTransportsHack()) //Boats&Zeppelins.
         if (!entry || transport->GetEntry() == entry)
             transports.insert(transport);
 
@@ -833,16 +875,19 @@ std::vector<WorldPosition> WorldPosition::frommGridPair(const mGridPair& gridPai
 
 bool WorldPosition::isVmapLoaded(uint32 mapId, int x, int y) 
 {
-    return VMAP::VMapFactory::createOrGetVMapManager()->IsTileLoaded(mapId, x, y);
+    float fx = (32 - x - 0.5f) * SIZE_OF_GRIDS;
+    float fy = (32 - y - 0.5f) * SIZE_OF_GRIDS;
+    Map* map = sMapMgr.FindMap(mapId, 0);
+    return map && map->IsLoaded(fx, fy);
 }
 
 bool WorldPosition::isMmapLoaded(uint32 mapId, uint32 instanceId, int x, int y)
 {
-#ifndef MANGOSBOT_TWO
-    return MMAP::MMapFactory::createOrGetMMapManager()->IsMMapIsLoaded(mapId, x, y);
-#else
-    return MMAP::MMapFactory::createOrGetMMapManager()->IsMMapTileLoaded(mapId, instanceId, x, y);
-#endif
+    MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
+    if (!mmap) return false;
+    dtNavMesh const* navMesh = mmap->GetNavMesh(mapId);
+    if (!navMesh) return false;
+    return navMesh->getTileAt(x, y, 0) != nullptr;
 }
 
 bool WorldPosition::loadMapAndVMap(uint32 mapId, uint32 instanceId, int x, int y)
@@ -866,13 +911,7 @@ bool WorldPosition::loadMapAndVMap(uint32 mapId, uint32 instanceId, int x, int y
     if (!hasMmap)
     {
 #ifndef MANGOSBOT_TWO
-        if (mapId == 0 || mapId == 1 || mapId == 530 || mapId == 571)
-            isLoaded = MMAP::MMapFactory::createOrGetMMapManager()->loadMap(sWorld.GetDataPath(), mapId, x, y);
-        else
-        {
-            MMAP::MMapFactory::createOrGetMMapManager()->loadMapInstance(sWorld.GetDataPath(), mapId, instanceId);
-            isLoaded = MMAP::MMapFactory::createOrGetMMapManager()->loadMap(sWorld.GetDataPath(), mapId, x, y);
-        }
+        isLoaded = MMAP::MMapFactory::createOrGetMMapManager()->loadMap(mapId, x, y);
 #else
         if (mapId == 0 || mapId == 1 || mapId == 530 || mapId == 571)
         {
@@ -1089,15 +1128,28 @@ std::vector<WorldPosition> WorldPosition::getPathFromPath(const std::vector<Worl
     //Load mmaps and vmaps between the two points.
 
     std::unique_ptr<PathFinder> pathfinder = nullptr;
+    std::unique_ptr<PathfindingUnit> dummyBot = nullptr;
 
     if (bot && instanceId == bot->GetInstanceId())
+    {
         pathfinder = std::make_unique<PathFinder>(bot);
+    }
     else
-        pathfinder = std::make_unique<PathFinder>(getMapId(), instanceId);
+    {
+        Map* map = sMapMgr.FindMap(getMapId(), instanceId);
+        if (map)
+        {
+            dummyBot = std::make_unique<PathfindingUnit>(map, instanceId);
+            pathfinder = std::make_unique<PathFinder>(dummyBot.get());
+        }
+    }
 
-    pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
-    pathfinder->setAreaCost(12, 5.0f);
-    pathfinder->setAreaCost(13, 20.0f);
+    if (!pathfinder)
+        return {};
+
+    // pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
+    // pathfinder->setAreaCost(12, 5.0f);
+    // pathfinder->setAreaCost(13, 20.0f);
 
     //Limit the pathfinding attempts
     for (uint32 i = 0; i < maxAttempt; i++)
@@ -1131,7 +1183,7 @@ bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 
 
     MANGOS_ASSERT(mmap);
 
-    dtNavMeshQuery const* query = mmap->GetNavMeshQuery(getMapId(), instanceId);
+    dtNavMeshQuery const* query = mmap->GetNavMeshQuery(getMapId());
 
     MANGOS_ASSERT(query && query->getAttachedNavMesh());
 
@@ -1146,7 +1198,7 @@ bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 
     uint16 excludeFlags = 0;
 
     includeFlags |= (NAV_GROUND );
-    excludeFlags |= (NAV_MAGMA_SLIME | NAV_GROUND_STEEP | NAV_WATER);
+    excludeFlags |= (NAV_MAGMA | NAV_SLIME | NAV_STEEP_SLOPES | NAV_WATER);
 
 
     filter.setIncludeFlags(includeFlags);
@@ -1163,17 +1215,14 @@ bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 
 
 bool WorldPosition::GetReachableRandomPointOnGround(const Player* bot, const float radius, const bool randomRange) 
 {
-#ifndef MANGOSBOT_TWO         
-    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetReachableRandomPointOnGround(x, y, z, radius, randomRange);
-#else
-    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetReachableRandomPointOnGround(bot->GetPhaseMask(), x, y, z, radius, randomRange);
-#endif
+    Transport* transport = bot ? const_cast<Player*>(bot)->GetTransport() : nullptr;
+    return getMap(bot ? bot->GetInstanceId() : getFirstInstanceId())->GetWalkRandomPosition(transport, x, y, z, radius);
 }
 
 bool WorldPosition::isUnderground() const
 {
     float groundZ = getMap(getFirstInstanceId())->GetHeight(x, y, z+0.5f, true), maxZ;
-    maxZ = getTerrain()->GetWaterOrGroundLevel(x, y, z + 0.5f, groundZ, true, 1.0f);
+    maxZ = getTerrain()->GetWaterOrGroundLevel(x, y, z + 0.5f, &groundZ, true);
 
     if (maxZ > INVALID_HEIGHT)
     {
@@ -1201,9 +1250,9 @@ std::vector<WorldPosition> WorldPosition::ComputePathToRandomPoint(const Player*
 
     std::unique_ptr<PathFinder> pathfinder = std::make_unique<PathFinder>(bot);
 
-    pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
-    pathfinder->setAreaCost(12, 5.0f);
-    pathfinder->setAreaCost(13, 20.0f);
+    // pathfinder->setAreaCost(NAV_AREA_WATER, 10.0f);
+    // pathfinder->setAreaCost(12, 5.0f);
+    // pathfinder->setAreaCost(13, 20.0f);
 
     std::vector<WorldPosition> path = getPathStepFrom(start, pathfinder, bot);
     
@@ -1237,8 +1286,8 @@ uint32 WorldPosition::getUnitsAggro(const std::list<ObjectGuid>& units, const Pl
 
 bool FindPointCreatureData::operator()(CreatureDataPair const& dataPair)
 {
-    if (!entry || dataPair.second.id == entry)
-        if ((!point || dataPair.second.mapid == point.getMapId()) && (!radius || point.sqDistance(WorldPosition(dataPair.second.mapid, dataPair.second.posX, dataPair.second.posY, dataPair.second.posZ)) < radius * radius))
+    if (!entry || dataPair.second.HasCreatureId(entry))
+        if ((!point || dataPair.second.position.mapId == point.getMapId()) && (!radius || point.sqDistance(WorldPosition(dataPair.second.position.mapId, dataPair.second.position.x, dataPair.second.position.y, dataPair.second.position.z)) < radius * radius))
         {
             data.push_back(&dataPair);
         }
@@ -1249,7 +1298,7 @@ bool FindPointCreatureData::operator()(CreatureDataPair const& dataPair)
 bool FindPointGameObjectData::operator()(GameObjectDataPair const& dataPair)
 {
     if (!entry || dataPair.second.id == entry)
-        if ((!point || dataPair.second.mapid == point.getMapId()) && (!radius || point.sqDistance(WorldPosition(dataPair.second.mapid, dataPair.second.posX, dataPair.second.posY, dataPair.second.posZ)) < radius * radius))
+        if ((!point || dataPair.second.position.mapId == point.getMapId()) && (!radius || point.sqDistance(WorldPosition(dataPair.second.position.mapId, dataPair.second.position.x, dataPair.second.position.y, dataPair.second.position.z)) < radius * radius))
         {
             data.push_back(&dataPair);
         }

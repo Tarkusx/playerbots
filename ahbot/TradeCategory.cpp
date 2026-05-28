@@ -4,16 +4,10 @@
 #include "PricingStrategy.h"
 #include "playerbot/ServerFacade.h"
 #include "Server/SQLStorages.h"
-#include "Server/DBCStructure.h"
+#include "Database/DBCStructure.h"
 #include "Entities/ItemPrototype.h"
-#ifdef CMANGOS
 #include "Globals/ObjectMgr.h"
-#include "Spells/SpellEffectDefines.h"
-#endif
-#ifdef MANGOS
-#include "Object/ObjectMgr.h"
 #include "Globals/SharedDefines.h"
-#endif
 
 
 using namespace ahbot;
@@ -34,9 +28,9 @@ bool TradeSkill::Contains(ItemPrototype const* proto)
 bool TradeSkill::ContainsInternal(ItemPrototype const* proto)
 {
 
-    for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+    for (uint32 j = 0; j < sObjectMgr.GetMaxSkillLineAbilityId(); ++j)
     {
-        SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
+        SkillLineAbilityEntry const* skillLine = sObjectMgr.GetSkillLineAbility(j);
         if (!skillLine || skillLine->skillId != skill)
             continue;
 
@@ -47,12 +41,12 @@ bool TradeSkill::ContainsInternal(ItemPrototype const* proto)
     for (uint32 id = 0; id < sCreatureStorage.GetMaxEntry(); ++id)
     {
         CreatureInfo const* co = sCreatureStorage.LookupEntry<CreatureInfo>(id);
-        if (!co || co->TrainerType != TRAINER_TYPE_TRADESKILLS)
+        if (!co || co->trainer_type != TRAINER_TYPE_TRADESKILLS)
             continue;
 
-        uint32 trainerId = co->TrainerTemplateId;
+        uint32 trainerId = co->trainer_id;
         if (!trainerId)
-            trainerId = co->Entry;
+            trainerId = co->entry;
 
         TrainerSpellData const* trainer_spells = sObjectMgr.GetNpcTrainerTemplateSpells(trainerId);
         if (!trainer_spells)

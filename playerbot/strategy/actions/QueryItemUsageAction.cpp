@@ -294,7 +294,7 @@ std::string QueryItemUsageAction::QueryItemPower(ItemQualifier& qualifier)
 {
     uint32 power = sRandomItemMgr.ItemStatWeight(bot, qualifier);
 
-    ItemPrototype const* proto = ObjectMgr::GetItemPrototype(qualifier.GetId());
+    ItemPrototype const* proto = sObjectMgr.GetItemPrototype(qualifier.GetId());
 
     if (power)
     {

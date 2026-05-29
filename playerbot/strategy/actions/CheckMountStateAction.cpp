@@ -302,7 +302,7 @@ bool CheckMountStateAction::isUseful()
         }
     }
 
-    if (!bot->GetMap()->IsMountAllowed() && bot->GetMapId() != 531)
+    if (!bot->GetMap()->GetMapEntry()->IsMountAllowed() && bot->GetMapId() != 531)
         return false;
 
     if (AI_VALUE(std::vector<MountValue>, "mount list").empty())
@@ -494,7 +494,7 @@ bool CheckMountStateAction::Mount(Player* requester, bool limitSpeedToGroup)
 
         if (mount.IsItem())
         {
-            if (!bot->GetItemByEntry(mount.GetItemProto()->ItemId))
+            if (!PlayerbotsCompatibility::GetItemByEntry(bot, mount.GetItemProto()->ItemId))
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
                     ai->TellPlayerNoFacing(requester, "Bot does not have this mount.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);

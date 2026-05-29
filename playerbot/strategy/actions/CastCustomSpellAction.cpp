@@ -6,6 +6,23 @@
 #include "playerbot/ServerFacade.h"
 #include "CheckMountStateAction.h"
 
+static std::string GetSpellCastResultString(SpellCastResult result)
+{
+    switch (result)
+    {
+        case SPELL_CAST_OK:
+            return "SPELL_CAST_OK";
+        case SPELL_FAILED_NOT_READY:
+            return "SPELL_FAILED_NOT_READY";
+        case SPELL_FAILED_OUT_OF_RANGE:
+            return "SPELL_FAILED_OUT_OF_RANGE";
+        case SPELL_FAILED_BAD_TARGETS:
+            return "SPELL_FAILED_BAD_TARGETS";
+        default:
+            return "SPELL_FAILED_" + std::to_string(uint32(result));
+    }
+}
+
 using namespace ai;
 
 int FindLastSeparator(std::string text, std::string sep)
@@ -202,7 +219,7 @@ bool CastCustomSpellAction::Execute(Event& event)
         else
         {
 
-            ItemPrototype const* proto = ObjectMgr::GetItemPrototype(newItemId);
+            ItemPrototype const* proto = sObjectMgr.GetItemPrototype(newItemId);
             replyArgs["%spell"] = ChatHelper::formatItem(proto);
         }
     }    
@@ -369,13 +386,7 @@ bool CastCustomSpellAction::CastSummonPlayer(Player* requester, std::string comm
                         {
                             float x, y, z;
                             bot->GetPosition(x, y, z);
-                            target->SetSummonPoint(bot->GetMapId(), x, y, z, bot->GetObjectGuid());
-
-                            WorldPacket data(SMSG_SUMMON_REQUEST, 8 + 4 + 4);
-                            data << bot->GetObjectGuid();
-                            data << uint32(bot->GetZoneId());
-                            data << uint32(MAX_PLAYER_SUMMON_DELAY * IN_MILLISECONDS);
-                            target->GetSession()->SendPacket(data);
+                            target->SendSummonRequest(bot->GetObjectGuid(), bot->GetMapId(), bot->GetZoneId(), x, y, z);
                         }
                         else
                         {
@@ -683,7 +694,7 @@ bool CraftRandomItemAction::Execute(Event& event)
             if (!newItemId)
                 continue;
 
-            ItemPrototype const* proto = ObjectMgr::GetItemPrototype(newItemId);
+            ItemPrototype const* proto = sObjectMgr.GetItemPrototype(newItemId);
 
             if (!proto)
                 continue;
@@ -730,7 +741,7 @@ bool DisenchantRandomItemAction::Execute(Event& event)
 
     for (auto& item: items)
     {
-        ItemPrototype const* proto = ObjectMgr::GetItemPrototype(item);
+        ItemPrototype const* proto = sObjectMgr.GetItemPrototype(item);
 
         if (!proto)
             continue;

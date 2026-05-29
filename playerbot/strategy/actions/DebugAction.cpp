@@ -1,5 +1,9 @@
 #include "playerbot/playerbot.h"
 #include "DebugAction.h"
+
+#ifndef TEMPSPAWN_TIMED_DESPAWN
+#define TEMPSPAWN_TIMED_DESPAWN TEMPSUMMON_TIMED_DESPAWN
+#endif
 #include "playerbot/PlayerbotAIConfig.h"
 #include <playerbot/TravelNode.h>
 #include "ChooseTravelTargetAction.h"
@@ -1024,7 +1028,7 @@ void DebugAction::FakeSpell(uint32 spellId, Unit* truecaster, Unit* caster, Obje
     {
         uint32 castFlags = CAST_FLAG_UNKNOWN2;
 
-        if (spellInfo && spellInfo->HasAttribute(SPELL_ATTR_USES_RANGED_SLOT))
+        if (spellInfo && spellInfo->HasAttribute(SPELL_ATTR_RANGED))
             castFlags |= CAST_FLAG_AMMO;                        // arrows/bullets visual
 
         WorldPacket data(SMSG_SPELL_START, (8 + 8 + 4 + 2 + 4));
@@ -1052,19 +1056,19 @@ void DebugAction::FakeSpell(uint32 spellId, Unit* truecaster, Unit* caster, Obje
         }
 
         if(caster)
-            caster->GetMap()->MessageBroadcast(caster, data);
+            caster->GetMap()->MessageBroadcast(caster, &data);
         else
-            truecaster->GetMap()->MessageBroadcast(truecaster, data);
+            truecaster->GetMap()->MessageBroadcast(truecaster, &data);
     }
     {
         uint32 castFlags = CAST_FLAG_UNKNOWN9;
 
 
 
-        if (spellInfo && spellInfo->HasAttribute(SPELL_ATTR_USES_RANGED_SLOT))
+        if (spellInfo && spellInfo->HasAttribute(SPELL_ATTR_RANGED))
             castFlags |= CAST_FLAG_AMMO;                        // arrows/bullets visual
-        if (spellInfo && HasPersistentAuraEffect(spellInfo))
-            castFlags |= CAST_FLAG_PERSISTENT_AA;
+        // if (spellInfo && HasPersistentAuraEffect(spellInfo))
+        //     castFlags |= CAST_FLAG_PERSISTENT_AA;
 
         WorldPacket data(SMSG_SPELL_GO, 53);                    // guess size
 
@@ -1120,9 +1124,9 @@ void DebugAction::FakeSpell(uint32 spellId, Unit* truecaster, Unit* caster, Obje
         }
 
         if (caster)
-            caster->GetMap()->MessageBroadcast(caster, data);
+            caster->GetMap()->MessageBroadcast(caster, &data);
         else
-            truecaster->GetMap()->MessageBroadcast(truecaster, data);
+            truecaster->GetMap()->MessageBroadcast(truecaster, &data);
     }
 }
 
@@ -1168,37 +1172,13 @@ void DebugAction::addAura(uint32 spellId, Unit* target)
 bool DebugAction::HandleAvoidScan(Event& event, Player* requester, const std::string& text)
 {
     PathFinder path(requester);
-    for (float x = -100.0f; x < 100.0f; x += 2.0f)
-        for (float y = -100.0f; y < 100.0f; y += 2.0f)
-        {
-            WorldPosition p(requester);
-            p.setX(p.getX() + x);
-            p.setY(p.getY() + y);
-            p.setZ(p.getHeight(bot->GetInstanceId()));
-            Creature* wpCreature = requester->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0.0, TEMPSPAWN_TIMED_DESPAWN, 20000.0f);
-            if(path.getArea(p.getMapId(), p.getX(), p.getY(), p.getZ()) == 12)
-                ai->AddAura(wpCreature, 246);
-            if (path.getArea(p.getMapId(), p.getX(), p.getY(), p.getZ()) == 13)
-                ai->AddAura(wpCreature, 1130);
-        }
+    // Obsolete: Turtle PathInfo does not support getArea
     return true;
 }
 
 bool DebugAction::HandleAvoidAdd(Event& event, Player* requester, const std::string& text)
 {
-    PathFinder pathfinder(bot);
-    WorldPosition point(requester);
-    uint32 area, radius;
-    std::vector<std::string> args = { "12", "5" };
-    if (text.length() > std::string("avoid add").size())
-    {
-        args = ChatHelper::splitString(text.substr(std::string("avoid add").size() + 1), " ");
-        if (args.size() == 1)
-            args.push_back("5");
-    }
-    area = stoi(args[0]);
-    radius = stoi(args[1]);
-    pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), area, radius);
+    // Obsolete: Turtle PathInfo does not support setArea
     return true;
 }
 
@@ -1209,8 +1189,8 @@ bool DebugAction::HandleMount(Event& event, Player* requester, const std::string
     out << (bot->IsTaxiFlying() ? ", taxi flying" : ", not taxi flying");
     out << ", mount speed: " << AI_VALUE2(uint32, "current mount speed", "self target");
     out << ", mount id: " << bot->GetMountID();        
-    if(bot->GetMountInfo())
-        out << ", mount info: " << bot->GetMountInfo()->Name;
+    // if(bot->GetMountInfo())
+    //     out << ", mount info: " << bot->GetMountInfo()->Name;
     ai->TellPlayerNoFacing(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
     return true;
 }
@@ -1227,7 +1207,7 @@ bool DebugAction::HandleArea(Event& event, Player* requester, const std::string&
     AreaTableEntry const* area = point.GetArea();
     std::ostringstream out;
     out << point.getAreaName(true, false); 
-    out << "," << area->Team << " (" << (area->Team != FACTION_GROUP_MASK_ALLIANCE ? (area->Team != FACTION_GROUP_MASK_HORDE ? "neutral" : "horde") : "alliance") << ")";
+    out << "," << area->Team << " (" << (area->Team != FACTION_MASK_ALLIANCE ? (area->Team != FACTION_MASK_HORDE ? "neutral" : "horde") : "alliance") << ")";
     ai->TellPlayerNoFacing(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
     return true;
 }
@@ -1274,21 +1254,16 @@ bool DebugAction::HandleMonsterTalk(Event& event, Player* requester, const std::
 
 bool DebugAction::HandleGY(Event& event, Player* requester, const std::string& text)
 {
-    for (uint32 i = 0; i < sMapStorage.GetNumRows(); ++i)
+    for (uint32 i = 0; i <= sMapStorage.GetMaxEntry(); ++i)
     {
         if (!sMapStorage.LookupEntry<MapEntry>(i))
             continue;
 
-        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->MapID;
+        uint32 mapId = sMapStorage.LookupEntry<MapEntry>(i)->id;
 
         Map* map = sMapMgr.FindMap(mapId);
 
         if (!map)
-            continue;
-
-        GraveyardManager* gy = &map->GetGraveyardManager();
-
-        if (!gy)
             continue;
 
         for (uint32 x = 0; x < TOTAL_NUMBER_OF_CELLS_PER_MAP; x++)
@@ -1306,15 +1281,13 @@ bool DebugAction::HandleGY(Event& event, Player* requester, const std::string& t
 
                 pos.setZ(pos.getHeight(bot->GetInstanceId()));
 
-                const uint32 zoneId = sTerrainMgr.GetZoneId(mapId, pos.getX(), pos.getY(), pos.getZ());
                 const uint32 areaId = sTerrainMgr.GetAreaId(mapId, pos.getX(), pos.getY(), pos.getZ());
 
-                WorldSafeLocsEntry const* graveyard = nullptr;
                 if (areaId != 0)
                 {
                     WorldSafeLocsEntry const* ClosestGrave;
-                    ClosestGrave = gy->GetClosestGraveYard(pos.getX(), pos.getY(), pos.getZ(), mapId, ALLIANCE);
-                    ClosestGrave = gy->GetClosestGraveYard(pos.getX(), pos.getY(), pos.getZ(), mapId, HORDE);
+                    ClosestGrave = sObjectMgr.GetClosestGraveYard(pos.getX(), pos.getY(), pos.getZ(), mapId, ALLIANCE);
+                    ClosestGrave = sObjectMgr.GetClosestGraveYard(pos.getX(), pos.getY(), pos.getZ(), mapId, HORDE);
                 }
             }
         }
@@ -1331,7 +1304,7 @@ bool DebugAction::HandleGrid(Event& event, Player* requester, const std::string&
 
     out << "Map: " << botPos.getMapId() << " " << botPos.getAreaName() << " Grid: " << botPos.getGridPair().x_coord << "," << botPos.getGridPair().y_coord << " [" << loaded << "] Cell: " << botPos.getCellPair().x_coord << "," << botPos.getCellPair().y_coord;
 
-    bot->Whisper(out.str().c_str(), LANG_UNIVERSAL, event.getOwner()->GetObjectGuid());
+    ai->TellPlayer(requester, out.str());
 
     return true;
 }
@@ -1371,7 +1344,7 @@ bool DebugAction::HandleTest(Event& event, Player* requester, const std::string&
         if (TestRegistry::ParseLocation(locationName, loc))
         {
             std::ostringstream out;
-            out << locationName << " -> map=" << loc.mapid << " pos=(" << std::fixed << std::setprecision(2) << loc.coord_x << ", " << loc.coord_y << ", " << loc.coord_z << ")";
+            out << locationName << " -> map=" << loc.mapId << " pos=(" << std::fixed << std::setprecision(2) << loc.coord_x << ", " << loc.coord_y << ", " << loc.coord_z << ")";
             ai->TellPlayer(requester, out.str());
         }
         else
@@ -1571,21 +1544,20 @@ bool DebugAction::HandleMotion(Event& event, Player* requester, const std::strin
         else if (cmd == "flee")
             mm->MoveFleeing(motionTarget, 10);
         else if (cmd == "followmain")
-            mm->MoveFollow(motionTarget, 5, 0, true, true);
+            mm->MoveFollow(motionTarget, 5, 0);
         else if (cmd == "follow")
             mm->MoveFollow(motionTarget, 5, 0);
         else if (cmd == "dist")
-            mm->DistanceYourself(10);
+            { /* Obsolete in Turtle: mm->DistanceYourself(10); */ }
         else if (cmd == "update")
             mm->UpdateMotion(10);
         else if (cmd == "chase")
             mm->MoveChase(motionTarget, 5, 0);
         else if (cmd == "fall")
-            mm->MoveFall();
+            { /* Obsolete in Turtle: mm->MoveFall(); */ }
         else if (cmd == "formation")
         {
-            FormationSlotDataSPtr form = std::make_shared<FormationSlotData>(0, bot->GetObjectGuid(), nullptr, SpawnGroupFormationSlotType::SPAWN_GROUP_FORMATION_SLOT_TYPE_STATIC);
-            mm->MoveInFormation(form);
+            // Obsolete in Turtle: formation movement
         }
 
         std::string sType = "TODO"; // GetMoveTypeStr(type);
@@ -1688,7 +1660,7 @@ bool DebugAction::HandlePointOnTrans(Event& event, Player* requester, const std:
     bot->SetTransport(nullptr);
 
     Creature* wpCreature = bot->SummonCreature(2334, pointOnTrans.getX(), pointOnTrans.getY(), pointOnTrans.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
-    transport->AddPassenger(wpCreature, true);
+    transport->AddPassenger(wpCreature);
     wpCreature->NearTeleportTo(pointOnTrans.getX(), pointOnTrans.getY(), pointOnTrans.getZ(), wpCreature->GetOrientation());
     ai->AddAura(wpCreature, 246);
     bot->SetTransport(botTrans);
@@ -1852,7 +1824,7 @@ bool DebugAction::HandleOnTrans(Event& event, Player* requester, const std::stri
     else
     {
         ai->TellPlayer(requester, "Found point on transport, trying to walk there.");
-        transport->AddPassenger(bot, true);
+        transport->AddPassenger(bot);
 
         ai->StopMoving();
 
@@ -1873,7 +1845,7 @@ bool DebugAction::HandleOnTrans(Event& event, Player* requester, const std::stri
         {
             Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
 
-            transport->AddPassenger(wpCreature, true);
+            transport->AddPassenger(wpCreature);
 
             wpCreature->NearTeleportTo(p.getX(), p.getY(), p.getZ(), wpCreature->GetOrientation());
 
@@ -2022,7 +1994,7 @@ bool DebugAction::HandleRandomSpot(Event& event, Player* requester, const std::s
     wpCreature->SetObjectScale(0.5f);
 
     if (bot->GetTransport())
-        bot->GetTransport()->AddPassenger(wpCreature,true);
+        bot->GetTransport()->AddPassenger(wpCreature);
 
 
     for (auto& p : path)
@@ -2030,7 +2002,7 @@ bool DebugAction::HandleRandomSpot(Event& event, Player* requester, const std::s
         Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
         ai->AddAura(wpCreature, 246);
         if (bot->GetTransport())
-            bot->GetTransport()->AddPassenger(wpCreature,true);
+            bot->GetTransport()->AddPassenger(wpCreature);
     }
     return true;
 }
@@ -2095,7 +2067,7 @@ bool DebugAction::HandleLogoutTime(Event& event, Player* requester, const std::s
 
     out << "Logout in: " << hr << ":" << min << ":" << time;
 
-    bot->Whisper(out.str().c_str(), LANG_UNIVERSAL, event.getOwner()->GetObjectGuid());
+    ai->TellPlayer(requester, out.str());
 
     return true;
 }
@@ -2109,9 +2081,9 @@ bool DebugAction::HandleLevel(Event& event, Player* requester, const std::string
 
     std::ostringstream out;
 
-    out << "Level: " << level << ", xp:" << xp << "/" << nextLevelXp << " :" || flevel;
+    out << "Level: " << level << ", xp:" << xp << "/" << nextLevelXp << " :" << flevel;
 
-    bot->Whisper(out.str().c_str(), LANG_UNIVERSAL, event.getOwner()->GetObjectGuid());
+    ai->TellPlayer(requester, out.str());
 
     return true;
 }
@@ -2147,7 +2119,7 @@ bool DebugAction::HandleQuest(Event& event, Player* requester, const std::string
         int count = 0;
         for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
         {
-            uint32 questId = bot->GetQuestSlotQuestId(slot);
+            uint32 questId = PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot);
             if (!questId)
                 continue;
 
@@ -2233,7 +2205,7 @@ bool DebugAction::HandleQuest(Event& event, Player* requester, const std::string
 
         for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
         {
-            uint32 logQuestId = bot->GetQuestSlotQuestId(slot);
+            uint32 logQuestId = PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot);
             if (!logQuestId)
                 continue;
 
@@ -2286,9 +2258,9 @@ bool DebugAction::HandleQuest(Event& event, Player* requester, const std::string
                 }
                 else if (creature > 0)
                 {
-                    if (CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(creature))
+                    if (CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(creature))
                         for (uint16 z = 0; z < creaturecount; ++z)
-                            bot->KilledMonster(cInfo, nullptr);
+                            bot->KilledMonster(cInfo, ObjectGuid());
                 }
                 else if (creature < 0)
                 {
@@ -2353,15 +2325,9 @@ bool DebugAction::HandleQuest(Event& event, Player* requester, const std::string
             return true;
         }
 
-        for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
+        if (bot->GetQuestStatus(questId) != QUEST_STATUS_NONE)
         {
-            uint32 logQuestId = bot->GetQuestSlotQuestId(slot);
-            if (!logQuestId || logQuestId != questId)
-                continue;
-
-            bot->SetQuestSlot(slot, 0);
-            bot->SetQuestSlotState(slot, QUEST_STATE_NONE);
-            
+            bot->RemoveQuest(questId);
             std::ostringstream out;
             out << "Quest " << questId << " dropped.";
             ai->TellPlayer(requester, out.str());
@@ -2393,14 +2359,9 @@ bool DebugAction::HandleQuest(Event& event, Player* requester, const std::string
         }
 
         // Find empty slot
-        for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
+        if (bot->CanAddQuest(pQuest, false))
         {
-            if (bot->GetQuestSlotQuestId(slot))
-                continue;
-
-            bot->SetQuestSlot(slot, questId);
-            bot->SetQuestSlotState(slot, QUEST_STATE_NONE);
-            
+            bot->AddQuest(pQuest, nullptr);
             std::ostringstream out;
             out << "Quest " << questId << " (" << pQuest->GetTitle() << ") added.";
             ai->TellPlayer(requester, out.str());
@@ -2476,7 +2437,7 @@ bool DebugAction::HandleQuest(Event& event, Player* requester, const std::string
         QuestStatus status = QUEST_STATUS_NONE;
         for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
         {
-            if (bot->GetQuestSlotQuestId(slot) == questId)
+            if (PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot) == questId)
             {
                 inLog = true;
                 status = bot->GetQuestStatus(questId);
@@ -2554,9 +2515,9 @@ PositionTarget DebugAction::ParseLocation(const std::string& param, Player* bot)
     {
         result.valid = true;
         result.mapId = tele->mapId;
-        result.x = tele->position_x;
-        result.y = tele->position_y;
-        result.z = tele->position_z;
+        result.x = tele->x;
+        result.y = tele->y;
+        result.z = tele->z;
         result.name = param;
         return result;
     }
@@ -3333,10 +3294,10 @@ bool DebugAction::HandleNPC(Event& event, Player* requester, const std::string& 
 
 
     std::ostringstream out2;
-    FactionTemplateEntry const* requestFaction = sFactionTemplateStore.LookupEntry(requester->GetFaction());
+    FactionTemplateEntry const* requestFaction = sFactionTemplateStore.LookupEntry(requester->GetFactionId());
     FactionTemplateEntry const* objectFaction = nullptr;
-    if(guidP.GetCreatureTemplate() && guidP.GetCreatureTemplate()->Faction)
-        objectFaction = sFactionTemplateStore.LookupEntry(guidP.GetCreatureTemplate()->Faction);
+    if(guidP.GetCreatureTemplate() && guidP.GetCreatureTemplate()->faction)
+        objectFaction = sFactionTemplateStore.LookupEntry(guidP.GetCreatureTemplate()->faction);
     FactionTemplateEntry const* humanFaction = sFactionTemplateStore.LookupEntry(1);
     FactionTemplateEntry const* orcFaction = sFactionTemplateStore.LookupEntry(2);
 
@@ -3357,7 +3318,7 @@ bool DebugAction::HandleNPC(Event& event, Player* requester, const std::string& 
         ReputationRank reactionHum = PlayerbotAI::GetFactionReaction(humanFaction, objectFaction);
         ReputationRank reactionOrc = PlayerbotAI::GetFactionReaction(orcFaction, objectFaction);
 
-        out2 << " faction:" << guidP.GetCreatureTemplate()->Faction << " reaction me: " << rep[reactionRequest] << ",alliance: " << rep[reactionHum] << " ,horde: " << rep[reactionOrc];
+        out2 << " faction:" << guidP.GetCreatureTemplate()->faction << " reaction me: " << rep[reactionRequest] << ",alliance: " << rep[reactionHum] << " ,horde: " << rep[reactionOrc];
     }
 
     ai->TellPlayerNoFacing(requester, out2);
@@ -3412,7 +3373,7 @@ bool DebugAction::HandleGO(Event& event, Player* requester, const std::string& t
 
     std::ostringstream out2;
     
-    FactionTemplateEntry const* requestFaction = sFactionTemplateStore.LookupEntry(requester->GetFaction());
+    FactionTemplateEntry const* requestFaction = sFactionTemplateStore.LookupEntry(requester->GetFactionId());
     FactionTemplateEntry const* objectFaction = sFactionTemplateStore.LookupEntry(guidP.GetGameObjectInfo()->faction);
     FactionTemplateEntry const* humanFaction = sFactionTemplateStore.LookupEntry(1);
     FactionTemplateEntry const* orcFaction = sFactionTemplateStore.LookupEntry(2);
@@ -3541,7 +3502,7 @@ bool DebugAction::HandleFind(Event& event, Player* requester, const std::string&
     uint32 entry = stoi(link);
 
     Creature* creature = nullptr;
-    MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*bot, entry, true, false, 1000.0f, true);
+    MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*bot, entry, true, 1000.0f);
     MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(creature, creature_check);
     Cell::VisitGridObjects(bot, searcher, 1000.0f);
 
@@ -3578,7 +3539,7 @@ bool DebugAction::HandleItem(Event& event, Player* requester, const std::string&
 
     uint32 itemId = *items.begin();
 
-    Item* item = bot->GetItemByEntry(itemId);
+    Item* item = PlayerbotsCompatibility::GetItemByEntry(bot, itemId);
 
     ItemQualifier qualifier;
     ItemPrototype const* proto;
@@ -3881,7 +3842,7 @@ bool DebugAction::HandlePrintTravel(Event& event, Player* requester, const std::
                 else if (type != typeid(ExploreTravelDestination))
                 {
                     if (((EntryTravelDestination*)dest)->GetCreatureInfo())
-                        out << ((EntryTravelDestination*)dest)->GetCreatureInfo()->Name;
+                        out << ((EntryTravelDestination*)dest)->GetCreatureInfo()->name;
                     else if (((EntryTravelDestination*)dest)->GetGoInfo())
                         out << ((EntryTravelDestination*)dest)->GetGoInfo()->name;
                     else
@@ -4372,7 +4333,7 @@ bool DebugAction::HandleVSpell(Event& event, Player* requester, const std::strin
             WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 8 + 4);        // visual effect on guid
             data << wpCreature->GetObjectGuid();
             data << uint32(spellEffect);                               // index from SpellVisualKit.dbc
-            wpCreature->SendMessageToSet(data, true);                
+            wpCreature->SendMessageToSet(&data, true);                
         }
     }
     return true;
@@ -4452,7 +4413,7 @@ bool DebugAction::HandleFSpell(Event& event, Player* requester, const std::strin
         data << uint32(0);
         data << uint16(2);
         data << requester->GetObjectGuid();
-        bot->SendMessageToSet(data, true);
+        bot->SendMessageToSet(&data, true);
     }
 
     {
@@ -4466,7 +4427,7 @@ bool DebugAction::HandleFSpell(Event& event, Player* requester, const std::strin
         data << uint8(0);
         data << uint16(2);
         data << requester->GetObjectGuid();
-        bot->SendMessageToSet(data, true);
+        bot->SendMessageToSet(&data, true);
     }
 
     return true;
@@ -4475,7 +4436,7 @@ bool DebugAction::HandleFSpell(Event& event, Player* requester, const std::strin
 bool DebugAction::HandleSpell(Event& event, Player* requester, const std::string& text)
 {
     uint32 spellEffect = stoi(text.substr(6));
-    requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), spellEffect);
+    bot->SendPlaySpellVisual(spellEffect);
     return true;
 }
 
@@ -4585,12 +4546,12 @@ bool DebugAction::HandleVSpellMap(Event& event, Player* requester, const std::st
     for (auto dat : datMap)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        bot->SendMessageToSet(dat, true);
+        bot->SendMessageToSet(&dat, true);
     }
     for (auto dat : datMap)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        bot->SendMessageToSet(dat, true);
+        bot->SendMessageToSet(&dat, true);
     }
 
     return true;
@@ -4629,12 +4590,12 @@ bool DebugAction::HandleISpellMap(Event& event, Player* requester, const std::st
     for (auto dat : datMap)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        bot->SendMessageToSet(dat, true);
+        bot->SendMessageToSet(&dat, true);
     }
     for (auto dat : datMap)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        bot->SendMessageToSet(dat, true);
+        bot->SendMessageToSet(&dat, true);
     }
 
     return true;
@@ -4852,7 +4813,7 @@ bool DebugAction::HandleMSpellMap(Event& event, Player* requester, const std::st
                 if (!target)
                     target = requester;
 
-                requester->GetSession()->SendPlaySpellVisual(caster->GetObjectGuid(), 5036);
+                caster->SendPlaySpellVisual(5036);
                 FakeSpell(effect, realCaster, caster, target->GetObjectGuid(), hits, miss, WorldPosition(caster), WorldPosition(target));
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -5432,9 +5393,9 @@ bool DebugAction::HandleTransanal(Event& event, Player* requester, const std::st
                             float hx = x, hy = y, hz = z - 50;
 
 #ifndef MANGOSBOT_TWO
-                            bool hasHit = map->GetHitPosition(testPos.getX(), testPos.getY(), testPos.getZ(), hx, hy, hz, 0.0f);
+                            bool hasHit = map->GetLosHitPosition(testPos.getX(), testPos.getY(), testPos.getZ(), hx, hy, hz, 0.0f);
 #else
-                            bool hasHit = map->GetHitPosition(testPos.getX(), testPos.getY(), testPos.getZ(), hx, hy, hz, 0, 0.0f);
+                            bool hasHit = map->GetLosHitPosition(testPos.getX(), testPos.getY(), testPos.getZ(), hx, hy, hz, 0.0f);
 #endif
 
                             if (!hasHit)
@@ -5477,7 +5438,7 @@ bool DebugAction::HandleTransanal(Event& event, Player* requester, const std::st
                     0, LOCALE_enUS, "", 0);
 #endif
 
-                    session->SetNoAnticheat();
+                    // session->SetNoAnticheat();
 
                     Player* tempPlayer = new Player(session);
 
@@ -5486,10 +5447,9 @@ bool DebugAction::HandleTransanal(Event& event, Player* requester, const std::st
                         0,
                         0,
                         0, // hairColor,
-                        0,
                         0);
                     tempPlayer->AddToWorld();
-                    tempPlayer->SetMap(map.get());
+                    tempPlayer->SetMap(map);
                     tempPlayer->SetTransport(transport);
                     tempPlayer->SetPosition(transPos.getX(), transPos.getY(), transPos.getZ(), 0);
 
@@ -5520,7 +5480,7 @@ bool DebugAction::HandleTransanal(Event& event, Player* requester, const std::st
                             if (found[end])
                                 continue;
 
-                            std::unique_ptr<PathFinder> pathfinder = std::make_unique<PathFinder>(tempPlayer, true);
+                            std::unique_ptr<PathFinder> pathfinder = std::make_unique<PathFinder>(tempPlayer);
 
                             WorldPosition tStart = start, tEnd = end;
                             tStart.CalculatePassengerOffset(transport);
@@ -5663,7 +5623,7 @@ bool DebugAction::HandleTransanal(Event& event, Player* requester, const std::st
                     delete session;
             }
 
-            transport->Update(100);
+            transport->Update(100, 100);
 
             transport->UpdatePosition(5000, 5000, 0, 0);
         }
@@ -5699,9 +5659,9 @@ bool DebugAction::HandleUpdownspace(Event& event, Player* requester, const std::
     bool vmapHitDown = (vmapDestX_down != botX || vmapDestY_down != botY || fabs(vmapDestZ_down - (startZ - 50.0f)) > 0.1f);
 
 #ifndef MANGOSBOT_TWO
-    bool combinedHitDown = bot->GetMap()->GetHitPosition(botX, botY, startZ, destX_down, destY_down, destZ_down, 0);
+    bool combinedHitDown = bot->GetMap()->GetLosHitPosition(botX, botY, startZ, destX_down, destY_down, destZ_down, 0);
 #else
-    bool combinedHitDown = bot->GetMap()->GetHitPosition(botX, botY, startZ, destX_down, destY_down, destZ_down, 0, 0);
+    bool combinedHitDown = bot->GetMap()->GetLosHitPosition(botX, botY, startZ, destX_down, destY_down, destZ_down, 0);
 #endif
 
     if (vmapHitDown)
@@ -5725,9 +5685,9 @@ bool DebugAction::HandleUpdownspace(Event& event, Player* requester, const std::
     bool vmapHitUp = (vmapDestX_up != botX || vmapDestY_up != botY || fabs(vmapDestZ_up - (startZ + 50.0f)) > 0.1f);
 
 #ifndef MANGOSBOT_TWO
-    bool combinedHitUp = bot->GetMap()->GetHitPosition(botX, botY, startZ, destX_up, destY_up, destZ_up, 0);
+    bool combinedHitUp = bot->GetMap()->GetLosHitPosition(botX, botY, startZ, destX_up, destY_up, destZ_up, 0);
 #else
-    bool combinedHitUp = bot->GetMap()->GetHitPosition(botX, botY, startZ, destX_up, destY_up, destZ_up, 0, 0);
+    bool combinedHitUp = bot->GetMap()->GetLosHitPosition(botX, botY, startZ, destX_up, destY_up, destZ_up, 0);
 #endif
 
     if (vmapHitUp)
@@ -5779,7 +5739,7 @@ bool DebugAction::HandlePatharound(Event& event, Player* requester, const std::s
         if (bot->GetTransport())
             target.CalculatePassengerOffset(bot->GetTransport());
 
-        PathFinder pathfinder(bot, true);
+        PathFinder pathfinder(bot);
         pathfinder.calculate(botPos.getVector3(), target.getVector3(), false);
 
         if (!(pathfinder.getPathType() & PATHFIND_NORMAL))
@@ -5803,7 +5763,7 @@ bool DebugAction::HandlePatharound(Event& event, Player* requester, const std::s
             //if (bot->GetTransport())
             //    p.CalculatePassengerPosition(bot->GetTransport());
 
-            Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             ai->AddAura(wpCreature, 246);
 

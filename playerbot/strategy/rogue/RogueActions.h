@@ -441,7 +441,7 @@ namespace ai
                 }
                 else
                 {
-                    Item* poisonItem = bot->GetItemByEntry(poisonItemId);
+                    Item* poisonItem = PlayerbotsCompatibility::GetItemByEntry(bot, poisonItemId);
                     if (poisonItem)
                     {
                         ai->ImbueItem(poisonItem, weaponSlot);

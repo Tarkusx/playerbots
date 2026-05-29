@@ -31,7 +31,7 @@ GuidPosition FreeMoveCenterValue::Calculate()
         Formation* formation = AI_VALUE(Formation*, "formation");
         GuidPosition loc(followTarget->GetObjectGuid(),formation->GetLocation());
 
-        if (Formation::IsNullLocation(loc) || loc.mapid == -1)
+        if (Formation::IsNullLocation(loc) || loc.mapId == -1)
             return followTarget;
 
         //Move the location to a location around follow targets destination.

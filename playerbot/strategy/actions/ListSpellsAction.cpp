@@ -23,9 +23,9 @@ bool CompareSpells(std::pair<uint32, std::string>& s1, std::pair<uint32, std::st
 
     uint32 skill1 = 0, skill2 = 0;
     uint32 skillValue1 = 0, skillValue2 = 0;
-    for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+    for (uint32 j = 0; j < sObjectMgr.GetMaxSkillLineAbilityId(); ++j)
     {
-        SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
+        SkillLineAbilityEntry const* skillLine = sObjectMgr.GetSkillLineAbility(j);
         if (skillLine && skillLine->spellId == s1.first)
         {
             skill1 = skillLine->skillId;
@@ -47,7 +47,7 @@ bool CompareSpells(std::pair<uint32, std::string>& s1, std::pair<uint32, std::st
 
     if (p1 == p2)
     {
-        return strcmp(si1->SpellName[0], si1->SpellName[1]) > 0;
+        return si1->SpellName[0].compare(si1->SpellName[1]) > 0;
     }
 
     return p1 > p2;
@@ -57,9 +57,9 @@ std::list<std::pair<uint32, std::string> > ListSpellsAction::GetSpellList(std::s
 {    
     if (skillSpells.empty())
     {
-        for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+        for (uint32 j = 0; j < sObjectMgr.GetMaxSkillLineAbilityId(); ++j)
         {
-            SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
+            SkillLineAbilityEntry const* skillLine = sObjectMgr.GetSkillLineAbility(j);
             if (skillLine)
                 skillSpells[skillLine->spellId] = skillLine;
         }
@@ -127,7 +127,7 @@ std::list<std::pair<uint32, std::string> > ListSpellsAction::GetSpellList(std::s
     for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr) {
         const uint32 spellId = itr->first;
 
-        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+        if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* const pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
@@ -142,7 +142,7 @@ std::list<std::pair<uint32, std::string> > ListSpellsAction::GetSpellList(std::s
         if (!(ignoreList.find(comp) == std::string::npos && alreadySeenList.find(comp) == std::string::npos))
             continue;
 
-        if (!filter.empty() && !strstri(pSpellInfo->SpellName[0], filter.c_str()))
+        if (!filter.empty() && !strstri(pSpellInfo->SpellName[0].c_str(), filter.c_str()))
             continue;
 
         bool first = true;

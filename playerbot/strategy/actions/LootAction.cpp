@@ -171,7 +171,7 @@ uint32 OpenLootAction::GetOpeningSpell(LootObject& lootObject, GameObject* go)
     {
         uint32 spellId = itr->first;
 
-		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+		if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || Spells::IsPassiveSpell(spellId))
 			continue;
 
 		if (spellId == MINING || spellId == HERB_GATHERING)
@@ -399,7 +399,7 @@ bool StoreLootAction::IsLootAllowed(ItemQualifier& itemQualifier, PlayerbotAI *a
 
     for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
-        uint32 entry = ai->GetBot()->GetQuestSlotQuestId(slot);
+        uint32 entry = PlayerbotsCompatibility::GetQuestSlotQuestId(ai->GetBot(), slot);
         Quest const* quest = sObjectMgr.GetQuestTemplate(entry);
         if (!quest)
             continue;

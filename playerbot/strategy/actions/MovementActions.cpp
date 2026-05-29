@@ -444,7 +444,7 @@ bool MovementAction::UseTransport(PlayerbotAI* ai, uint32 entry, WorldPosition d
         if (transportName.empty())
             transportName = data->name;
 
-        if (dockPosition.mapid == bot->GetMapId() && dockPosition.sqDistance2d(transport) < INTERACTION_DISTANCE * INTERACTION_DISTANCE)
+        if (dockPosition.mapId == bot->GetMapId() && dockPosition.sqDistance2d(transport) < INTERACTION_DISTANCE * INTERACTION_DISTANCE)
         {
             MoveOffTransport(ai, exitPosition, doTeleport);
             ai->TellDebug(ai->GetMaster(), "Leaving transport " + transportName, "debug move");
@@ -479,7 +479,7 @@ bool MovementAction::UseTransport(PlayerbotAI* ai, uint32 entry, WorldPosition d
             transportName = data->name;
     }
 
-    if (transport && dockPosition.mapid == bot->GetMapId() && dockPosition.sqDistance2d(transport) < INTERACTION_DISTANCE * INTERACTION_DISTANCE)
+    if (transport && dockPosition.mapId == bot->GetMapId() && dockPosition.sqDistance2d(transport) < INTERACTION_DISTANCE * INTERACTION_DISTANCE)
     {
         MoveOnTransport(ai, transport, doTeleport);
 
@@ -1784,7 +1784,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
                     if (!urand(0, 10))
                     {
                         movePosition = bot;
-                        if (movePosition.ComputePathToRandomPoint(bot, 10, true).empty() || !movePosition || movePosition.mapid != bot->GetMapId() || !movePosition.isOnTransport(bot->GetTransport()))
+                        if (movePosition.ComputePathToRandomPoint(bot, 10, true).empty() || !movePosition || movePosition.mapId != bot->GetMapId() || !movePosition.isOnTransport(bot->GetTransport()))
                             return true;
 
                         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
@@ -2187,7 +2187,7 @@ bool MovementAction::MoveTo(Unit* target, float distance)
     {
         Stance* stance = AI_VALUE(Stance*, "stance");
         WorldLocation loc = stance->GetLocation();
-        if (Formation::IsNullLocation(loc) || loc.mapid == -1)
+        if (Formation::IsNullLocation(loc) || loc.mapId == -1)
         {
             //ai->TellError("Nowhere to move");
             return false;
@@ -3540,7 +3540,7 @@ bool JumpAction::Execute(ai::Event &event)
             if (formation)
             {
                 WorldLocation loc = formation->GetLocation();
-                if (!Formation::IsNullLocation(loc) && loc.mapid != -1)
+                if (!Formation::IsNullLocation(loc) && loc.mapId != -1)
                 {
                     if (sServerFacade.GetDistance2d(bot, loc.coord_x, loc.coord_y) < ai->GetRange("follow") && fabs(src.getZ() - loc.coord_z) < ai->GetRange("follow"))
                         return false;

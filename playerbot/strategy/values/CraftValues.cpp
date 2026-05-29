@@ -15,7 +15,7 @@ std::vector<uint32> CraftSpellsValue::Calculate()
     {
         uint32 spellId = spell.first;
 
-        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || IsPassiveSpell(spellId))
+        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
@@ -56,7 +56,7 @@ std::vector<uint32> EnchantSpellsValue::Calculate()
     {
         uint32 spellId = spell.first;
 
-        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || IsPassiveSpell(spellId))
+        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);

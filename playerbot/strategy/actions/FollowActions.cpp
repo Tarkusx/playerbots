@@ -21,7 +21,7 @@ bool FollowAction::Execute(Event& event)
         if (formation)
         {
             WorldLocation loc = formation->GetLocation();
-            if (!Formation::IsNullLocation(loc) && loc.mapid != -1)
+            if (!Formation::IsNullLocation(loc) && loc.mapId != -1)
             {
                 moved = Follow(followTarget, formation->GetOffset(), formation->GetAngle());
             }
@@ -65,7 +65,7 @@ bool FollowAction::isUseful()
     else
     {
         WorldLocation loc = formation->GetLocation();
-        if (Formation::IsNullLocation(loc) || bot->GetMapId() != loc.mapid)
+        if (Formation::IsNullLocation(loc) || bot->GetMapId() != loc.mapId)
         {
             return false;
         }
@@ -172,7 +172,7 @@ bool FleeToMasterAction::isUseful()
 
     Unit* target = AI_VALUE(Unit*, "current target");
 
-    if (target && ai->GetGroupMaster()->HasTarget(target->GetObjectGuid()))
+    if (target && ai->GetGroupMaster()->GetTargetGuid() == target->GetObjectGuid())
         return false;
 
     if (!(ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) ||

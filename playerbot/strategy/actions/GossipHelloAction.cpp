@@ -35,7 +35,7 @@ bool GossipHelloAction::Execute(Event& event)
 		return false;
 	}
 
-	GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->GossipMenuId);
+	GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(pCreature->GetCreatureInfo()->gossip_menu_id);
 	if (pMenuItemBounds.first == pMenuItemBounds.second)
 		return false;
 
@@ -88,15 +88,21 @@ void GossipHelloAction::TellGossipText(Player* requester, uint32 textId)
     if (!textId)
         return;
 
-    GossipText const* text = sObjectMgr.GetGossipText(textId);
+    NpcText const* text = sObjectMgr.GetNpcText(textId);
     if (text)
     {
-        for (int i = 0; i < MAX_GOSSIP_TEXT_OPTIONS; i++)
+        for (int i = 0; i < MAX_NPC_TEXT_OPTIONS; i++)
         {
-            std::string text0 = text->Options[i].Text_0;
-            if (!text0.empty()) ai->TellPlayerNoFacing(requester, text0);
-            std::string text1 = text->Options[i].Text_1;
-            if (!text1.empty()) ai->TellPlayerNoFacing(requester, text1);
+            if (text->Options[i].BroadcastTextID)
+            {
+                if (BroadcastText const* bct = sObjectMgr.GetBroadcastTextLocale(text->Options[i].BroadcastTextID))
+                {
+                    int loc_idx = requester->GetSession()->GetSessionDbLocaleIndex();
+                    std::string textVal = bct->GetText(loc_idx, bot->GetGender(), false);
+                    if (!textVal.empty())
+                        ai->TellPlayerNoFacing(requester, textVal);
+                }
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿#include "playerbot/playerbot.h"
+#include "playerbot/playerbot.h"
 #include "WorldBuffTravelActions.h"
 #include "ChooseTravelTargetAction.h"
 #include "playerbot/TravelMgr.h"
@@ -152,13 +152,7 @@ static bool SummonPlayerToSummoner(Player* summoner, Player* target, PlayerbotAI
 
     if (target->isRealPlayer())
     {
-        target->SetSummonPoint(summoner->GetMapId(), x, y, z, summoner->GetObjectGuid());
-
-        WorldPacket data(SMSG_SUMMON_REQUEST, 8 + 4 + 4);
-        data << summoner->GetObjectGuid();
-        data << uint32(summoner->GetZoneId());
-        data << uint32(MAX_PLAYER_SUMMON_DELAY * IN_MILLISECONDS);
-        target->GetSession()->SendPacket(data);
+        target->SendSummonRequest(summoner->GetObjectGuid(), summoner->GetMapId(), summoner->GetZoneId(), x, y, z);
     }
     else
     {

@@ -117,7 +117,7 @@ std::vector<uint32> SuggestWhatToDoAction::GetIncompletedQuests()
 
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
-        uint32 questId = bot->GetQuestSlotQuestId(slot);
+        uint32 questId = PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot);
         if (!questId)
             continue;
 
@@ -149,7 +149,7 @@ void SuggestWhatToDoAction::grindMaterials()
     {
         uint32 randomItemId = vec[urand() % vec.size()];
 
-        const ItemPrototype* proto = ObjectMgr::GetItemPrototype(randomItemId);
+        const ItemPrototype* proto = sObjectMgr.GetItemPrototype(randomItemId);
         if (proto)
         {
             BroadcastHelper::BroadcastSuggestGrindMaterials(ai, ai->GetChatHelper()->formatItem(proto), bot);

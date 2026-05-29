@@ -327,7 +327,7 @@ namespace ai
 
             Group* group = bot->GetGroup();
 
-            if (player->isDND())
+            if (player->IsDND())
                 continue;
 
             if (player->IsBeingTeleported())
@@ -357,7 +357,7 @@ namespace ai
             Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
             if (sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
             {
-                if (guild && bot->IsInGuild(player))
+                if (guild && bot->GetGuildId() != 0 && player->GetGuildId() == bot->GetGuildId())
                 {
                     BroadcastHelper::BroadcastGuildGroupOrRaidInvite(
                         ai,
@@ -451,7 +451,7 @@ namespace ai
             if (player->GetGroup())
                 continue;
 
-            if (player->isDND())
+            if (player->IsDND())
                 continue;
 
             if (!sPlayerbotAIConfig.randomBotInvitePlayer && player->isRealPlayer())

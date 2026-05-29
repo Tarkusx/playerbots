@@ -669,7 +669,10 @@ bool EmoteAction::Execute(Event& event)
         p.rpos(0);
         p >> source >> text_emote >> emote_num >> namlen;
         if (namlen > 1)
-            p.read(nam, namlen);
+        {
+            nam.resize(namlen);
+            p.read((uint8*)&nam[0], namlen);
+        }
 
         isTarget = nam.find(bot->GetName()) != std::string::npos;
 

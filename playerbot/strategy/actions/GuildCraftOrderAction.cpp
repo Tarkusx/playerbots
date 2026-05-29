@@ -10,7 +10,7 @@ uint32 GuildCraftOrderAction::FindCraftSpell(uint32 itemId)
 {
     for (auto& [spellId, spellState] : bot->GetSpellMap())
     {
-        if (spellState.state == PLAYERSPELL_REMOVED || spellState.disabled || IsPassiveSpell(spellId))
+        if (spellState.state == PLAYERSPELL_REMOVED || spellState.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);

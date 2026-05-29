@@ -12,7 +12,7 @@ WorldLocation Formation::NullLocation = WorldLocation();
 
 bool IsSameLocation(WorldLocation const &a, WorldLocation const &b)
 {
-	return a.coord_x == b.coord_x && a.coord_y == b.coord_y && a.coord_z == b.coord_z && a.mapid == b.mapid;
+	return a.coord_x == b.coord_x && a.coord_y == b.coord_y && a.coord_z == b.coord_z && a.mapId == b.mapId;
 }
 
 float Formation::GetMaxDistance()
@@ -28,7 +28,7 @@ bool Formation::IsNullLocation(WorldLocation const& loc)
 float Formation::GetAngle()
 {
     WorldLocation loc = GetLocation();
-    if (Formation::IsNullLocation(loc) || loc.mapid == -1)
+    if (Formation::IsNullLocation(loc) || loc.mapId == -1)
         return 0.0f;
 
     Unit* followTarget = AI_VALUE(Unit*, "follow target");
@@ -42,7 +42,7 @@ float Formation::GetAngle()
 float Formation::GetOffset()
 {
     WorldLocation loc = GetLocation();
-    if (Formation::IsNullLocation(loc) || loc.mapid == -1)
+    if (Formation::IsNullLocation(loc) || loc.mapId == -1)
         return 0.0f;
 
     Unit* followTarget = AI_VALUE(Unit*, "follow target");

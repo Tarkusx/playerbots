@@ -243,7 +243,7 @@ static std::unordered_map<uint32, uint32> BuildCraftSpellMap(Player* bot, const 
         if (remaining.empty())
             break;
 
-        if (spellState.state == PLAYERSPELL_REMOVED || spellState.disabled || IsPassiveSpell(spellId))
+        if (spellState.state == PLAYERSPELL_REMOVED || spellState.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
@@ -989,7 +989,7 @@ uint32 GuildShareQuestRewardItemValue::Calculate()
 
     for (uint16 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
-        uint32 questId = bot->GetQuestSlotQuestId(slot);
+        uint32 questId = PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot);
         if (!questId)
             continue;
 

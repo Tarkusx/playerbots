@@ -296,7 +296,7 @@ bool UseAction::Execute(Event& event)
             itemID = items[0];
             if (items.size() > 1)
             {
-                targetItem = bot->GetItemByEntry(items[1]);
+                targetItem = PlayerbotsCompatibility::GetItemByEntry(bot, items[1]);
             }
         }
 
@@ -866,7 +866,7 @@ bool UseAction::UseGameObject(Player* requester, Event& event, GameObject* gameO
             for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
             {
                 uint32 possibleSpellId = itr->first;
-                if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(possibleSpellId))
+                if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || Spells::IsPassiveSpell(possibleSpellId))
                     continue;
 
                 if (CanOpenLock(sServerFacade.LookupSpellInfo(possibleSpellId), gameObject))

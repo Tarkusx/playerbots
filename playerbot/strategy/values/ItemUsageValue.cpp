@@ -889,7 +889,7 @@ bool ItemUsageValue::IsNeededForQuest(Player* player, uint32 itemId, bool ignore
 
     for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
-        uint32 entry = player->GetQuestSlotQuestId(slot);
+        uint32 entry = PlayerbotsCompatibility::GetQuestSlotQuestId(player, slot);
         Quest const* quest = sObjectMgr.GetQuestTemplate(entry);
         if (!quest)
             continue;
@@ -1165,7 +1165,7 @@ std::vector<uint32> ItemUsageValue::SpellsUsingItem(uint32 itemId, Player* bot)
     {
         uint32 spellId = spell.first;
 
-        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || IsPassiveSpell(spellId))
+        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
@@ -1399,7 +1399,7 @@ void ItemUsageValue::PopulateReagentItemIdsForCraftableItemIds()
 
                             uint32 reagentItemId = spellInfo->Reagent[x];
                             uint32 reagentsRequiredCount = spellInfo->ReagentCount[x];
-                            if (reagentItemId && ObjectMgr::GetItemPrototype(reagentItemId))
+                            if (reagentItemId && sObjectMgr.GetItemPrototype(reagentItemId))
                             {
                                 m_craftingReagentItemIdsForCraftableItem[craftedItemId].push_back({ reagentItemId , reagentsRequiredCount });
                             }
@@ -1424,7 +1424,7 @@ void ItemUsageValue::PopulateSoldByVendorItemIds()
             if (!entry)
                 continue;
 
-            if (!ObjectMgr::GetItemPrototype(entry))
+            if (!sObjectMgr.GetItemPrototype(entry))
                 continue;
 
             m_allItemIdsSoldByAnyVendors.insert(fields[0].GetUInt32());
@@ -1442,7 +1442,7 @@ void ItemUsageValue::PopulateSoldByVendorItemIds()
             if (!entry)
                 continue;
 
-            if (!ObjectMgr::GetItemPrototype(entry))
+            if (!sObjectMgr.GetItemPrototype(entry))
                 continue;
 
             m_itemIdsSoldByAnyVendorsWithLimitedMaxCount.insert(fields[0].GetUInt32());
@@ -1834,7 +1834,7 @@ uint32 ItemUsageValue::GetItemBaseValue(ItemPrototype const* proto, uint8 maxRea
 
         for (auto idCountPair : GetAllReagentItemIdsForCraftingItem(proto))
         {
-            ItemPrototype const* reagentProto = ObjectMgr::GetItemPrototype(idCountPair.first);
+            ItemPrototype const* reagentProto = sObjectMgr.GetItemPrototype(idCountPair.first);
             totalReagentsValue += GetItemBaseValue(reagentProto, maxReagentLevel) * idCountPair.second;
         }
 

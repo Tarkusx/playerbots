@@ -426,7 +426,7 @@ uint8 FreeQuestLogSlotValue::Calculate()
 	uint8 numQuest = 0;
 	for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
 	{
-		uint32 questId = bot->GetQuestSlotQuestId(slot);
+		uint32 questId = PlayerbotsCompatibility::GetQuestSlotQuestId(bot, slot);
 
 		if (!questId)
 			continue;

@@ -176,11 +176,11 @@ inline void TellPosition(PlayerbotAI* ai, Player* requester)
     if (bot->IsTaxiFlying())
     {
         out << "On a flight path";
-        const Taxi::Map tMap = bot->GetTaxiPathSpline();
+        TaxiPathNodeList const& tMap = bot->GetTaxi().GetTaxiPath();
         if (!tMap.empty())
         {
-            auto tEnd = tMap.back();
-            WorldPosition taxiEnd(tEnd->mapid, tEnd->x, tEnd->y, tEnd->z);
+            TaxiPathNodeEntry const& tEnd = tMap[tMap.size() - 1];
+            WorldPosition taxiEnd(tEnd.mapid, tEnd.x, tEnd.y, tEnd.z);
             std::string endArea = taxiEnd.getAreaName();
 
             if (!endArea.empty())
@@ -727,7 +727,7 @@ bool GoAction::MoveToGps(std::string& param, Player* requester)
             Vector3 end = path.getEndPosition();
             Vector3 aend = path.getActualEndPosition();
 
-            PointsArray& points = path.getPath();
+            PointsArray const& points = path.getPath();
             PathType type = path.getPathType();
 
             std::ostringstream out;

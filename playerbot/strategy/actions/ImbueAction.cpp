@@ -17,7 +17,7 @@ bool ImbueWithStoneAction::Execute(Event& event)
         bot->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
     // hp check
-    if (bot->getStandState() != UNIT_STAND_STATE_STAND)
+    if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
         bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     bool allowMainhand = true;
@@ -161,7 +161,7 @@ bool ImbueWithOilAction::Execute(Event& event)
         bot->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
     // hp check
-    if (bot->getStandState() != UNIT_STAND_STATE_STAND)
+    if (bot->GetStandState() != UNIT_STAND_STATE_STAND)
         bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     // Search and apply oil to weapons

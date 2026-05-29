@@ -21,7 +21,7 @@ TestResult CommandSetupTeleport::Execute(const std::string& params, Player* bot,
         return TestResult::IMPOSSIBLE;
     }
 
-    if (bot->TeleportTo(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, bot->GetOrientation()))
+    if (bot->TeleportTo(loc.mapId, loc.coord_x, loc.coord_y, loc.coord_z, bot->GetOrientation()))
     {
         return TestResult::PASS;
     }

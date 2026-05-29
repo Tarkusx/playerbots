@@ -2,6 +2,7 @@
 #include "playerbot/playerbot.h"
 #include "GenericActions.h"
 #include "playerbot/PlayerbotFactory.h"
+#include "CreatureAI.h"
 
 using namespace ai;
 
@@ -124,15 +125,15 @@ bool InitializePetAction::isUseful()
             bool hasTamedPet = bot->GetPet();
             if (!hasTamedPet)
             {
-                std::unique_ptr<QueryResult> queryResult = CharacterDatabase.PQuery("SELECT id, entry, owner "
+                std::unique_ptr<QueryResult> queryResult(CharacterDatabase.PQuery("SELECT id, entry, owner "
                                                                                     "FROM character_pet WHERE owner = '%u' AND (slot = '%u' OR slot > '%u') ",
-                                                                                    bot->GetGUIDLow(), PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT);
+                                                                                    bot->GetGUIDLow(), PET_SAVE_AS_CURRENT, PET_SAVE_LAST_STABLE_SLOT));
             
                 if (queryResult)
                 {
                     Field* fields = queryResult->Fetch();
                     const uint32 entry = fields[1].GetUInt32();
-                    hasTamedPet = ObjectMgr::GetCreatureTemplate(entry);
+                    hasTamedPet = sObjectMgr.GetCreatureTemplate(entry);
                 }
             }
 
@@ -496,7 +497,7 @@ bool SetPetAction::Execute(Event& event)
                 constexpr uint32 PET_IMP = 416;
                 constexpr uint32 PHASE_SHIFT = 4511;
                 if (bot->GetClass() == CLASS_WARLOCK &&
-                    pet->AI() && pet->AI()->HasReactState(REACT_PASSIVE) &&
+                    pet->HasReactState(REACT_PASSIVE) &&
                     pet->GetEntry() == PET_IMP && pet->HasAura(PHASE_SHIFT))
                 {
                     ai->TellPlayer(requester, "Pet has Phase Shift active, cannot attack");

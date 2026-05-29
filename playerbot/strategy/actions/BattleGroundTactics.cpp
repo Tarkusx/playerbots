@@ -2995,7 +2995,7 @@ bool BGTactics::selectObjective(bool reset)
         {
             if (!pos.isSet())
             {
-                pos.Set(objectiveLocation.coord_x, objectiveLocation.coord_y, objectiveLocation.coord_z, objectiveLocation.mapid);
+                pos.Set(objectiveLocation.coord_x, objectiveLocation.coord_y, objectiveLocation.coord_z, objectiveLocation.mapId);
             }
 
             posMap["bg objective"] = pos;

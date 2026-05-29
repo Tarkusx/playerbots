@@ -52,7 +52,7 @@ namespace ai
                     Unit* target = GetTarget();
                     if (target && AI_VALUE2(uint8, "health", GetTargetName()) <= 20)
                     {
-                        Item* soulShard = bot->GetItemByEntry(6265);
+                        Item* soulShard = PlayerbotsCompatibility::GetItemByEntry(bot, 6265);
                         if (soulShard)
                         {
                             bot->DestroyItem(soulShard->GetBagSlot(), soulShard->GetSlot(), true);

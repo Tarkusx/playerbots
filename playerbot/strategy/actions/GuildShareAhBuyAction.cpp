@@ -6,6 +6,7 @@
 #include "AuctionHouse/AuctionHouseMgr.h"
 #include "Guilds/GuildMgr.h"
 #include "Mails/Mail.h"
+#include "MapNodes/MasterPlayer.h"
 
 using namespace ai;
 
@@ -50,7 +51,7 @@ bool GuildShareAhBuyAction::CanBotCraftItem(uint32 itemId)
 {
     for (auto& [spellId, spellState] : bot->GetSpellMap())
     {
-        if (spellState.state == PLAYERSPELL_REMOVED || spellState.disabled || IsPassiveSpell(spellId))
+        if (spellState.state == PLAYERSPELL_REMOVED || spellState.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
@@ -96,7 +97,10 @@ uint32 GuildShareAhBuyAction::CountMailboxItems(uint32 itemId)
     uint32 count = 0;
     time_t curTime = time(nullptr);
 
-    for (PlayerMails::iterator itr = bot->GetMailBegin(); itr != bot->GetMailEnd(); ++itr)
+    MasterPlayer* masterPlayer = bot->GetSession() ? bot->GetSession()->GetMasterPlayer() : nullptr;
+    if (!masterPlayer)
+        return count;
+    for (PlayerMails::iterator itr = masterPlayer->GetMailBegin(); itr != masterPlayer->GetMailEnd(); ++itr)
     {
         Mail* mail = *itr;
         if (!mail || mail->state == MAIL_STATE_DELETED || curTime < mail->deliver_time)
@@ -109,7 +113,7 @@ uint32 GuildShareAhBuyAction::CountMailboxItems(uint32 itemId)
         {
             if (itemItr->item_template == itemId)
             {
-                Item* mailItem = bot->GetMItem(itemItr->item_guid);
+                Item* mailItem = masterPlayer->GetMItem(itemItr->item_guid);
                 count += mailItem ? mailItem->GetCount() : 1;
             }
         }
@@ -228,8 +232,10 @@ bool GuildShareAhBuyAction::Execute(Event& event)
     AuctionCandidate bestCandidate = { nullptr, 0, 0, 0, false };
     uint32 bestPricePerItem = std::numeric_limits<uint32>::max();
 
-    AuctionHouseObject::AuctionEntryMapBounds bounds = auctionHouse->GetAuctionsBounds();
-    for (auto itr = bounds.first; itr != bounds.second; ++itr)
+    AuctionHouseObject::AuctionEntryMap* auctionsMap = auctionHouse->GetAuctions();
+    if (!auctionsMap)
+        return false;
+    for (auto itr = auctionsMap->begin(); itr != auctionsMap->end(); ++itr)
     {
         AuctionEntry* auction = itr->second;
         if (!auction || auction->buyout == 0)
@@ -289,7 +295,22 @@ bool GuildShareAhBuyAction::Execute(Event& event)
     {
         AuctionEntry* auction = bestCandidate.auction;
 
-        auction->UpdateBid(auction->buyout, bot);
+        // Inline buyout: deduct money, update bid fields, send AH mails, remove auction
+        if (bot->GetGUIDLow() == auction->bidder)
+            bot->LogModifyMoney(-int32(auction->buyout - auction->bid), "AuctionBuyout", ObjectGuid(HIGHGUID_PLAYER, auction->owner), auction->itemTemplate);
+        else
+        {
+            bot->LogModifyMoney(-int32(auction->buyout), "AuctionBuyout", ObjectGuid(HIGHGUID_PLAYER, auction->owner), auction->itemTemplate);
+        }
+        auction->bidder = bot->GetGUIDLow();
+        auction->bid = auction->buyout;
+        sAuctionMgr.SendAuctionSuccessfulMail(auction);
+        sAuctionMgr.SendAuctionWonMail(auction);
+        sAuctionMgr.RemoveAItem(auction->itemGuidLow);
+        auctionHouse->RemoveAuction(auction);
+        auction->DeleteFromDB();
+        delete auction;
+        auction = nullptr;
 
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(bestCandidate.itemId);
         std::ostringstream out;

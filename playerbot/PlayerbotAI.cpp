@@ -5081,7 +5081,10 @@ bool PlayerbotAI::CanCastVehicleSpell(uint32 spellId, Unit* target)
     if (siegePos.isSet())
         dest = WorldLocation(bot->GetMapId(), siegePos.x, siegePos.y, siegePos.z, 0);
     else if (spellTarget != vehicle)
-        dest = WorldLocation(spellTarget->GetMapId(), spellTarget->GetPosition());
+    {
+        Position const& pos = spellTarget->GetPosition();
+        dest = WorldLocation(spellTarget->GetMapId(), pos.x, pos.y, pos.z, pos.o);
+    }
 
     if (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
         spell->m_targets.setDestination(dest.coord_x, dest.coord_y, dest.coord_z);
@@ -5197,7 +5200,10 @@ bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target, float projectil
     {
         WorldLocation dest;
         if (spellTarget != vehicle)
-            dest = WorldLocation(spellTarget->GetMapId(), spellTarget->GetPosition());
+        {
+            Position const& pos = spellTarget->GetPosition();
+            dest = WorldLocation(spellTarget->GetMapId(), pos.x, pos.y, pos.z, pos.o);
+        }
         else if (siegePos.isSet())
             dest = WorldLocation(bot->GetMapId(), siegePos.x + frand(-5.0f, 5.0f), siegePos.y + frand(-5.0f, 5.0f), siegePos.z, 0.0f);
         else

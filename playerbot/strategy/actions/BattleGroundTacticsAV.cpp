@@ -124,7 +124,7 @@ bool BGTactics::SelectAvObjectiveAlliance(WorldLocation& objectiveLocation)
     {
         if (Creature* pDrek = bot->GetMap()->GetCreature(bg->GetSingleCreatureGuid(BG_AV_BOSS_H, 0)))
         {
-            objectiveLocation = WorldLocation(pDrek->GetMapId(), pDrek->GetPosition());
+            objectiveLocation = WorldLocation(pDrek->GetMapId(), pDrek->GetPositionX(), pDrek->GetPositionY(), pDrek->GetPositionZ(), pDrek->GetOrientation());
             return true;
         }
     }
@@ -169,7 +169,7 @@ bool BGTactics::SelectAvObjectiveAlliance(WorldLocation& objectiveLocation)
                     }
                     else
                     {
-                        objectiveLocation = WorldLocation(pGalvangar->GetMapId(), pGalvangar->GetPosition());
+                        objectiveLocation = WorldLocation(pGalvangar->GetMapId(), pGalvangar->GetPositionX(), pGalvangar->GetPositionY(), pGalvangar->GetPositionZ(), pGalvangar->GetOrientation());
                     }
 
                     return true;
@@ -210,7 +210,7 @@ bool BGTactics::SelectAvObjectiveAlliance(WorldLocation& objectiveLocation)
         {
             if (bot->IsWithinDist(neutralMineBoss, VISIBILITY_DISTANCE_LARGE) && neutralMineBoss->GetDeathState() != DEAD && bg->IsActiveEvent(BG_AV_MINE_BOSSES_SOUTH, TEAM_INDEX_NEUTRAL))
             {
-                objectiveLocation = WorldLocation(neutralMineBoss->GetMapId(), neutralMineBoss->GetPosition());
+                objectiveLocation = WorldLocation(neutralMineBoss->GetMapId(), neutralMineBoss->GetPositionX(), neutralMineBoss->GetPositionY(), neutralMineBoss->GetPositionZ(), neutralMineBoss->GetOrientation());
                 return true;
             }
         }
@@ -219,7 +219,7 @@ bool BGTactics::SelectAvObjectiveAlliance(WorldLocation& objectiveLocation)
         {
             if (bot->IsWithinDist(hordeMineBoss, VISIBILITY_DISTANCE_LARGE) && hordeMineBoss->GetDeathState() != DEAD && bg->IsActiveEvent(BG_AV_MINE_BOSSES_SOUTH, TEAM_INDEX_HORDE))
             {
-                objectiveLocation = WorldLocation(hordeMineBoss->GetMapId(), hordeMineBoss->GetPosition());
+                objectiveLocation = WorldLocation(hordeMineBoss->GetMapId(), hordeMineBoss->GetPositionX(), hordeMineBoss->GetPositionY(), hordeMineBoss->GetPositionZ(), hordeMineBoss->GetOrientation());
                 return true;
             }
         }
@@ -285,7 +285,7 @@ bool BGTactics::SelectAvObjectiveHorde(WorldLocation& objectiveLocation)
     {
         if (Creature* pVanndar = bot->GetMap()->GetCreature(bg->GetSingleCreatureGuid(BG_AV_BOSS_A, 0)))
         {
-            objectiveLocation = WorldLocation(pVanndar->GetMapId(), pVanndar->GetPosition());
+            objectiveLocation = WorldLocation(pVanndar->GetMapId(), pVanndar->GetPositionX(), pVanndar->GetPositionY(), pVanndar->GetPositionZ(), pVanndar->GetOrientation());
             return true;
         }
     }
@@ -330,7 +330,7 @@ bool BGTactics::SelectAvObjectiveHorde(WorldLocation& objectiveLocation)
                     }
                     else
                     {
-                        objectiveLocation = WorldLocation(pBalinda->GetMapId(), pBalinda->GetPosition());
+                        objectiveLocation = WorldLocation(pBalinda->GetMapId(), pBalinda->GetPositionX(), pBalinda->GetPositionY(), pBalinda->GetPositionZ(), pBalinda->GetOrientation());
                     }
 
                     return true;
@@ -377,7 +377,7 @@ bool BGTactics::SelectAvObjectiveHorde(WorldLocation& objectiveLocation)
         {
             if (bot->IsWithinDist(neutralMineBoss, VISIBILITY_DISTANCE_GIGANTIC) && neutralMineBoss->GetDeathState() != DEAD && bg->IsActiveEvent(BG_AV_MINE_BOSSES_NORTH, TEAM_INDEX_NEUTRAL))
             {
-                objectiveLocation = WorldLocation(neutralMineBoss->GetMapId(), neutralMineBoss->GetPosition());
+                objectiveLocation = WorldLocation(neutralMineBoss->GetMapId(), neutralMineBoss->GetPositionX(), neutralMineBoss->GetPositionY(), neutralMineBoss->GetPositionZ(), neutralMineBoss->GetOrientation());
                 return true;
             }
         }
@@ -386,7 +386,7 @@ bool BGTactics::SelectAvObjectiveHorde(WorldLocation& objectiveLocation)
         {
             if (bot->IsWithinDist(allianceMineBoss, VISIBILITY_DISTANCE_GIGANTIC) && allianceMineBoss->GetDeathState() != DEAD && bg->IsActiveEvent(BG_AV_MINE_BOSSES_NORTH, TEAM_INDEX_ALLIANCE))
             {
-                objectiveLocation = WorldLocation(allianceMineBoss->GetMapId(), allianceMineBoss->GetPosition());
+                objectiveLocation = WorldLocation(allianceMineBoss->GetMapId(), allianceMineBoss->GetPositionX(), allianceMineBoss->GetPositionY(), allianceMineBoss->GetPositionZ(), allianceMineBoss->GetOrientation());
                 return true;
             }
         }

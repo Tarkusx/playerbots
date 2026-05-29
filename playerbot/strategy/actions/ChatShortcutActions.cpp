@@ -78,10 +78,10 @@ bool FollowChatShortcutAction::Execute(Event& event)
     if (sServerFacade.IsInCombat(bot))
     {     
         WorldLocation loc = formation->GetLocation();
-        if (Formation::IsNullLocation(loc) || loc.mapid == -1)
+        if (Formation::IsNullLocation(loc) || loc.mapId == -1)
             return false;
 
-        if (MoveTo(loc.mapid, loc.coord_x, loc.coord_y, loc.coord_z, false, false))
+        if (MoveTo(loc.mapId, loc.coord_x, loc.coord_y, loc.coord_z, false, false))
         {
             ai->TellPlayerNoFacing(requester, BOT_TEXT("following"));
             return true;

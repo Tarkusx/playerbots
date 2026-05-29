@@ -159,7 +159,7 @@ bool MountValue::IsValidLocation(Player* bot)
     // Ignore map check if spell have AreaId. AreaId already checked and this prevent special mount spells
     if (bot->GetTypeId() == TYPEID_PLAYER &&
         !isAQ40Mounted &&   // [-ZERO] && !m_spellInfo->AreaId)
-        !bot->GetMap()->IsMountAllowed())
+        !bot->GetMap()->GetMapEntry()->IsMountAllowed())
     {
         return false;  //SPELL_FAILED_NO_MOUNTS_ALLOWED;
     }
@@ -247,7 +247,7 @@ std::vector<MountValue> MountListValue::Calculate()
 		mounts.push_back(MountValue(mount));
 
     for (PlayerSpellMap::iterator itr = bot->GetSpellMap().begin(); itr != bot->GetSpellMap().end(); ++itr)
-        if (itr->second.state != PLAYERSPELL_REMOVED && !itr->second.disabled && !IsPassiveSpell(itr->first))
+        if (itr->second.state != PLAYERSPELL_REMOVED && !itr->second.disabled && !Spells::IsPassiveSpell(itr->first))
             if(MountValue::IsMountSpell(itr->first))
                 mounts.push_back(MountValue(itr->first));
 

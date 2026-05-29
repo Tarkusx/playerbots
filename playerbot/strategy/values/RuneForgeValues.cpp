@@ -17,7 +17,7 @@ std::vector<uint32> RuneForgeSpellsValue::Calculate() {
     for (auto& spell : spellMap) {
         uint32 spellId = spell.first;
 
-        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || IsPassiveSpell(spellId))
+        if (spell.second.state == PLAYERSPELL_REMOVED || spell.second.disabled || Spells::IsPassiveSpell(spellId))
             continue;
 
         SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBoundsBySpellId(spellId);

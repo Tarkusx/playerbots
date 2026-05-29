@@ -174,12 +174,8 @@ bool MoveToRpgTargetAction::Execute(Event& event)
     if (unit && unit->IsMoving() && bot->GetDistance(unit) < INTERACTION_DISTANCE * 2 && unit->GetMotionMaster()->GetCurrentMovementGeneratorType() != IDLE_MOTION_TYPE)
     {
 
-        Creature* creature = static_cast<Creature*>(unit);
-
-
-        if (creature)
-            if (uint32 pauseTimer = creature->GetInteractionPauseTimer())
-                creature->GetMotionMaster()->PauseWaypoints(pauseTimer);
+        // Turtle vanilla: Creature has no GetInteractionPauseTimer() and MotionMaster has no PauseWaypoints().
+        // Skip waypoint-pause; bot will still approach and interact normally.
     }
         couldMove = MoveTo(mapId, x, y, z, false, false);
 

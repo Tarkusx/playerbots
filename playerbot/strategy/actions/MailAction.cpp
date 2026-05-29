@@ -1,5 +1,6 @@
 
 #include "Mails/Mail.h"
+#include "MapNodes/MasterPlayer.h"
 #include "playerbot/playerbot.h"
 #include "MailAction.h"
 #include "playerbot/PlayerbotAIConfig.h"
@@ -39,7 +40,7 @@ public:
         {
             for (MailItemInfoVec::iterator i = mail->items.begin(); i != mail->items.end(); ++i)
             {
-                Item* item = bot->GetMItem(i->item_guid);
+                Item* item = bot->GetSession() && bot->GetSession()->GetMasterPlayer() ? bot->GetSession()->GetMasterPlayer()->GetMItem(i->item_guid) : nullptr;
                 int count = item ? item->GetCount() : 1;
                 ItemPrototype const *proto = sObjectMgr.GetItemPrototype(i->item_template);
                 if (proto)
@@ -130,7 +131,7 @@ public:
 #ifndef MANGOSBOT_ZERO
                 packet << *i;
 #endif
-                Item* item = bot->GetMItem(*i);
+                Item* item = bot->GetSession() && bot->GetSession()->GetMasterPlayer() ? bot->GetSession()->GetMasterPlayer()->GetMItem(*i) : nullptr;
 
                 if (item)
                 {
@@ -305,7 +306,10 @@ bool MailAction::Execute(Event& event)
 
     std::vector<Mail*> mailList;
     time_t cur_time = time(0);
-    for (PlayerMails::iterator itr = bot->GetMailBegin(); itr != bot->GetMailEnd(); ++itr)
+    MasterPlayer* masterPlayer = bot->GetSession() ? bot->GetSession()->GetMasterPlayer() : nullptr;
+    if (!masterPlayer)
+        return false;
+    for (PlayerMails::iterator itr = masterPlayer->GetMailBegin(); itr != masterPlayer->GetMailEnd(); ++itr)
     {
         if ((*itr)->state == MAIL_STATE_DELETED || cur_time < (*itr)->deliver_time)
             continue;

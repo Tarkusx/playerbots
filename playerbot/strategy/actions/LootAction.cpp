@@ -94,7 +94,7 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
 
     if (creature)
     {
-        SkillType skill = creature->GetCreatureInfo()->GetRequiredLootSkill();
+        SkillType skill = SKILL_SKINNING; // Turtle vanilla: CreatureInfo has no GetRequiredLootSkill(); always SKILL_SKINNING
         if (!CanOpenLock(skill, lootObject.reqSkillValue))
             return false;
 
@@ -302,7 +302,7 @@ bool StoreLootAction::Execute(Event& event)
 
         ItemQualifier itemQualifier(itemid, ((int32)randomPropertyId));
 
-		if (lootslot_type != LOOT_SLOT_NORMAL
+		if (lootslot_type != LOOT_SLOT_TYPE_ALLOW_LOOT
 #ifndef MANGOSBOT_ZERO
 		        && lootslot_type != LOOT_SLOT_OWNER
 #endif
@@ -319,13 +319,13 @@ bool StoreLootAction::Execute(Event& event)
         if (!proto)
             continue;
 
-        LootItem* lootItem = loot->GetLootItemInSlot(itemindex);
+        LootItem* lootItem = loot->LootItemInSlot(itemindex, bot->GetGUIDLow());
 
         if (!lootItem)
             continue;
 
         //have no right to loot
-        if (lootItem->isBlocked || lootItem->GetSlotTypeForSharedLoot(bot, loot) == MAX_LOOT_SLOT_TYPE)
+        if (lootItem->is_blocked || lootItem->GetSlotTypeForSharedLoot(ALL_PERMISSION, bot, loot->GetLootTarget()) == MAX_LOOT_SLOT_TYPE)
             continue;
 
         Player* master = ai->GetMaster();

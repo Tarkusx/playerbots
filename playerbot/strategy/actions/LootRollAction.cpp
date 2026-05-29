@@ -43,9 +43,12 @@ bool LootStartRollAction::Execute(Event& event)
     if (!loot)
         return false;
 
-    for(uint8 i=0;i< MAX_NR_LOOT_ITEMS;i++)
-        if(loot->GetRollForSlot(i))
+    for(uint8 i=0;i<MAX_NR_LOOT_ITEMS;i++)
+    {
+        // Turtle vanilla: no GroupLootRoll system; insert any active slot index
+        if (i < loot->items.size())
             lootRolls.insert({ creatureGuid, i });
+    }
         
     ActiveRolls::CleanUp(bot,lootRolls);
 
@@ -168,7 +171,7 @@ ItemQualifier RollAction::GetRollItem(ObjectGuid lootGuid, uint32 slot)
     if (!loot)
         return ItemQualifier();
 
-    LootItem* item = loot->GetLootItemInSlot(slot);
+    LootItem* item = loot->LootItemInSlot(slot, bot->GetGUIDLow());
 
     if (!item)
         return ItemQualifier();
@@ -228,8 +231,10 @@ RollVote RollAction::CalculateRollVote(ItemQualifier& itemQualifier)
             vote = "Rolling greed";
         else if (needVote == ROLL_NEED)
             vote = "Rolling need";
+#ifdef MANGOSBOT_TWO
         else if (needVote == ROLL_DISENCHANT)
             vote = "Rolling disenchant";
+#endif
 
          ai->TellPlayerNoFacing(ai->GetMaster(), vote + " on " + ChatHelper::formatItem(itemQualifier) + " " + reason);
     }
@@ -239,31 +244,9 @@ RollVote RollAction::CalculateRollVote(ItemQualifier& itemQualifier)
 
 bool RollAction::RollOnItemInSlot(RollVote vote, ObjectGuid lootGuid, uint32 slot)
 {
-    Loot* loot = sLootMgr.GetLoot(bot, lootGuid);
-    if (!loot)
-        return false;
-
-    LootItem* item = loot->GetLootItemInSlot(slot);
-    ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(item->itemId);
-    if (!proto)
-        return false;
-
-    GroupLootRoll* lootRoll = loot->GetRollForSlot(slot);
-    if (!lootRoll)
-        return false;
-
-    bool didRoll = lootRoll->PlayerVote(bot, vote);
-
-    if (didRoll)
-    {
-        LootRollMap lootRolls = AI_VALUE(LootRollMap, "active rolls");
-
-        ActiveRolls::CleanUp(bot, lootRolls, lootGuid, slot);
-
-        SET_AI_VALUE(LootRollMap, "active rolls", lootRolls);
-    }
-
-    return didRoll;
+    // Turtle vanilla does not have a GroupLootRoll / GetRollForSlot API.
+    // Group loot rolling is not supported; always return false.
+    return false;
 }
 
 bool LootRollAction::Execute(Event& event)

@@ -16,6 +16,7 @@
 #include "Entities/Vehicle.h"
 #endif
 #include "playerbot/strategy/generic/CombatStrategy.h"
+#include "AI/CreatureAI.h"
 
 using namespace ai;
 
@@ -27,7 +28,7 @@ void MovementAction::CreateWp(Player* wpOwner, float x, float y, float z, float 
     //if(!important)
     //    delay *= 0.25;
 
-    Creature* wpCreature = wpOwner->SummonCreature(entry, x, y, z - 1, o, TEMPSPAWN_TIMED_DESPAWN, delay);
+    Creature* wpCreature = wpOwner->SummonCreature(entry, x, y, z - 1, o, TEMPSUMMON_TIMED_DESPAWN, delay);
     ai->AddAura(wpCreature, 246);
 
     if (!important)
@@ -330,7 +331,7 @@ bool MovementAction::MoveOnTransport(PlayerbotAI* ai, GenericTransport* transpor
     if (doTeleport)
     {
         bot->GetMap()->PlayerRelocation(bot, transPos.getX(), transPos.getY(), transPos.getZ(), bot->GetOrientation());
-        transport->AddPassenger(bot, true);
+        transport->AddPassenger(bot);
         bot->SendHeartBeat();
         return true;
     }
@@ -346,7 +347,7 @@ bool MovementAction::MoveOnTransport(PlayerbotAI* ai, GenericTransport* transpor
     }
     else
     {
-        transport->AddPassenger(bot, true);
+        transport->AddPassenger(bot);
 
         ai->StopMoving();
 
@@ -365,9 +366,9 @@ bool MovementAction::MoveOnTransport(PlayerbotAI* ai, GenericTransport* transpor
     {
         for (auto& p : path)
         {
-            Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000);
 
-            transport->AddPassenger(wpCreature, true);
+            transport->AddPassenger(wpCreature);
 
             wpCreature->NearTeleportTo(p.getX(), p.getY(), p.getZ(), wpCreature->GetOrientation());
 
@@ -960,7 +961,7 @@ void MovementAction::DispatchMovement(TravelPath movePath, bool generatePath, bo
 
     std::vector<WorldPosition> path = movePath.getPointPath();
 
-    if (!generatePath || !bot->IsFreeFlying())
+    if (!generatePath || !bot->IsFlying())
     {
         WorldPosition movePosition = path.back();
 
@@ -985,7 +986,11 @@ void MovementAction::DispatchMovement(TravelPath movePath, bool generatePath, bo
     std::vector<G3D::Vector3> pointPath = WorldPosition().toPointsArray(path);
     float size = WorldPosition().getPathLength(path);
 
+#ifdef MANGOSBOT_ZERO
+    bool usePath = false; // Turtle/MANGOSBOT_ZERO: MotionMaster has no MovePath; use MovePoint path below
+#else
     bool usePath = true;
+#endif
 
     if (usePath)
     {
@@ -1000,9 +1005,9 @@ void MovementAction::DispatchMovement(TravelPath movePath, bool generatePath, bo
                 bot->GetTransport()->CalculatePassengerOffset(p.x, p.y, p.z);
         }
 
-#ifndef MANGOSBOT_TWO
+#if !defined(MANGOSBOT_ZERO) && !defined(MANGOSBOT_TWO) // MANGOSBOT_ONE only
         mm.MovePath(pointPath, moveMode, false, false);
-#else
+#elif defined(MANGOSBOT_TWO)
         mm.MovePath(pointPath, moveMode, false);
 #endif
     }
@@ -1145,7 +1150,7 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
     {
         for (auto& p : movePath.getPath())
         {
-            Creature* wpCreature = bot->SummonCreature(2334, p.point.getX(), p.point.getY(), p.point.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, p.point.getX(), p.point.getY(), p.point.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000);
             ai->AddAura(wpCreature, 246);
             if (p.point == movePath.getBack())
                 ai->AddAura(wpCreature, 1130);
@@ -1496,7 +1501,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         //Use standard pathfinder to find a route.
         pathfinder.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
         PathType type = pathfinder.getPathType();
-        PointsArray& points = pathfinder.getPath();
+        PointsArray const& points = pathfinder.getPath();
 
         // DEBUG: After VMaps pathfinder - use TellDebug for debug move
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
@@ -1874,7 +1879,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         PathFinder path(mover);
         path.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
         PathType type = path.getPathType();
-        PointsArray& points = path.getPath();
+        PointsArray const& points = path.getPath();
         movePath.addPath(startPosition.fromPointsArray(points));
         TravelNodePathType pathType;
         uint32 entry;
@@ -1893,7 +1898,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
             PathFinder path(mover);
             path.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
             PathType type = path.getPathType();
-            PointsArray& points = path.getPath();
+            PointsArray const& points = path.getPath();
             bool foundAggro = false;
 
             for (auto p : points)
@@ -2332,7 +2337,7 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
 
     float tDist = botPos.fDist(tarPos);
 
-    if (tDist > sPlayerbotAIConfig.sightDistance || (target->IsFlying() && !bot->IsFreeFlying()) || target->IsTaxiFlying())
+    if (tDist > sPlayerbotAIConfig.sightDistance || (target->IsFlying() && !bot->IsFlying()) || target->IsTaxiFlying())
     {
         if (target->GetObjectGuid().IsPlayer())
         {
@@ -2353,13 +2358,13 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
 
             if (player->IsTaxiFlying()) //Move to where the player is flying to.
             {
-                const Taxi::Map tMap = player->GetTaxiPathSpline();
-                if (!tMap.empty())
+                // Turtle: use GetTaxi().GetTaxiPath() to find the last node destination
+                TaxiPathNodeList const& tPath = player->GetTaxi().GetTaxiPath();
+                if (!tPath.empty())
                 {
-                    auto tEnd = tMap.back();
-
-                    if (tEnd)
-                        return MoveTo(tEnd->mapid, tEnd->x, tEnd->y, tEnd->z);
+                    // Turtle: TaxiPathNodeList Path<TaxiPathNodePtr> const operator[] returns TaxiPathNodeEntry const&
+                    TaxiPathNodeEntry const& tEnd = tPath[tPath.size()-1];
+                    return MoveTo(tEnd.mapid, tEnd.x, tEnd.y, tEnd.z);
                 }
             }
         }
@@ -2381,7 +2386,7 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
             if (const TerrainInfo* terrain = moveToPos.getTerrain())
             {
                 float bottom = terrain->GetHeightStatic(moveToPos.getX(), moveToPos.getY(), moveToPos.getZ());
-                float waterLevel = terrain->GetWaterOrGroundLevel(moveToPos.getX(), moveToPos.getY(), moveToPos.getZ(), bottom, true);
+                float waterLevel = terrain->GetWaterOrGroundLevel(moveToPos.getX(), moveToPos.getY(), moveToPos.getZ(), &bottom, true);
                 bool canSwimToTarget = selfOnSurface && botPos.IsInLineOfSight(tarPos);
                 moveToPos.setZ(waterLevel);
                 if (waterLevel > -200000.0f && waterLevel > bottom)
@@ -2390,7 +2395,7 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
                     //Use standard pathfinder to find a route.
                     WorldPosition prevPoint = botPos;
                     pathfinder.calculate(moveToPos.getVector3(), tarPos.getVector3());
-                    Movement::PointsArray& pathPoints = pathfinder.getPath();
+                    Movement::PointsArray const& pathPoints = pathfinder.getPath();
                     if (pathPoints.size() >= 2)
                     {
                         for (uint32 i = 1; i < pathPoints.size() - 1; i++)
@@ -2504,7 +2509,7 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
             return false;
     }
 
-    mm.MoveFollow(target, distance, angle, true, sPlayerbotAIConfig.boostFollow);
+    mm.MoveFollow(target, distance, angle);
     return true;
 }
 
@@ -2635,7 +2640,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
             sServerFacade.GetChaseTarget(bot) == obj && 
             sServerFacade.GetChaseOffset(bot) == distance)
         {
-            bot->SetTarget(obj); //Needed to keep chase going in combat.
+            bot->SetTargetGuid(obj->GetObjectGuid()); //Needed to keep chase going in combat.
             bot->Attack((Unit*)obj, false); //Needed to keep chase going in combat.
             return true;
         }
@@ -2660,7 +2665,7 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
     if (!endPosition.isValid()) return false;
     if (angle > 20) angle = 0;
 
-    bot->SetTarget(obj); //Needed to keep chase going in combat.
+    bot->SetTargetGuid(obj->GetObjectGuid()); //Needed to keep chase going in combat.
     bot->Attack((Unit*)obj, false); //Needed to keep chase going in combat.
 
     mm.MoveChase((Unit*)obj, distance, angle);
@@ -2904,13 +2909,13 @@ bool MovementAction::Flee(Unit *target)
 
         if (mm->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
         {
-            ChaseMovementGenerator* chase = (ChaseMovementGenerator*)mm->GetCurrent();
+            ChaseMovementGenerator<Player>* chase = (ChaseMovementGenerator<Player>*)mm->GetCurrent();
 
-            if (chase->GetCurrentTarget() == target && sServerFacade.GetChaseOffset(bot) == distance)
+            if (chase->GetTarget() == target && sServerFacade.GetChaseOffset(bot) == distance)
                 return true;
         }
 
-        mm->MoveChase(target, distance, WorldPosition(bot).getAngleTo(target), true, false, true, false);
+        mm->MoveChase(target, distance, WorldPosition(bot).getAngleTo(target));
         return true;
     }
 
@@ -3123,12 +3128,12 @@ bool MovementAction::GeneratePathAvoidingHazards(std::vector<WorldPosition>& mov
         {
             for (auto& pathPoint : movePath)
             {
-                bot->SummonCreature(1, pathPoint.getX(), pathPoint.getY(), pathPoint.getZ(), 0.0f, TEMPSPAWN_TIMED_DESPAWN, 5000.0f);
+                bot->SummonCreature(1, pathPoint.getX(), pathPoint.getY(), pathPoint.getZ(), 0.0f, TEMPSUMMON_TIMED_DESPAWN, 5000);
             }
 
             for (auto& hazards : collidingHazards)
             {
-                bot->SummonCreature(15631, hazards.getX(), hazards.getY(), hazards.getZ(), 0.0f, TEMPSPAWN_TIMED_DESPAWN, 5000.0f);
+                bot->SummonCreature(15631, hazards.getX(), hazards.getY(), hazards.getZ(), 0.0f, TEMPSUMMON_TIMED_DESPAWN, 5000);
             }
         }
 
@@ -3151,7 +3156,7 @@ bool FleeWithPetAction::Execute(Event& event)
         UnitAI* creatureAI = ((Creature*)pet)->AI();
         if (creatureAI)
         {
-            creatureAI->SetReactState(REACT_PASSIVE);
+            pet->SetReactState(REACT_PASSIVE);
             pet->AttackStop();
         }
     }
@@ -3267,7 +3272,7 @@ bool SetBehindTargetAction::Execute(Event& event)
 #ifdef MANGOSBOT_TWO
     target->GetMap()->GetHitPosition(ox, oy, oz + bot->GetCollisionHeight(), x, y, z, bot->GetPhaseMask(), -0.5f);
 #else
-    target->GetMap()->GetHitPosition(ox, oy, oz + bot->GetCollisionHeight(), x, y, z, -0.5f);
+    target->GetMap()->GetLosHitPosition(ox, oy, oz + bot->GetCollisionHeight(), x, y, z, -0.5f);
 #endif
 
     const bool isLos = target->IsWithinLOS(x, y, z + bot->GetCollisionHeight(), true);
@@ -3291,10 +3296,10 @@ bool SetBehindTargetAction::isUseful()
         return false;
 
     Unit* target = AI_VALUE(Unit*, "current target");
-    if (target && !bot->IsFacingTargetsBack(target))
+    if (target && !bot->IsBehindTarget(target))
     {
         // Don't move behind if the target is too far away
-        const float distance = bot->GetDistance(target, false);
+        const float distance = bot->GetDistance(target, SizeFactor::None);
         return distance <= 15.0f;
     }
 
@@ -3340,8 +3345,17 @@ bool MoveOutOfCollisionAction::Execute(Event& event)
         gx = botPos.getX();
         gy = botPos.getY();
         gz = botPos.getZ();
-#ifndef MANGOSBOT_TWO  
-        if (bot->GetMap()->GetReachableRandomPointOnGround(gx, gy, gz, ai->GetRange("follow")))
+#ifndef MANGOSBOT_TWO
+        // Turtle: no GetReachableRandomPointOnGround; use angle-based random movement
+        {
+            float angle = 2.0f * M_PI * float(urand(0, 999)) / 1000.0f;
+            float dist = ai->GetRange("follow");
+            gx = botPos.getX() + cos(angle) * dist;
+            gy = botPos.getY() + sin(angle) * dist;
+            gz = botPos.getZ();
+            bot->UpdateAllowedPositionZ(gx, gy, gz);
+            return MoveTo(bot->GetMapId(), gx, gy, gz);
+        }
 #else
         if (bot->GetMap()->GetReachableRandomPointOnGround(bot->GetPhaseMask(), gx, gy, gz, ai->GetRange("follow")))
 #endif
@@ -3529,10 +3543,9 @@ bool JumpAction::Execute(ai::Event &event)
                 return false;
 
             if ((bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE ||
-            bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE) &&
-            (bot->GetMotionMaster()->GetCurrent()->GetCurrentTarget() != followTarget ||
-            /*bot->InBattleGround() ||*/
-            bot->GetTransport()))
+                 bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE) &&
+                // Turtle: TargetedMovementGeneratorBase::GetTarget() not accessible; skip target equality check
+                bot->GetTransport())
                 return false;
 
             // do not try if very close
@@ -3559,10 +3572,9 @@ bool JumpAction::Execute(ai::Event &event)
                 return false;
 
             if ((bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE ||
-            bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE) &&
-            (bot->GetMotionMaster()->GetCurrent()->GetCurrentTarget() != chaseTarget ||
-            /*bot->InBattleGround() ||*/
-            bot->GetTransport()))
+                 bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE) &&
+                // Turtle: TargetedMovementGeneratorBase::GetTarget() not accessible; skip target equality check
+                bot->GetTransport())
                 return false;
 
             dest = WorldPosition(chaseTarget);
@@ -3621,7 +3633,7 @@ bool JumpAction::Execute(ai::Event &event)
 
                 if (showLanding)
                 {
-                    Creature* wpCreature = bot->SummonCreature(2334, jumpPoint.getX(), jumpPoint.getY(), jumpPoint.getZ() - 1, bot->GetOrientation(), TEMPSPAWN_TIMED_DESPAWN, 3000);
+                    Creature* wpCreature = bot->SummonCreature(2334, jumpPoint.getX(), jumpPoint.getY(), jumpPoint.getZ() - 1, bot->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 3000);
                     PlayerbotAI::AddAura(wpCreature, 246);
 
                     float pointAngle = src.getAngleTo(jumpPoint);
@@ -3643,7 +3655,7 @@ bool JumpAction::Execute(ai::Event &event)
 
                 if (showLanding)
                 {
-                    Creature* wpCreature = bot->SummonCreature(2334, possibleLanding.getX(), possibleLanding.getY(), possibleLanding.getZ() - 1, bot->GetOrientation(), TEMPSPAWN_TIMED_DESPAWN, 3000);
+                    Creature* wpCreature = bot->SummonCreature(2334, possibleLanding.getX(), possibleLanding.getY(), possibleLanding.getZ() - 1, bot->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 3000);
                     PlayerbotAI::AddAura(wpCreature, 246);
 
                     float pointAngle = src.getAngleTo(possibleLanding);
@@ -3704,7 +3716,7 @@ bool JumpAction::Execute(ai::Event &event)
         // only show landing
         if (showLanding || ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
         {
-            Creature* wpCreature = bot->SummonCreature(2334, jumpLanding.getX(), jumpLanding.getY(), jumpLanding.getZ() - 1, bot->GetOrientation(), TEMPSPAWN_TIMED_DESPAWN, 3000);
+            Creature* wpCreature = bot->SummonCreature(2334, jumpLanding.getX(), jumpLanding.getY(), jumpLanding.getZ() - 1, bot->GetOrientation(), TEMPSUMMON_TIMED_DESPAWN, 3000);
             PlayerbotAI::AddAura(wpCreature, 246);
             if (showLanding)
             {
@@ -3759,7 +3771,7 @@ WorldPosition JumpAction::CalculateJumpParameters(const WorldPosition& src, Unit
 #ifdef MANGOSBOT_TWO
         if (jumper->GetMap()->GetHitPosition(ox, oy, oz, fx, fy, fz, jumper->GetPhaseMask(), -0.5f))
 #else
-        if (jumper->GetMap()->GetHitPosition(ox, oy, oz, fx, fy, fz, -0.5f))
+        if (jumper->GetMap()->GetLosHitPosition(ox, oy, oz, fx, fy, fz, -0.5f))
 #endif
         {
             // hit object above
@@ -3810,13 +3822,13 @@ WorldPosition JumpAction::CalculateJumpParameters(const WorldPosition& src, Unit
             fz += jumper->GetCollisionHeight();
 
         // add some collision distances
-        fx += jumper->GetCollisionWidth() * vcos;
-        fy += jumper->GetCollisionWidth() * vsin;
+        fx += jumper->GetCollisionHeight() * vcos;
+        fy += jumper->GetCollisionHeight() * vsin;
 
 #ifdef MANGOSBOT_TWO
         foundCollision = jumper->GetMap()->GetHitPosition(ox, oy, oz, fx, fy, fz, jumper->GetPhaseMask(), -0.5f);
 #else
-        foundCollision = jumper->GetMap()->GetHitPosition(ox, oy, oz, fx, fy, fz, -0.5f);
+        foundCollision = jumper->GetMap()->GetLosHitPosition(ox, oy, oz, fx, fy, fz, -0.5f);
 #endif
 
         if (!foundCollision)
@@ -3825,19 +3837,19 @@ WorldPosition JumpAction::CalculateJumpParameters(const WorldPosition& src, Unit
             if (ascending)
                 fz += jumper->GetCollisionHeight();
 
-            fx += jumper->GetCollisionWidth() * vcos;
-            fy += jumper->GetCollisionWidth() * vsin;
+            fx += jumper->GetCollisionHeight() * vcos;
+            fy += jumper->GetCollisionHeight() * vsin;
 
 #ifdef MANGOSBOT_TWO
             foundCollision = jumper->GetMap()->GetHitPosition(ox, oy, oz, fx, fy, fz, jumper->GetPhaseMask(), -0.5f);
 #else
-            foundCollision = jumper->GetMap()->GetHitPosition(ox, oy, oz + 0.5f, fx, fy, fz, -0.5f);
+            foundCollision = jumper->GetMap()->GetLosHitPosition(ox, oy, oz + 0.5f, fx, fy, fz, -0.5f);
 #endif
 
             if (!foundCollision)
             {
-                fx -= jumper->GetCollisionWidth() * vcos;
-                fy -= jumper->GetCollisionWidth() * vsin;
+                fx -= jumper->GetCollisionHeight() * vcos;
+                fy -= jumper->GetCollisionHeight() * vsin;
                 if (ascending)
                     fz -= jumper->GetCollisionHeight();
             }
@@ -3878,7 +3890,7 @@ WorldPosition JumpAction::CalculateJumpParameters(const WorldPosition& src, Unit
 #ifdef MANGOSBOT_TWO
                 jumper->GetMap()->GetHitPosition(fx, fy, fz, fx, fy, fz_mod, jumper->GetPhaseMask(), -0.5f);
 #else
-                jumper->GetMap()->GetHitPosition(fx, fy, fz, fx, fy, fz_mod, -0.5f);
+                jumper->GetMap()->GetLosHitPosition(fx, fy, fz, fx, fy, fz_mod, -0.5f);
 #endif
                 fz = fz_mod;
                 //fz = fz - CONTACT_DISTANCE - jumper->GetCollisionHeight();
@@ -4059,8 +4071,7 @@ bool JumpAction::IsNotMagmaSlime(const WorldPosition &dest, Unit *jumper)
 {
     if (const TerrainInfo* terrain = dest.getTerrain())
     {
-        if (!terrain->CanCheckLiquidLevel(dest.getX(), dest.getY()))
-            return true;
+        // Turtle: no CanCheckLiquidLevel; getLiquidStatus returning NO_WATER handles missing liquid data
 
         GridMapLiquidData data;
         if (terrain->getLiquidStatus(dest.getX(), dest.getY(), dest.getZ(), MAP_ALL_LIQUIDS, &data) == LIQUID_MAP_NO_WATER)
@@ -4225,7 +4236,7 @@ bool JumpAction::DoJump(const WorldPosition &dest, const WorldPosition& highestP
         data << bot->m_movementInfo.jump.sinAngle;
         data << bot->m_movementInfo.jump.xyspeed;
         data << bot->m_movementInfo.jump.zspeed;
-        bot->GetMover()->SendMessageToSetExcept(data, bot);
+        bot->GetMover()->SendMessageToSetExcept(&data, bot);
     }
     else
     {
@@ -4349,7 +4360,7 @@ WorldPosition JumpAction::GetPossibleJumpStartForInRange(const WorldPosition& sr
     {
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
         {
-            jumper->SummonCreature(VISUAL_WAYPOINT, src.getX(), src.getY(), src.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000);
+            jumper->SummonCreature(VISUAL_WAYPOINT, src.getX(), src.getY(), src.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000);
         }
         requiredSpeed = jumper->GetSpeed(MOVE_WALK);
         return src;
@@ -4361,7 +4372,7 @@ WorldPosition JumpAction::GetPossibleJumpStartForInRange(const WorldPosition& sr
         {
             if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
             {
-                jumper->SummonCreature(VISUAL_WAYPOINT, src.getX(), src.getY(), src.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000);
+                jumper->SummonCreature(VISUAL_WAYPOINT, src.getX(), src.getY(), src.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000);
             }
             requiredSpeed = jumper->GetSpeedRate(MOVE_RUN) * sPlayerbotAIConfig.jumpHSpeed;
             return src;
@@ -4392,8 +4403,16 @@ WorldPosition JumpAction::GetPossibleJumpStartForInRange(const WorldPosition& sr
         gx = src.getX();
         gy = src.getY();
         gz = src.getZ();
-#ifndef MANGOSBOT_TWO  
-        if (jumper->GetMap()->GetReachableRandomPointOnGround(gx, gy, gz, distanceTo))
+#ifndef MANGOSBOT_TWO
+        // Turtle: no GetReachableRandomPointOnGround; use angle-based fallback
+        {
+            float angle = 2.0f * M_PI * float(urand(0, 999)) / 1000.0f;
+            gx = src.getX() + cos(angle) * distanceTo;
+            gy = src.getY() + sin(angle) * distanceTo;
+            gz = src.getZ();
+            jumper->UpdateAllowedPositionZ(gx, gy, gz);
+        }
+        if (true)
 #else
         if (jumper->GetMap()->GetReachableRandomPointOnGround(bot->GetPhaseMask(), gx, gy, gz, distanceTo))
 #endif
@@ -4417,7 +4436,7 @@ WorldPosition JumpAction::GetPossibleJumpStartForInRange(const WorldPosition& sr
 
             if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
             {
-                jumper->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSPAWN_TIMED_DESPAWN, 10000);
+                jumper->SummonCreature(VISUAL_WAYPOINT, gx, gy, gz, 0, TEMPSUMMON_TIMED_DESPAWN, 10000);
             }
             ++successes;
             if (successes >= 10)
@@ -4430,7 +4449,7 @@ WorldPosition JumpAction::GetPossibleJumpStartForInRange(const WorldPosition& sr
         WorldPosition closest = src.closestSq(jumpPoints);
         if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
         {
-            Creature* wpCreature = bot->SummonCreature(15631, closest.getX(), closest.getY(), closest.getZ(), closest.getO(), TEMPSPAWN_TIMED_DESPAWN, 2000.0f);
+            Creature* wpCreature = bot->SummonCreature(15631, closest.getX(), closest.getY(), closest.getZ(), closest.getO(), TEMPSUMMON_TIMED_DESPAWN, 2000);
             wpCreature->SetObjectScale(0.2f);
         }
 

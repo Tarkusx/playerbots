@@ -166,7 +166,8 @@ bool PossibleAttackTargetsValue::HasUnBreakableCC(Unit* target, Player* player)
 bool PossibleAttackTargetsValue::IsImmuneToDamage(Unit* target, Player* player)
 {
     // Charmed
-    if (sServerFacade.IsCharmed(target) && target->IsInTeam(player, true))
+    Player* ownerPlayer = target->GetCharmerOrOwnerPlayerOrPlayerItself();
+    if (sServerFacade.IsCharmed(target) && ownerPlayer && PlayerbotsCompatibility::IsInGroup(player, ownerPlayer))
     {
         return true;
     }
@@ -240,8 +241,11 @@ bool PossibleAttackTargetsValue::IsTapped(Unit* target, Player* player)
             if (master && victim == master) //Target is attacking master.
                 return true;
 
-            if (PlayerbotsCompatibility::IsInGroup(player, victim)) //Target is attacking groupmember.
-                return true;
+            if (Player* victimPlayer = victim->ToPlayer())
+            {
+                if (PlayerbotsCompatibility::IsInGroup(player, victimPlayer)) //Target is attacking groupmember.
+                    return true;
+            }
 
             if (!creature->HasLootRecipient()) //Target is untapped.
                 return true;
@@ -249,7 +253,7 @@ bool PossibleAttackTargetsValue::IsTapped(Unit* target, Player* player)
             if (creature->IsTappedBy(player)) //Target is tapped by player.
                 return true;
 
-            if (master && target->getThreatManager().getThreat(master)) //Master as threat
+            if (master && target->GetThreatManager().getThreat(master)) //Master as threat
                 return true;
 
             if (ai && ai->HasStrategy("attack tagged", BotState::BOT_STATE_NON_COMBAT)) //Can attack tagged.

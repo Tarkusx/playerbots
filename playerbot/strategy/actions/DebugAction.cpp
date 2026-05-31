@@ -1,8 +1,8 @@
 #include "playerbot/playerbot.h"
 #include "DebugAction.h"
 
-#ifndef TEMPSPAWN_TIMED_DESPAWN
-#define TEMPSPAWN_TIMED_DESPAWN TEMPSUMMON_TIMED_DESPAWN
+#ifndef TEMPSUMMON_TIMED_DESPAWN
+#define TEMPSUMMON_TIMED_DESPAWN TEMPSUMMON_TIMED_DESPAWN
 #endif
 #include "playerbot/PlayerbotAIConfig.h"
 #include <playerbot/TravelNode.h>
@@ -1659,7 +1659,7 @@ bool DebugAction::HandlePointOnTrans(Event& event, Player* requester, const std:
     GenericTransport* botTrans = bot->GetTransport();
     bot->SetTransport(nullptr);
 
-    Creature* wpCreature = bot->SummonCreature(2334, pointOnTrans.getX(), pointOnTrans.getY(), pointOnTrans.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+    Creature* wpCreature = bot->SummonCreature(2334, pointOnTrans.getX(), pointOnTrans.getY(), pointOnTrans.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
     transport->AddPassenger(wpCreature);
     wpCreature->NearTeleportTo(pointOnTrans.getX(), pointOnTrans.getY(), pointOnTrans.getZ(), wpCreature->GetOrientation());
     ai->AddAura(wpCreature, 246);
@@ -1708,7 +1708,7 @@ bool DebugAction::HandlePointOnTrans(Event& event, Player* requester, const std:
 
             bot->SetTransport(nullptr);
 
-            Creature* wpCreature = bot->SummonCreature(2334, pos.getX(), pos.getY(), pos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, pos.getX(), pos.getY(), pos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
             transport->AddPassenger(wpCreature, true);
             wpCreature->NearTeleportTo(pos.getX(), pos.getY(), pos.getZ(), wpCreature->GetOrientation());
             ai->AddAura(wpCreature, 246);
@@ -1843,7 +1843,7 @@ bool DebugAction::HandleOnTrans(Event& event, Player* requester, const std::stri
     {
         for (auto& p : path)
         {
-            Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             transport->AddPassenger(wpCreature);
 
@@ -1951,7 +1951,7 @@ bool DebugAction::HandlePathable(Event& event, Player* requester, const std::str
             else //Generate wp off transport so it doesn't spawn on transport.
                 bot->SetTransport(nullptr);
 
-            Creature* wpCreature = bot->SummonCreature(2334, pos.getX(), pos.getY(), pos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, pos.getX(), pos.getY(), pos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
             ai->AddAura(wpCreature, 246);
 
             if (onTrans)
@@ -1990,7 +1990,7 @@ bool DebugAction::HandleRandomSpot(Event& event, Player* requester, const std::s
     if (path.empty())
         return false;
    
-    Creature* wpCreature = bot->SummonCreature(6, path.back().getX(), path.back().getY(), path.back().getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+    Creature* wpCreature = bot->SummonCreature(6, path.back().getX(), path.back().getY(), path.back().getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
     wpCreature->SetObjectScale(0.5f);
 
     if (bot->GetTransport())
@@ -1999,7 +1999,7 @@ bool DebugAction::HandleRandomSpot(Event& event, Player* requester, const std::s
 
     for (auto& p : path)
     {
-        Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+        Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
         ai->AddAura(wpCreature, 246);
         if (bot->GetTransport())
             bot->GetTransport()->AddPassenger(wpCreature);
@@ -2844,7 +2844,7 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
                     
                     if (debugMove && i < 20)
                     {
-                        bot->SummonCreature(2334, p.point.getX(), p.point.getY(), p.point.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 20000.0f);
+                        bot->SummonCreature(2334, p.point.getX(), p.point.getY(), p.point.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 20000.0f);
                     }
                     
                     prevPos = p.point;
@@ -2854,7 +2854,7 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
             
             if (debugMove && !fullPath.getPath().empty())
             {
-                bot->SummonCreature(6, fullPath.getFront().getX(), fullPath.getFront().getY(), fullPath.getFront().getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 30000.0f);
+                bot->SummonCreature(6, fullPath.getFront().getX(), fullPath.getFront().getY(), fullPath.getFront().getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 30000.0f);
             }
 
             std::ostringstream summary;
@@ -2969,7 +2969,7 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
                 
                 if (debugMove)
                 {
-                    bot->SummonCreature(2334, nodePos.getX(), nodePos.getY(), nodePos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 20000.0f);
+                    bot->SummonCreature(2334, nodePos.getX(), nodePos.getY(), nodePos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 20000.0f);
                 }
                 
                 prevPos = nodePos;
@@ -2979,7 +2979,7 @@ bool DebugAction::HandlePosition(Event& event, Player* requester, const std::str
             {
                 bot->SummonCreature(6, route.getNodes().front()->getPosition()->getX(), 
                     route.getNodes().front()->getPosition()->getY(), 
-                    route.getNodes().front()->getPosition()->getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 30000.0f);
+                    route.getNodes().front()->getPosition()->getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 30000.0f);
             }
 
             std::ostringstream summary;
@@ -4263,7 +4263,7 @@ bool DebugAction::HandleShowNode(Event& event, Player* requester, const std::str
 
             for (auto p : ppath)
             {
-                Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 20000.0f);
+                Creature* wpCreature = bot->SummonCreature(2334, p.getX(), p.getY(), p.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 20000.0f);
                 //addAura(246, wpCreature);
                 units.push_back(wpCreature->GetObjectGuid());
 
@@ -4299,7 +4299,7 @@ bool DebugAction::HandleDSpell(Event& event, Player* requester, const std::strin
         botPos.setY(botPos.getY() + sin(ang) * dist);
         botPos.setZ(botPos.getHeight(bot->GetInstanceId()) + 2);
 
-        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
         FakeSpell(spellEffect, wpCreature, wpCreature, prev->GetObjectGuid(), {}, {}, botPos, botPos);
 
@@ -4326,7 +4326,7 @@ bool DebugAction::HandleVSpell(Event& event, Player* requester, const std::strin
         botPos.setY(botPos.getY() + sin(ang) * dist);
         botPos.setZ(botPos.getHeight(bot->GetInstanceId()) + 2);
 
-        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);            
+        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);            
 
         if (wpCreature)
         {
@@ -4357,7 +4357,7 @@ bool DebugAction::HandleASpell(Event& event, Player* requester, const std::strin
         botPos.setY(botPos.getY() + sin(ang) * dist);
         botPos.setZ(botPos.getHeight(bot->GetInstanceId()) + 2);
 
-        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 5000.0f + i * 100.0f);
+        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 5000.0f + i * 100.0f);
         wpCreature->SetObjectScale(0.5f);
 
         if (wpCreature)
@@ -4385,7 +4385,7 @@ bool DebugAction::HandleCSpell(Event& event, Player* requester, const std::strin
         botPos.setY(botPos.getY() + sin(ang) * dist);
         botPos.setZ(botPos.getHeight(bot->GetInstanceId()) + 2);
 
-        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+        Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
         units.push_back(wpCreature->GetObjectGuid());
     }
 
@@ -4454,7 +4454,7 @@ bool DebugAction::HandleTSpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             if (wpCreature)
             {
@@ -4485,7 +4485,7 @@ bool DebugAction::HandleUSpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(effect, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(effect, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
         }
     }
     return true;
@@ -4526,7 +4526,7 @@ bool DebugAction::HandleVSpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
                                    
             if (wpCreature)
             {
@@ -4572,7 +4572,7 @@ bool DebugAction::HandleISpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             if (wpCreature)
             {
@@ -4617,7 +4617,7 @@ bool DebugAction::HandleCSpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             if (wpCreature && lCreature)
             {
@@ -4646,7 +4646,7 @@ bool DebugAction::HandleASpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             if (wpCreature)
             {
@@ -4680,7 +4680,7 @@ bool DebugAction::HandleGSpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             all_targets.push_back(wpCreature->GetObjectGuid());
         }
@@ -4758,7 +4758,7 @@ bool DebugAction::HandleMSpellMap(Event& event, Player* requester, const std::st
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(2334, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             all_targets.push_back(wpCreature->GetObjectGuid());
         }
@@ -4836,7 +4836,7 @@ bool DebugAction::HandleSoundMap(Event& event, Player* requester, const std::str
             botPos.setY(botPos.getY() + (dy - 5) * 5);
             botPos.setZ(botPos.getHeight(bot->GetInstanceId()));
 
-            Creature* wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSPAWN_TIMED_DESPAWN, 10000.0f);
+            Creature* wpCreature = bot->SummonCreature(6, botPos.getX(), botPos.getY(), botPos.getZ(), 0, TEMPSUMMON_TIMED_DESPAWN, 10000.0f);
 
             wpCreature->PlayDistanceSound(effect);
         }

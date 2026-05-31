@@ -257,7 +257,8 @@ void AttackersValue::AddTargetsOf(Player* player, std::set<Unit*>& targets, std:
         // Add the duel opponent (Only consider the owner bot)
         if (bot == player && bot->m_duel && bot->m_duel->opponent)
         {
-            units.insert(bot->m_duel->opponent);
+            if (Unit* opponent = ObjectAccessor::FindPlayer(bot->m_duel->opponent))
+                units.insert(opponent);
         }
 
         // Add the pet attackers (if nearby)
@@ -308,7 +309,7 @@ void AttackersValue::AddTargetsOf(Player* player, std::set<Unit*>& targets, std:
 bool AttackersValue::InCombat(Unit* target, Player* player, bool checkPullTargets)
 {
     // Check if the the target is attacking the player
-    bool inCombat = (target->getThreatManager().getThreat(player) > 0.0f) ||
+    bool inCombat = (target->GetThreatManager().getThreat(player) > 0.0f) ||
                     (target->GetVictim() && (target->GetVictim() == player));
 
     // Check if the target is attacking the player's pet
@@ -317,7 +318,7 @@ bool AttackersValue::InCombat(Unit* target, Player* player, bool checkPullTarget
         Pet* pet = player->GetPet();
         if (pet)
         {
-            inCombat = (target->getThreatManager().getThreat(pet) > 0.0f) ||
+            inCombat = (target->GetThreatManager().getThreat(pet) > 0.0f) ||
                        (target->GetVictim() && (target->GetVictim() == pet));
         }
     }
@@ -361,7 +362,7 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
         }
 
         // Don't check distance on duel opponents
-        if (!player->m_duel || (player->m_duel && (player->m_duel->opponent != target)))
+        if (!player->m_duel || (player->m_duel && (player->m_duel->opponent != target->GetObjectGuid())))
         {
             // If the enemy player is not within sight distance
             if (!enemyPlayer->IsWithinDist(playerToCheckAgainst, EnemyPlayerValue::GetMaxAttackDistance(playerToCheckAgainst), false))
@@ -398,7 +399,7 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
         const Creature* creature = dynamic_cast<Creature*>(target);
         if (creature)
         {
-            if (creature->GetCombatManager().IsInEvadeMode())
+            if (creature->IsInEvadeMode())
             {
                 return false;
             }
@@ -449,7 +450,7 @@ bool AttackersValue::IgnoreTarget(Unit* target, Player* playerToCheckAgainst)
         bool isDummy = false;
 
 
-        if (WorldPosition(playerToCheckAgainst).isOverworld() && target->AI() && target->AI()->IsPreventingDeath())
+        if (WorldPosition(playerToCheckAgainst).isOverworld() && target->AI() /* && target->AI()->IsPreventingDeath() */)
         {
 
             isDummy = true;

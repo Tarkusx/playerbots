@@ -140,7 +140,7 @@ bool FearPvpTrigger::IsActive()
         if (health <= sPlayerbotAIConfig.lowHealth)
         {
 			// Check if targeting bot
-			if (target->GetSelectionGuid() == bot->GetObjectGuid())
+			if (target->GetTargetGuid() == bot->GetObjectGuid())
 			{
                 // Check if the bot has feared anyone
                 bool alreadyFeared = false;

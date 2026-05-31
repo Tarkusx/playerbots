@@ -13,14 +13,15 @@ bool SpellCastUsefulValue::Calculate()
 {
     uint32 spellid = AI_VALUE2(uint32, "spell id", qualifier);
 	if (!spellid)
+
 		return true; // there can be known alternatives
 
 	SpellEntry const *spellInfo = sServerFacade.LookupSpellInfo(spellid);
 	if (!spellInfo)
 		return true; // there can be known alternatives
 
-	if (spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING ||
-		spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_NO_DAMAGE)
+	if (spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_1 ||
+		spellInfo->Attributes & SPELL_ATTR_ON_NEXT_SWING_2)
 	{
 		Spell* spell = bot->GetCurrentSpell(CURRENT_MELEE_SPELL);
 #ifdef CMANGOS
@@ -37,12 +38,12 @@ bool SpellCastUsefulValue::Calculate()
         if (spellid == lastSpellId)
         {
             Spell* const pSpell = bot->FindCurrentSpellBySpellId(lastSpellId);
-            if (pSpell && (pSpell->getState() == SPELL_STATE_CASTING || pSpell->getState() == SPELL_STATE_CHANNELING))
+            if (pSpell && (pSpell->getState() == SPELL_STATE_CASTING))
                 return false;
         }
 	}
 
-    if (IsAutoRepeatRangedSpell(spellInfo) && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) &&
+    if (spellInfo->IsAutoRepeatRangedSpell() && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) &&
             bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL)->m_spellInfo->Id == spellid)
     {
         return false;

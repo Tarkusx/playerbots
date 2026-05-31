@@ -244,12 +244,7 @@ Unit* PartyMemberToProtect::Calculate()
         if (!unit)
             continue;
 
-        bool isRanged = false;
-        if (unit->AI())
-        {
-            if (unit->AI()->IsRangedUnit())
-                isRanged = true;
-        }
+        bool isRanged = unit->IsCaster();
 
         Unit* pVictim = unit->GetVictim();
         if (!pVictim || !pVictim->IsPlayer())

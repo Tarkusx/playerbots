@@ -91,38 +91,7 @@ std::list<ObjectGuid> NearestGameObjects::Calculate()
 
 std::list<ObjectGuid> NearestDynamicObjects::Calculate()
 {
-    std::list<DynamicObject*> targets;
-
-    // Remove this when updating wotlk core
-#ifndef MANGOSBOT_TWO
-    AnyDynamicObjectInObjectRangeCheck u_check(bot, range);
-    MaNGOS::DynamicObjectListSearcher<AnyDynamicObjectInObjectRangeCheck> searcher(targets, u_check);
-    Cell::VisitAllObjects((const WorldObject*)bot, searcher, range);
-#endif
-
     std::list<ObjectGuid> result;
-    for (std::list<DynamicObject*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
-    {
-        DynamicObject* go = *tIter;
-
-        switch (lineOfSight)
-        {
-        case LOS_STATIC:
-            if (!sServerFacade.IsWithinStaticLOSInMap(bot, go))
-            {
-                continue;
-            }
-            break;
-        case LOS_FULL:
-            if (!sServerFacade.IsWithinLOSInMap(bot, go))
-            {
-                continue;
-            }
-            break;
-        }
-
-        result.push_back(go->GetObjectGuid());
-    }
-
+    // Turtle WoW lacks DynamicObjectListSearcher; disable dynamic object search for now.
     return result;
 }

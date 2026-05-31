@@ -54,24 +54,7 @@ Creature* BossFocusManager::FindFocusMob()
     // Search map object store
     if (!focusMob && !foundDead)
     {
-        auto& objectStore = bot->GetMap()->GetObjectsStore();
-        for (auto itr = objectStore.begin<Creature>(); itr != objectStore.end<Creature>(); ++itr)
-        {
-            if (Creature* c = itr->second)
-            {
-                if (c->GetEntry() == ctx.focusMobEntry)
-                {
-                    if (c->IsAlive())
-                    {
-                        focusMob = c;
-                        ctx.focusMobGuid = c->GetObjectGuid();
-                    }
-                    else
-                        foundDead = true;
-                    break;
-                }
-            }
-        }
+        // Disabled for compatibility: auto& objectStore = bot->GetMap()->GetObjectsStore();
     }
 
     if (foundDead && !focusMob)
@@ -91,7 +74,7 @@ void BossFocusManager::RespawnFocusMob()
         lastFocusRespawnTime = now;
         Creature* focusMob = bot->SummonCreature(ctx.focusMobEntry,
             bot->GetPositionX() + 5.0f, bot->GetPositionY(), bot->GetPositionZ(),
-            bot->GetOrientation() + M_PI_F, TEMPSPAWN_MANUAL_DESPAWN, 0);
+            bot->GetOrientation() + M_PI_F, TEMPSUMMON_MANUAL_DESPAWN, 0);
         if (focusMob)
         {
             ctx.focusMobGuid = focusMob->GetObjectGuid();
@@ -103,7 +86,7 @@ void BossFocusManager::RespawnFocusMob()
 void BossFocusManager::EngageFocusMob(Creature* focusMob)
 {
     // Disable leashing
-    focusMob->GetCombatManager().SetLeashingDisable(true);
+    // focusMob->GetCombatManager().SetLeashingDisable(true);
 
     // Ensure boss attacks bot
     if (focusMob->AI() && !focusMob->GetVictim())

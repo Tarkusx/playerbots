@@ -237,7 +237,7 @@ std::list<GuidPosition> GoTrappedFilterValue::Calculate()
             else
             {
                 GameObject* go = guid.GetGameObject(bot->GetInstanceId());
-                if (go && !go->GetLinkedTrap())
+                if (go)
                     result.push_back(guid);
             }
         }

@@ -6,9 +6,10 @@
 #include "playerbot/strategy/AiObjectContext.h"
 #include "playerbot/strategy/values/HazardsValue.h"
 #include "playerbot/strategy/actions/MovementActions.h"
-#include "Grids/GridNotifiers.h"
-#include "Grids/GridNotifiersImpl.h"
-#include "Grids/CellImpl.h"
+#include "Maps/GridNotifiers.h"
+#include "Maps/GridNotifiersImpl.h"
+#include "Maps/CellImpl.h"
+#include "Maps/GridSearchers.h"
 
 using namespace ai;
 
@@ -155,7 +156,7 @@ float CloseToHazardTrigger::GetDistanceToHazard(const ObjectGuid& hazzardGuid)
         Creature* creatureHazard = ai->GetCreature(hazzardGuid);
         if (creatureHazard)
         {
-            return bot->GetDistance(creatureHazard, true, DIST_CALC_COMBAT_REACH);
+            return bot->GetCombatDistance(creatureHazard);
         }
     }
 
@@ -172,11 +173,9 @@ std::list<ObjectGuid> CloseToCreatureHazardTrigger::GetPossibleHazards()
 {
     std::list<ObjectGuid> possibleHazards;
 
-    std::list<Unit*> creatures;
-    MaNGOS::AllCreaturesOfEntryInRangeCheck u_check(bot, creatureID, hazardRadius);
-    MaNGOS::UnitListSearcher<MaNGOS::AllCreaturesOfEntryInRangeCheck> searcher(creatures, u_check);
-    Cell::VisitAllObjects(bot, searcher, hazardRadius);
-    for (Unit* unit : creatures)
+    std::list<Creature*> creatures;
+    GetCreatureListWithEntryInGrid(creatures, bot, creatureID, hazardRadius);
+    for (Creature* unit : creatures)
     {
         possibleHazards.push_back(unit->GetObjectGuid());
     }
@@ -223,14 +222,10 @@ bool CloseToCreatureTrigger::IsActive()
     {
         AiObjectContext* context = ai->GetAiObjectContext();
 
-        // Iterate through the near creatures
-        std::list<Unit*> creatures;
-        MaNGOS::AllCreaturesOfEntryInRangeCheck u_check(bot, creatureID, range);
-        MaNGOS::UnitListSearcher<MaNGOS::AllCreaturesOfEntryInRangeCheck> searcher(creatures, u_check);
-        Cell::VisitAllObjects(bot, searcher, range);
-        for (Unit* unit : creatures)
+        std::list<Creature*> creatures;
+        GetCreatureListWithEntryInGrid(creatures, bot, creatureID, range);
+        for (Creature* creature : creatures)
         {
-            Creature* creature = (Creature*)unit;
             if (creature)
             {
                 // Check if the bot is not being targeted by the creature

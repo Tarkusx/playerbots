@@ -1,6 +1,7 @@
 
 #include "playerbot/playerbot.h"
 #include "ArmsWarriorStrategy.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 

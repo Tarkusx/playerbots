@@ -8,7 +8,7 @@
 #include "PossibleAttackTargetsValue.h"
 #include "playerbot/strategy/actions/ChooseTargetActions.h"
 #include "playerbot/strategy/values/FreeMoveValues.h"
-#include "Tools/Formulas.h"
+#include "Formulas.h"
 
 using namespace ai;
 
@@ -206,7 +206,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
             continue;
         }
 
-        if (creature && creature->IsCritter() && urand(0, 10))
+        if (creature && creature->GetCreatureType() == CREATURE_TYPE_CRITTER && urand(0, 10))
         {
             if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
                 ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " ignored (ignore critters).");

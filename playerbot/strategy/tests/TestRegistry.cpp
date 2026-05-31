@@ -30,7 +30,7 @@ static void InitTeleLocations()
 {
     for (auto const& [id, tele] : sObjectMgr.GetGameTeleMap())
     {
-        GuidPosition pos(ObjectGuid(), WorldPosition(tele.mapId, tele.position_x, tele.position_y, tele.position_z, tele.orientation));
+        GuidPosition pos(ObjectGuid(), WorldPosition(tele.mapId, tele.x, tele.y, tele.z, tele.o));
         sTeleLocations.push_back({ tele.name, pos });
     }
 }

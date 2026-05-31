@@ -94,10 +94,10 @@ bool QuestAction::CompleteQuest(Player* player, uint32 entry)
         }
         else if (creature > 0)
         {
-            if (CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(creature))
+            if (CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(creature))
                 for (uint16 z = 0; z < creaturecount; ++z)
                 {
-                    player->KilledMonster(cInfo, nullptr);
+                    player->KilledMonster(cInfo, ObjectGuid());
                 }
         }
         else if (creature < 0)
@@ -291,9 +291,9 @@ bool QuestUpdateAddKillAction::Execute(Event& event)
         CreatureInfo const* info = sObjectMgr.GetCreatureTemplate(entry);
         if (info)
         {
-            ai->TellPlayer(requester, chat->formatQuestObjective(info->Name, available, required), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(requester, chat->formatQuestObjective(info->name, available, required), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
-            BroadcastHelper::BroadcastQuestUpdateAddKill(ai, bot, qInfo, available, required, info->Name);
+            BroadcastHelper::BroadcastQuestUpdateAddKill(ai, bot, qInfo, available, required, info->name);
         }
     }
     else

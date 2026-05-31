@@ -34,7 +34,7 @@ GuidPosition GraveyardValue::Calculate()
         }
     }
 
-    WorldSafeLocsEntry const* ClosestGrave = bot->GetMap()->GetGraveyardManager().GetClosestGraveYard(
+    WorldSafeLocsEntry const* ClosestGrave = sObjectMgr.GetClosestGraveYard(
         refPosition.getX(),
         refPosition.getY(),
         refPosition.getZ(),
@@ -59,6 +59,8 @@ GuidPosition GraveyardValue::Calculate()
 
 WorldSafeLocsEntry const* GraveyardValue::GetAnotherAppropriateClosestGraveyard() const
 {
+    return nullptr;
+#if 0
     // near
     float distNear = std::numeric_limits<float>::max();
     WorldSafeLocsEntry const* entryNear = nullptr;
@@ -99,19 +101,25 @@ WorldSafeLocsEntry const* GraveyardValue::GetAnotherAppropriateClosestGraveyard(
         if (bot->GetLevel() + 5 < (uint32)graveyardAreaEntry->AreaLevel)
             continue;
 
-        float dist = WorldPosition(corpse).sqDistance(graveyardCoreEntry);
+        float dist = sServerFacade.GetDistance2d(bot, graveyardCoreEntry->x, graveyardCoreEntry->y);
+#endif
 
+#if 0
         if (dist < distNear)
         {
             distNear = dist;
             entryNear = graveyardCoreEntry;
         }
+
+        //store far
+        entryFar = graveyardCoreEntry;
     }
 
     if (entryNear)
         return entryNear;
 
     return entryFar;
+#endif
 }
 
 GuidPosition BestGraveyardValue::Calculate()

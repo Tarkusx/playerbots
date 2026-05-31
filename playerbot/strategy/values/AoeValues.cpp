@@ -4,6 +4,7 @@
 
 #include "playerbot/PlayerbotAIConfig.h"
 #include "playerbot/ServerFacade.h"
+#include "Objects/DynamicObject.h"
 using namespace ai;
 
 std::list<ObjectGuid> AoeCountValue::FindMaxDensity(Player* bot, float range)
@@ -112,10 +113,10 @@ bool HasAreaDebuffValue::Calculate()
         if (!spellProto)
             continue;
 
-        if (IsPositiveEffect(spellProto, go->GetEffIndex()))
+        if (spellProto->IsPositiveEffect(SpellEffectIndex(go->GetEffIndex())))
             continue;
 
-        if (go->IsAffecting(checkTarget))
+        if (go->IsWithinDistInMap(checkTarget, go->GetRadius()))
             return true;
     }
 

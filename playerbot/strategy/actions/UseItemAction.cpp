@@ -19,131 +19,7 @@ constexpr std::string_view LOS_GOS_PARAM = "los gos";
 
 SpellCastResult BotUseItemSpell::ForceSpellStart(SpellCastTargets const* targets, Aura* triggeredByAura)
 {
-    WorldObject* truecaster = GetTrueCaster();
-    if (!truecaster)
-    {
-        truecaster = m_caster;
-    }
-
-    m_spellState = SPELL_STATE_TARGETING;
-    m_targets = *targets;
-
-    if (triggeredByAura)
-    {
-        m_triggeredByAuraSpell = triggeredByAura->GetSpellProto();
-    }
-
-    // create and add update event for this spell
-    SpellEvent* Event = new SpellEvent(this);
-    truecaster->m_events.AddEvent(Event, truecaster->m_events.CalculateTime(1));
-
-    SpellCastResult result = PreCastCheck();
-    bool failed = result != SPELL_CAST_OK;
-    if (result == SPELL_FAILED_BAD_TARGETS && OpenLockCheck())
-    {
-        failed = false;
-        m_IsTriggeredSpell = true;
-        m_ignoreCastTime = true;
-    }
-
-    if (result == SPELL_FAILED_REAGENTS && itemCheats)
-    {
-        failed = false;
-    }
-
-    if (failed)
-    {
-        SendCastResult(result);
-        finish(false);
-        return result;
-    }
-    else
-    {
-        Prepare();
-        return SPELL_CAST_OK;
-    }
-}
-
-bool BotUseItemSpell::OpenLockCheck()
-{
-    for (uint32 i = 0; i < MAX_EFFECT_INDEX; ++i)
-    {
-        // for effects of spells that have only one target
-        switch (m_spellInfo->Effect[i])
-        {
-#ifndef MANGOSBOT_TWO
-            case SPELL_EFFECT_OPEN_LOCK_ITEM:
-#endif
-            case SPELL_EFFECT_OPEN_LOCK:
-            {
-                if (m_caster->GetTypeId() != TYPEID_PLAYER) // only players can open locks, gather etc.
-                    return false;
-
-                // we need a go target in case of TARGET_GAMEOBJECT (for other targets acceptable GO and items)
-                if (m_spellInfo->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT)
-                {
-                    if (!m_targets.getGOTarget())
-                        return false;
-                }
-
-                // get the lock entry
-                uint32 lockId;
-                if (GameObject* go = m_targets.getGOTarget())
-                {
-                    // In BattleGround players can use only flags and banners
-                    if (((Player*)m_caster)->InBattleGround() &&
-                        !((Player*)m_caster)->CanUseBattleGroundObject())
-                        return false;
-
-                    lockId = go->GetGOInfo()->GetLockId();
-                    if (!lockId)
-                        return false;
-
-                    // check if its in use only when cast is finished (called from spell::cast() with strict = false)
-                    if (GameObjectIsInUse(go))
-                        return false;
-
-                    if (go->HasFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE))
-                        return false;
-
-                    // done in client but we need to recheck anyway
-                    if (go->GetGOInfo()->CannotBeUsedUnderImmunity() && m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE))
-                        return false;
-                }
-                else if (Item* item = m_targets.getItemTarget())
-                {
-                    // not own (trade?)
-                    if (item->GetOwner() != m_caster)
-                        return false;
-
-                    lockId = item->GetProto()->LockID;
-
-                    // if already unlocked
-                    if (!lockId || item->HasFlag(ITEM_FIELD_FLAGS, ITEM_DYNFLAG_UNLOCKED))
-                        return false;
-                }
-                else
-                    return false;
-
-                if (!lockId)                                            // possible case for GO and maybe for items.
-                    return false;
-
-                // Get LockInfo
-                LockEntry const* lockInfo = sLockStore.LookupEntry(lockId);
-
-                if (!lockInfo)
-                    return false;
-
-                // check lock compatibility
-                SpellEffectIndex effIdx = SpellEffectIndex(i);
-                SpellCastResult res = CanOpenLock(effIdx, lockId, m_effectSkillInfo[effIdx].skillId, m_effectSkillInfo[effIdx].reqSkillValue, m_effectSkillInfo[effIdx].skillValue);
-                if (res == SPELL_FAILED_BAD_TARGETS)
-                    return true;
-            }
-        }
-    }
-
-    return false;
+    return prepare(*targets, triggeredByAura, 0);
 }
 
 bool IsFoodOrDrink(const ItemPrototype* proto, uint32 spellCategory)
@@ -390,7 +266,7 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
         return false;
     }
 
-    if (proto->Flags & ITEM_FLAG_HAS_LOOT)
+    if (proto->Flags & ITEM_FLAG_LOOTABLE)
     {
         std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", ChatHelper::formatQItem(itemId));
         if (!items.empty())
@@ -518,7 +394,7 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
             continue;
         }
 
-        if (IsNonCombatSpell(spellInfo) && bot->IsInCombat())
+        if (spellInfo->IsNonCombatSpell() && bot->IsInCombat())
         {
             continue;
         }
@@ -565,7 +441,7 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
                 targets.setDestination(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ());
                 validTarget = true;
             }
-            else if (gameObject && gameObject->IsSpawned())
+            else if (gameObject && gameObject->isSpawned())
             {
                 gameObjectTarget = gameObject;
                 targets.setDestination(gameObject->GetPositionX(), gameObject->GetPositionY(), gameObject->GetPositionZ());
@@ -583,13 +459,13 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
             }
         }
         
-        if ((spellTargets & TARGET_FLAG_GAMEOBJECT || spellTargets & TARGET_FLAG_LOCKED) && !validTarget)
+        if ((spellTargets & TARGET_FLAG_OBJECT || spellTargets & TARGET_FLAG_UNK1) && !validTarget)
         {
-            if (gameObject && gameObject->IsSpawned())
+            if (gameObject && gameObject->isSpawned())
             {
                 gameObjectTarget = gameObject;
                 targets.setGOTarget(gameObject);
-                targets.m_targetMask = TARGET_FLAG_GAMEOBJECT;
+                targets.m_targetMask = TARGET_FLAG_OBJECT;
                 validTarget = true;
             }
         }
@@ -643,7 +519,7 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
 
             // Use triggered flag only for items with many spell casts and for not first cast
             BotUseItemSpell* spell = new BotUseItemSpell(bot, spellInfo, (successCasts > 0) ? TRIGGERED_OLD_TRIGGERED : TRIGGERED_NONE);
-            spell->m_clientCast = true;
+            spell->SetClientStarted(true);
             
 #ifdef MANGOSBOT_ONE
             // used in item_template.spell_2 with spell_id with SPELL_GENERIC_LEARN in spell_1
@@ -661,11 +537,11 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
             if (itemUsed)
             {
                 spell->SetCastItem(itemUsed);
-                itemUsed->SetUsedInSpell(true);
+                // itemUsed->SetUsedInSpell(true); // Turtle WoW handles item cast state internally in Spell
             }
 
             // Stop the movement for casted items
-            const bool isCastedSpell = spell->GetCastedTime() > 0 || IsChanneledSpell(spellInfo);
+            const bool isCastedSpell = spell->GetCastedTime() > 0 || spellInfo->IsChanneledSpell();
             if (isCastedSpell)
             {
                 ai->StopMoving();
@@ -986,7 +862,7 @@ bool UseAction::OpenItem(Player* requester, Item* item)
     if (spellId)
         return false;
 
-    if (!(item->GetProto()->Flags & ITEM_FLAG_HAS_LOOT))
+    if (!(item->GetProto()->Flags & ITEM_FLAG_LOOTABLE))
         return false;
 
         // Open quest item in inventory, containing related items (e.g Gnarlpine necklace, containing Tallonkai's Jewel)

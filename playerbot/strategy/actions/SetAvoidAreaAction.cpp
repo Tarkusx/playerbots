@@ -9,7 +9,7 @@ using namespace ai;
 
 bool SetAvoidAreaAction::Execute(Event& event)
 {
-    PathFinder pathfinder(bot->GetMapId(), bot->GetInstanceId());
+    PathFinder pathfinder(bot);
 
     SET_AI_VALUE2(PositionEntry, "pos", "last avoid", PositionEntry(bot));
 
@@ -23,7 +23,7 @@ bool SetAvoidAreaAction::Execute(Event& event)
 
     for (auto& target : targets)
     {
-        CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(target.GetEntry());
+        CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(target.GetEntry());
 
         if (!cInfo)
             continue;
@@ -31,10 +31,10 @@ bool SetAvoidAreaAction::Execute(Event& event)
         if (cInfo->npc_flags > 0) //Ignore npcs.
             continue;
 
-        if (cInfo->MaxLevel < bot->GetLevel() - 3) //Ignore lower level mobs.
+        if (cInfo->level_max < bot->GetLevel() - 3) //Ignore lower level mobs.
             continue;
 
-        FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->Faction);
+        FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(cInfo->faction);
         ReputationRank reactionHum = PlayerbotAI::GetFactionReaction(humanFaction, factionEntry);
         ReputationRank reactionOrc = PlayerbotAI::GetFactionReaction(orcFaction, factionEntry);
 
@@ -47,8 +47,8 @@ bool SetAvoidAreaAction::Execute(Event& event)
             continue;
 
         WorldPosition point(targetUnit);
-        pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 12, PlayerbotsCompatibility::GetAttackDistance(targetUnit, bot) * 2.5);
-        pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 13, PlayerbotsCompatibility::GetAttackDistance(targetUnit, bot));
+        // pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 12, PlayerbotsCompatibility::GetAttackDistance(targetUnit, bot) * 2.5);
+        // pathfinder.setArea(point.getMapId(), point.getX(), point.getY(), point.getZ(), 13, PlayerbotsCompatibility::GetAttackDistance(targetUnit, bot));
     }
 
     return true;

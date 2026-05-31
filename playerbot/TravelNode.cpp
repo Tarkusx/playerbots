@@ -16,6 +16,7 @@
 #include "playerbot/ServerFacade.h"
 #include "MoveMap.h"
 #include "strategy/values/HazardsValue.h"
+#include "Policies/SingletonImp.h"
 
 using namespace ai;
 using namespace MaNGOS;
@@ -3794,3 +3795,5 @@ WorldPosition TravelNodeMap::getMapOffset(uint32 mapId)
 
     return WorldPosition(mapId, 0, 0, 0, 0);
 }
+
+INSTANTIATE_SINGLETON_1(ai::TravelNodeMap);

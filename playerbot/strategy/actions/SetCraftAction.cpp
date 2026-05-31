@@ -45,9 +45,9 @@ bool SetCraftAction::Execute(Event& event)
 
     if (skillSpells.empty())
     {
-        for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+        for (uint32 j = 0; j < sObjectMgr.GetMaxSkillLineAbilityId(); ++j)
         {
-            SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
+            SkillLineAbilityEntry const* skillLine = sObjectMgr.GetSkillLineAbility(j);
             if (skillLine)
                 skillSpells[skillLine->spellId] = skillLine;
         }

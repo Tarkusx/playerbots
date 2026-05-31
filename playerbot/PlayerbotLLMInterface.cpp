@@ -796,3 +796,6 @@ void PlayerbotLLMInterface::LimitContext(std::string& context, int currentLength
         }
     }
 }
+
+#include "Policies/SingletonImp.h"
+INSTANTIATE_SINGLETON_1(PlayerbotLLMInterface);

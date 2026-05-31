@@ -26,7 +26,7 @@ void TestContext::Reset()
     {
         if (guid && guid.IsPlayer())
         {
-            sRandomPlayerbotMgr.DeleteBot(guid, true);
+            // sRandomPlayerbotMgr.DeleteBot(guid, true); // RandomPlayerbotMgr global unavailable in Turtle build; test cleanup disabled.
         }
     }
     spawnedBots.clear();

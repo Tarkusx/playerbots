@@ -25,11 +25,11 @@ Unit* EnemyHealerTargetValue::Calculate()
             continue;
 
         Spell* spell = unit->GetCurrentSpell(CURRENT_GENERIC_SPELL);
-        if (spell && IsPositiveSpell(spell->m_spellInfo))
+        if (spell && spell->m_spellInfo->IsPositiveSpell())
             return unit;
 
         spell = unit->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
-        if (spell && IsPositiveSpell(spell->m_spellInfo))
+        if (spell && spell->m_spellInfo->IsPositiveSpell())
             return unit;
     }
 

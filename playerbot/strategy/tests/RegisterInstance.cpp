@@ -82,7 +82,7 @@ void TestRegistry::GenerateBossWalkTest()
                 continue;
 
             GuidPosition entry;
-            std::string mapName = mapEntry->name[0];
+            std::string mapName = (mapEntry->name ? mapEntry->name : "");
 
             if (!ParseLocation(mapName, entry))
             {
@@ -99,7 +99,7 @@ void TestRegistry::GenerateBossWalkTest()
             {
                 for (auto& node : sTravelNodeMap.getNodes())
                 {
-                    if (node->getMapId() != mapEntry->MapID)
+                    if (node->getMapId() != mapEntry->id)
                         continue;
 
                     if (!node->isPortal())
@@ -110,7 +110,7 @@ void TestRegistry::GenerateBossWalkTest()
                         if (path->getPathType() != TravelNodePathType::areaTrigger)
                             continue;
 
-                        mapName = mapEntry->name[0];
+                        mapName = (mapEntry->name ? mapEntry->name : "");
                         RegisterNamedLocation(mapName, GuidPosition(ObjectGuid(), *otherNode->getPosition()));
                     }
                 }
@@ -132,7 +132,7 @@ void TestRegistry::GenerateBossWalkTest()
                 startCommand = ".bot r @tank co + mark rti";
             }
 
-            std::string bossName = mapEntry->name[0] + std::string("_") + bossInfo->Name;
+            std::string bossName = std::string(mapEntry->name ? mapEntry->name : "") + std::string("_") + bossInfo->name;
             std::replace(bossName.begin(), bossName.end(), ' ', '_');
             std::replace(bossName.begin(), bossName.end(), '\'', '_');
             std::transform(bossName.begin(), bossName.end(), bossName.begin(), ::tolower);
@@ -142,7 +142,7 @@ void TestRegistry::GenerateBossWalkTest()
             RegisterTest("scenario_trash_" + bossName, ApplyScenarioParams(instanceGroupTemplate, ScenarioParams{
                 {"timeout_s",        "1200"                                         },
                 {"start_command",    startCommand                                   },
-                {"level",            std::to_string(instanceTemplate->levelMin + 10)},
+                {"level",            std::to_string(60)}, // Turtle MapEntry has no levelMin field
                 {"group_size",       maxPlayers                                     },
                 {"dead_mobs_min",    "5"                                            },
                 {"instance_entry",   mapName                                        },
@@ -200,7 +200,7 @@ void TestRegistry::GenerateBossEncounterTest()
                 continue;
 
             GuidPosition entry;
-            std::string mapName = mapEntry->name[0];
+            std::string mapName = (mapEntry->name ? mapEntry->name : "");
 
             if (!ParseLocation(mapName, entry))
             {
@@ -235,7 +235,7 @@ void TestRegistry::GenerateBossEncounterTest()
                 startCommand = ".bot r @tank co + mark rti";
             }
 
-            std::string bossName = mapEntry->name[0] + std::string("_") + bossInfo->Name;
+            std::string bossName = std::string(mapEntry->name ? mapEntry->name : "") + std::string("_") + bossInfo->name;
             std::replace(bossName.begin(), bossName.end(), ' ', '_');
             std::replace(bossName.begin(), bossName.end(), '\'', '_');
             std::transform(bossName.begin(), bossName.end(), bossName.begin(), ::tolower);
@@ -243,12 +243,12 @@ void TestRegistry::GenerateBossEncounterTest()
             RegisterTest("scenario_boss_" + bossName, ApplyScenarioParams(bossEncounterTemplate, ScenarioParams{
                 {"timeout_s",        "600"                                          },
                 {"start_command",    startCommand                                   },
-                {"level",            std::to_string(instanceTemplate->levelMin + 10)},
+                {"level",            std::to_string(60)}, // Turtle MapEntry has no levelMin field
                 {"group_size",       maxPlayers                                     },
                 {"instance_entry",   mapName                                        },
                 {"boss_destination", bossCoords.str()                               },
-                {"boss_entry",       std::to_string(bossInfo->Entry)                },
-                {"boss_name",        bossInfo->Name                                 }
+                {"boss_entry",       std::to_string(bossInfo->entry)                },
+                {"boss_name",        bossInfo->name                                 }
             }));
         }
     }

@@ -55,7 +55,7 @@ bool EnemyPlayersValue::IsValid(Unit* target, Player* player)
             // Check that the target is not a mind controlled ally
             if (target->HasAuraType(SPELL_AURA_MOD_CHARM) || target->HasAuraType(SPELL_AURA_MOD_POSSESS))
             {
-                if (player && PlayerbotsCompatibility::IsInGroup(player, target))
+                if (player && PlayerbotsCompatibility::IsInGroup(player, (Player*)target))
                 {
                     return false;
                 }
@@ -107,9 +107,13 @@ bool HasEnemyPlayersValue::Calculate()
 Unit* EnemyPlayerValue::Calculate()
 {
     // Prioritize the duel opponent
-    if(bot->m_duel && bot->m_duel->opponent && !sServerFacade.IsFriendlyTo(bot->m_duel->opponent, bot))
+    if(bot->m_duel && bot->m_duel->opponent)
     {
-        return bot->m_duel->opponent;
+        if (Unit* opponent = ObjectAccessor::FindPlayer(bot->m_duel->opponent))
+        {
+            if (!sServerFacade.IsFriendlyTo(opponent, bot))
+                return opponent;
+        }
     }
 
     Unit* bestEnemyPlayer = nullptr;
@@ -124,7 +128,7 @@ Unit* EnemyPlayerValue::Calculate()
         Unit* firstTarget = ai->GetUnit(enemyPlayers.front());
         if (firstTarget)
         {
-            bestEnemyPlayerDistance = firstTarget->GetDistance(bot, false);
+            bestEnemyPlayerDistance = sServerFacade.GetDistance2d(firstTarget, bot);
             bestEnemyPlayerHealth = firstTarget->GetHealth();
             bestEnemyPlayer = firstTarget;
         }
@@ -145,7 +149,7 @@ Unit* EnemyPlayerValue::Calculate()
                 if (isMelee)
                 {
                     // Score best enemy player based on lowest distance
-                    const float distanceToEnemyPlayer = target->GetDistance(bot, false);
+                    const float distanceToEnemyPlayer = sServerFacade.GetDistance2d(target, bot);
                     if (distanceToEnemyPlayer < bestEnemyPlayerDistance)
                     {
                         bestEnemyPlayerDistance = distanceToEnemyPlayer;

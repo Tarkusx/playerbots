@@ -4,6 +4,7 @@
 #include "playerbot/strategy/values/AttackersValue.h"
 #include "PullActions.h"
 #include "playerbot/strategy/values/PositionValue.h"
+#include "AI/BaseAI/CreatureAI.h"
 
 using namespace ai;
 
@@ -105,12 +106,8 @@ bool PullStartAction::Execute(Event& event)
             Pet* pet = bot->GetPet();
             if (pet)
             {
-                UnitAI* creatureAI = ((Creature*)pet)->AI();
-                if (creatureAI)
-                {
-                    strategy->SetPetReactState(creatureAI->GetReactState());
-                    creatureAI->SetReactState(REACT_PASSIVE);
-                }
+                strategy->SetPetReactState(pet->GetReactState());
+                pet->SetReactState(REACT_PASSIVE);
             }
 
             strategy->OnPullStarted();
@@ -221,11 +218,7 @@ bool PullEndAction::Execute(Event& event)
         Pet* pet = bot->GetPet();
         if (pet)
         {
-            UnitAI* creatureAI = ((Creature*)pet)->AI();
-            if (creatureAI)
-            {
-                creatureAI->SetReactState(strategy->GetPetReactState());
-            }
+            pet->SetReactState(strategy->GetPetReactState());
         }
 
         // Remove the saved pull position

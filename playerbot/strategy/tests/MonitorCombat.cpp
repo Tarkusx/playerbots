@@ -63,20 +63,7 @@ bool MonitorCombatMob::IsConditionMet(const std::string& monitorStr, Player* bot
     // Also check map store if not found nearby
     if (!found)
     {
-        auto& objectStore = bot->GetMap()->GetObjectsStore();
-        for (auto itr = objectStore.begin<Creature>(); itr != objectStore.end<Creature>(); ++itr)
-        {
-            if (Creature* c = itr->second)
-            {
-                if (c->GetEntry() == entryId)
-                {
-                    found = true;
-                    if (c->IsAlive())
-                        allDead = false;
-                    break;
-                }
-            }
-        }
+        // Disabled for compatibility: auto& objectStore = bot->GetMap()->GetObjectsStore();
     }
 
     if (found && allDead)   

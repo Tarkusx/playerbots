@@ -136,7 +136,7 @@ void FindQuestObjectData::GetObjectiveEntries()
 //Data worker. Checks for a specific creature what quest they are needed for and puts them in the proper place in the quest map.
 bool FindQuestObjectData::operator()(CreatureDataPair const& dataPair)
 {
-	uint32 entry = dataPair.second.id;
+	uint32 entry = dataPair.second.creature_id[0];
 
 	for (auto& [questId, flag] : relationMap[entry])
 	{
@@ -233,7 +233,7 @@ std::list<GuidPosition> ActiveQuestGiversValue::Calculate()
 
 			if (creatureInfo)
 			{
-				if (!ai->IsFriendlyTo(creatureInfo->Faction))
+				if (!ai->IsFriendlyTo(creatureInfo->faction))
 					continue;
 			}
 
@@ -287,7 +287,7 @@ std::list<GuidPosition> ActiveQuestTakersValue::Calculate()
 
 				if (info)
 				{
-					if (!ai->IsFriendlyTo(info->Faction))
+					if (!ai->IsFriendlyTo(info->faction))
 						continue;
 				}
 			}

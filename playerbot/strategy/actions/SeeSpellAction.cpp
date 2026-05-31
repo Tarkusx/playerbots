@@ -5,9 +5,6 @@
 #include "playerbot/strategy/values/PositionValue.h"
 #include "playerbot/ServerFacade.h"
 #include "MotionGenerators/MovementGenerator.h"
-#ifdef MANGOS
-#include "luaEngine.h"
-#endif
 
 #include <MotionGenerators/PathFinder.h>
 #include "RtscAction.h"
@@ -23,7 +20,7 @@ Creature* SeeSpellAction::CreateWps(Player* wpOwner, float x, float y, float z, 
 
     if (!important)
         delay *= 0.25;
-    Creature* wpCreature = wpOwner->SummonCreature(entry, x, y, z - 1, o, TEMPSPAWN_TIMED_DESPAWN, delay);
+    Creature* wpCreature = wpOwner->SummonCreature(entry, x, y, z - 1, o, TEMPSUMMON_TIMED_DESPAWN, delay);
 
     if (!important)
         wpCreature->SetObjectScale(0.2f);
@@ -76,7 +73,7 @@ bool SeeSpellAction::Execute(Event& event)
     SpellCastTargets targets;
 
     p >> targets.ReadForCaster(requester);
-    WorldPosition spellPosition(requester->GetMapId(), targets.m_destPos);
+    WorldPosition spellPosition(requester->GetMapId(), targets.m_destX, targets.m_destY, targets.m_destZ);
     SET_AI_VALUE(WorldPosition, "see spell location", spellPosition);
 
     if (ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT) || ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
@@ -92,24 +89,7 @@ bool SeeSpellAction::Execute(Event& event)
         if (spellPosition.isOutside())
             out << "[outside]";
 
-        out << " area = ";
-
-        out << path.getArea(bot->GetMapId(), x, y, z);
-
-        unsigned short flags = path.getFlags(bot->GetMapId(), x, y, z);
-
-        out << " flags = " << flags;
-
-        if (flags & NAV_GROUND)
-            out << ", ground";
-        if (flags & NAV_EMPTY)
-            out << ", empty";
-        if (flags & NAV_GROUND_STEEP)
-            out << ", slope";
-        if (flags & NAV_WATER)
-            out << ", water";
-        if (flags & NAV_MAGMA_SLIME)
-            out << ", magma slime";
+        out << " (navmesh debug disabled)";
 
         ai->TellPlayer(requester, out);
     }
@@ -121,9 +101,9 @@ bool SeeSpellAction::Execute(Event& event)
     if (nextAction.empty())
     {
         if (!inRange && selected)
-            requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 6372);
+            ; // requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 6372);
         else if (inRange && !selected)
-            requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 5036);
+            ; // requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 5036);
 
         SET_AI_VALUE(bool, "RTSC selected", inRange);
 
@@ -200,7 +180,7 @@ bool SeeSpellAction::Execute(Event& event)
 
         SET_AI_VALUE2(WorldPosition, "RTSC saved location", locationName, spellPosition);
         
-        Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSPAWN_TIMED_DESPAWN, 2000.0f);
+        Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSUMMON_TIMED_DESPAWN, 2000.0f);
         wpCreature->SetObjectScale(0.5f);
         RESET_AI_VALUE(std::string, "RTSC next spell action");
 
@@ -215,7 +195,7 @@ bool SeeSpellAction::SelectSpell(Player* requester, WorldPosition& spellPosition
     if (spellPosition.distance(bot) <= 5 || AI_VALUE(bool, "RTSC selected"))
     {
         SET_AI_VALUE(bool, "RTSC selected", true);
-        requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 5036);
+        // requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 5036);
     }
     return true;
 }

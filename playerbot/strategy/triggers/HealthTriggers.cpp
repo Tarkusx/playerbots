@@ -76,8 +76,8 @@ bool HealTargetFullHealthTrigger::IsActive()
                 bool hpFull = pTarget->GetHealth() == pTarget->GetMaxHealth();
                 if (!hpFull && (pTarget->GetHealthPercent() > 90.f))
                 {
-                    uint32 healValue = currentSpell->GetDamage();
-                    uint32 needHeal = pTarget->GetMaxHealth() - pTarget->GetHealth();
+                    int32 healValue = currentSpell->CalculateDamage(EFFECT_INDEX_0, pTarget);
+                    int32 needHeal = pTarget->GetMaxHealth() - pTarget->GetHealth();
                     if (healValue > needHeal && float((needHeal * 100.0f) / healValue) < 50.0f)
                     {
                         status = "almost fullhp";

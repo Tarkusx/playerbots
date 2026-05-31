@@ -101,7 +101,7 @@ EntryTravelPurposeMap EntryTravelPurposeMapValue::Calculate()
         }
 
 
-        if (cInfo->MinLootGold > 0)
+        if (cInfo->gold_min > 0)
         {
             purpose |= (uint32)TravelDestinationPurpose::Grind;
         }
@@ -139,7 +139,7 @@ EntryTravelPurposeMap EntryTravelPurposeMapValue::Calculate()
                 purpose |= (uint32)TravelDestinationPurpose::Boss;
         }
 
-        if (cInfo->SkinningLootId && cInfo->GetRequiredLootSkill() == SKILL_SKINNING)
+        if (cInfo->skinning_loot_id && true)
         {
             purpose |= (uint32)TravelDestinationPurpose::GatherSkinning;
         }
@@ -160,13 +160,13 @@ EntryTravelPurposeMap EntryTravelPurposeMapValue::Calculate()
 
     for (uint32 entry = 0; entry < sGOStorage.GetMaxEntry(); ++entry)
     {
-        GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(entry);
+        GameObjectInfo const* gInfo = sObjectMgr.GetGameObjectInfo(entry);
 
         if (!gInfo)
             continue;
 
-        if (gInfo->flags_extra & CREATURE_FLAG_EXTRA_INVISIBLE)
-            continue;
+        // if (gInfo->flags_extra & CREATURE_FLAG_EXTRA_INVISIBLE) // Copy-paste error from CreatureInfo; GameObjectInfo has no flags_extra
+        //     continue;
 
         uint32 purpose = 0;
 
@@ -212,14 +212,14 @@ uint32 EntryTravelPurposeMapValue::SkillIdToGatherEntry(int32 entry)
     {
         CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(entry);
 
-        if (!cInfo->SkinningLootId)
+        if (!cInfo->skinning_loot_id)
             return 0;
 
-        return cInfo->GetRequiredLootSkill();
+        return SKILL_SKINNING;
     }
     else
     {
-        GameObjectInfo const* gInfo = ObjectMgr::GetGameObjectInfo(entry * -1);
+        GameObjectInfo const* gInfo = sObjectMgr.GetGameObjectInfo(entry * -1);
 
         if (uint32 lockId = gInfo->GetLockId())
         {

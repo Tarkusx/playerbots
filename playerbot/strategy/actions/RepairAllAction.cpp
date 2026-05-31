@@ -17,7 +17,7 @@ bool RepairAllAction::Execute(Event& event)
             continue;
 
 #ifdef MANGOS
-        if(bot->HasUnitState(UNIT_STAT_DIED))
+        if(bot->IsDead())
 #endif
 #ifdef CMANGOS
         if (bot->HasUnitState(UNIT_STAT_FEIGN_DEATH))

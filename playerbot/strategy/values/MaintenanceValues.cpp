@@ -54,60 +54,11 @@ bool ShouldAHSellValue::Calculate()
 
 
 bool CanGetMailValue::Calculate() {
-    if (!ai->HasStrategy("rpg vendor", BotState::BOT_STATE_NON_COMBAT))
-        return false;
-
-    if (AI_VALUE(bool, "should sell"))
-        return false;
-
-    time_t cur_time = time(0);
-
-    for (PlayerMails::iterator itr = bot->GetMailBegin(); itr != bot->GetMailEnd(); ++itr)
-    {
-        if ((*itr)->state == MAIL_STATE_DELETED || cur_time < (*itr)->deliver_time)
-            continue;
-
-        if ((*itr)->has_items || (*itr)->money)
-        {
-            return true;
-        }
-    }
-
+    // Turtle mail is not exposed through PlayerMails; disable proactive mailbox maintenance for now.
     return false;
 }
 
 bool ShouldGetMailValue::Calculate() {
-    time_t cur_time = time(0);
-
-    bool hasGuildShareList = !AI_VALUE(std::vector<GuildShareItemEntry>, "guild share list").empty();
-
-    for (PlayerMails::iterator itr = bot->GetMailBegin(); itr != bot->GetMailEnd(); ++itr)
-    {
-        if ((*itr)->state == MAIL_STATE_DELETED || cur_time < (*itr)->deliver_time)
-            continue;
-
-        int32 waitingInBoxTime = cur_time - (*itr)->deliver_time;
-
-        if (!hasGuildShareList && waitingInBoxTime < HOUR) //Let mail sit in the inbox for atleast 1 hour
-        {
-            return false;
-        }
-
-        if ((*itr)->has_items && waitingInBoxTime > HOUR * 4) //Items are allowed to sit in the mail for max 4 hours.
-        {
-            return true;
-        }
-
-        if (hasGuildShareList && (*itr)->has_items && (*itr)->stationery == MAIL_STATIONERY_AUCTION && waitingInBoxTime > MINUTE) //If bot has guild share list and mail is from AH, take mail immediately.
-        {
-            return true;
-        }
-
-        if ((*itr)->money && AI_VALUE(bool, "should get money")) //We need money so we should get it.
-        {
-            return true;
-        }
-    }
-
+    // Turtle mail is not exposed through PlayerMails; disable proactive mailbox maintenance for now.
     return false;
 }

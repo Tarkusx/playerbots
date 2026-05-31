@@ -2,9 +2,7 @@
 #include "playerbot/playerbot.h"
 #include "XpGainAction.h"
 #include "playerbot/LootObjectStack.h"
-#ifdef MANGOS
-#include "luaEngine.h"
-#endif
+
 
 
 

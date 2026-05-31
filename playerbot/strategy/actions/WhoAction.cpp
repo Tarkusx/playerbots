@@ -100,7 +100,7 @@ std::string WhoAction::QuerySkill(std::string text)
     uint32 spellId = AI_VALUE2(uint32, "spell id", skillName);
     uint16 value = bot->GetSkillValue(skill);
 #ifdef MANGOS
-    uint16 maxSkill = bot->GetMaxSkillValue(skill);
+    uint16 maxSkill = bot->GetPureMaxSkillValue(skill);
 #endif
 #ifdef CMANGOS
     uint16 maxSkill = bot->GetSkillMax(skill);

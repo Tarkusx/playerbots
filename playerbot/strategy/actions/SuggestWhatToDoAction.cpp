@@ -147,7 +147,7 @@ void SuggestWhatToDoAction::grindMaterials()
 
     if (vec.size() > 0)
     {
-        uint32 randomItemId = vec[urand() % vec.size()];
+        uint32 randomItemId = vec[urand(0, vec.size() - 1)];
 
         const ItemPrototype* proto = sObjectMgr.GetItemPrototype(randomItemId);
         if (proto)

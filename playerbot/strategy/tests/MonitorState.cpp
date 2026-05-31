@@ -2,7 +2,7 @@
 #include "MonitorState.h"
 #include "playerbot/WorldPosition.h"
 #include "playerbot/ChatHelper.h"
-#include "Server/DBCStores.h"
+#include "DBCStores.h"
 #include <cctype>
 #include <set>
 
@@ -114,6 +114,8 @@ bool MonitorStateStarterGearCount::IsConditionMet(const std::string& monitorStr,
 
     uint32 packed = bot->GetUInt32Value(UNIT_FIELD_BYTES_0) & 0x00FFFFFF;
     std::set<uint32> starterItems;
+    // Turtle does not expose CharStartOutfit store here; test-only outfit validation disabled.
+    /*
     for (uint32 i = 0; i < sCharStartOutfitStore.GetNumRows(); ++i)
     {
         CharStartOutfitEntry const* entry = sCharStartOutfitStore.LookupEntry(i);
@@ -127,6 +129,7 @@ bool MonitorStateStarterGearCount::IsConditionMet(const std::string& monitorStr,
         }
         break;
     }
+    */
 
     uint32 count = 0;
     for (uint8 slot = 0; slot < EQUIPMENT_SLOT_END; ++slot)

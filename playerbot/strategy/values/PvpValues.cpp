@@ -55,7 +55,7 @@ CreatureDataPair const* BgMasterValue::NearestBm(bool allowDead)
 
     for (auto& bmPair : bmPairs)
     {
-        ObjectGuid bmGuid(HIGHGUID_UNIT, bmPair->second.id, bmPair->first);
+        ObjectGuid bmGuid(HIGHGUID_UNIT, bmPair->second.creature_id[0], bmPair->first);
 
         if (!bmPair)
             continue;
@@ -72,12 +72,12 @@ CreatureDataPair const* BgMasterValue::NearestBm(bool allowDead)
         if (rbmPair && rDist <= dist)
             continue;
 
-        CreatureInfo const* bmTemplate = ObjectMgr::GetCreatureTemplate(bmPair->second.id);
+        CreatureInfo const* bmTemplate = sObjectMgr.GetCreatureTemplate(bmPair->second.creature_id[0]);
 
         if (!bmTemplate)
             continue;
 
-        FactionTemplateEntry const* bmFactionEntry = sFactionTemplateStore.LookupEntry(bmTemplate->Faction);
+        FactionTemplateEntry const* bmFactionEntry = sFactionTemplateStore.LookupEntry(bmTemplate->faction);
 
         //Is the unit hostile?
         if (ai->getReaction(bmFactionEntry) < REP_NEUTRAL)
@@ -171,11 +171,11 @@ Unit* FlagCarrierValue::Calculate()
             if (!bg)
                 return nullptr;
 
-            if ((!sameTeam && bot->GetTeam() == HORDE || (sameTeam && bot->GetTeam() == ALLIANCE)) && !bg->GetFlagCarrierGuid(TEAM_INDEX_HORDE).IsEmpty())
-                carrier = bg->GetBgMap()->GetPlayer(bg->GetFlagCarrierGuid(TEAM_INDEX_HORDE));
+            if ((!sameTeam && bot->GetTeam() == HORDE || (sameTeam && bot->GetTeam() == ALLIANCE)) && !bg->GetHordeFlagPickerGuid().IsEmpty())
+                carrier = bg->GetBgMap()->GetPlayer(bg->GetHordeFlagPickerGuid());
 
-            if ((!sameTeam && bot->GetTeam() == ALLIANCE || (sameTeam && bot->GetTeam() == HORDE)) && !bg->GetFlagCarrierGuid(TEAM_INDEX_ALLIANCE).IsEmpty())
-                carrier = bg->GetBgMap()->GetPlayer(bg->GetFlagCarrierGuid(TEAM_INDEX_ALLIANCE));
+            if ((!sameTeam && bot->GetTeam() == ALLIANCE || (sameTeam && bot->GetTeam() == HORDE)) && !bg->GetAllianceFlagPickerGuid().IsEmpty())
+                carrier = bg->GetBgMap()->GetPlayer(bg->GetAllianceFlagPickerGuid());
 
             if (carrier)
             {

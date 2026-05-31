@@ -3,6 +3,7 @@
 #include "PlayerbotMgr.h"
 #include "PlayerbotAIConfig.h"
 #include "RandomPlayerbotMgr.h"
+#include "Policies/SingletonImp.h"
 
 using namespace ai;
 
@@ -752,4 +753,66 @@ uint32 PlayerBotLoginMgr::GetLevelBucketSize(uint32 level)
     }
 
     return GetMaxOnlineBotCount() * sPlayerbotAIConfig.levelProbability[level] / levelProbabilityTotal;
+}
+
+INSTANTIATE_SINGLETON_1(ai::PlayerBotLoginMgr);
+
+void PlayerbotHolder::AddPlayerBot(uint32 guid, uint32 masterAccountId)
+{
+    if (GetPlayerBot(guid))
+        return;
+
+    uint32 accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(HIGHGUID_PLAYER, guid));
+    if (!accountId)
+        return;
+
+    SqlQueryHolder* holder = new PlayerbotLoginQueryHolder(this, masterAccountId, accountId, guid);
+    if (!static_cast<PlayerbotLoginQueryHolder*>(holder)->Initialize())
+    {
+        delete holder;
+        return;
+    }
+
+    CharacterDatabase.DelayQueryHolder(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
+}
+
+void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQueryHolder* holder)
+{
+    PlayerbotLoginQueryHolder* loginHolder = static_cast<PlayerbotLoginQueryHolder*>(holder);
+    uint32 accountId = loginHolder->GetAccountId();
+    ObjectGuid guid = loginHolder->GetGuid();
+
+    if (GetPlayerBot(guid.GetCounter()))
+    {
+        delete holder;
+        return;
+    }
+
+    WorldSession* botSession = new WorldSession(accountId, NULL, SEC_PLAYER,
+#ifdef MANGOSBOT_TWO
+        2, 0, LOCALE_enUS, "", 0, 0, false);
+#endif
+#ifdef MANGOSBOT_ONE
+        2, 0, LOCALE_enUS, "", 0, 0, false);
+#endif
+#ifdef MANGOSBOT_ZERO
+        0, LOCALE_enUS, "", 0);
+#endif
+
+    Player* bot = new Player(botSession);
+
+    if (!bot->LoadFromDB(guid, holder))
+    {
+        delete botSession;
+        delete bot;
+        delete holder;
+        return;
+    }
+
+    bot->SetInGameTime(WorldTimer::getMSTime());
+    bot->SetAtLoginFlag(AT_LOGIN_NONE);
+    sObjectAccessor.AddObject(bot);
+    OnBotLogin(bot);
+
+    delete holder;
 }

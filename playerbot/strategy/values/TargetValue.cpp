@@ -131,10 +131,8 @@ WorldPosition LastLongMoveValue::Calculate()
 
 WorldPosition HomeBindValue::Calculate()
 {
-    float x, y, z;
-    uint32 mapId;
-    bot->GetHomebindLocation(x, y, z, mapId);
-    return WorldPosition(mapId, x, y, z, 0.0);
+    // Turtle exposes homebind map/area publicly, but not X/Y/Z; avoid DB query here.
+    return WorldPosition(bot);
 }
 
 std::string HomeBindValue::Format()
@@ -189,7 +187,7 @@ Unit* ClosestAttackerTargetingMeTargetValue::Calculate()
         Unit* attacker = ai->GetUnit(attackerGuid);
         if (attacker)
         {
-            const float distance = bot->GetDistance(attacker, true, DIST_CALC_COMBAT_REACH);
+            const float distance = bot->GetDistance(attacker, SizeFactor::CombatReach);
             if (distance < closest)
             {
                 closest = distance;
@@ -208,9 +206,12 @@ std::list<ObjectGuid> FriendlyManualTargetsValue::Get()
         Unit* player = ai->GetUnit(playerGuid);
         if (ai->IsSafe(player))
         {
-            if (PlayerbotsCompatibility::IsInGroup(bot, player))
+            if (Player* playerUnit = player->ToPlayer())
             {
-                return false;
+                if (PlayerbotsCompatibility::IsInGroup(bot, playerUnit))
+                {
+                    return false;
+                }
             }
         }
 

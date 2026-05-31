@@ -67,13 +67,13 @@ uint32 GuildOrderValue::FindItemByName(const std::string& name)
             proto->Class == ITEM_CLASS_ARMOR)
             continue;
 
-        if (name.size() == strlen(proto->Name1) && strstri(proto->Name1, name.c_str()))
+        if (name.size() == proto->Name1.size() && strstri(proto->Name1.c_str(), name.c_str()))
         {
             s_cache[lowerName] = itemId;
             return itemId;
         }
 
-        if (!substringMatch && strstri(proto->Name1, name.c_str()))
+        if (!substringMatch && strstri(proto->Name1.c_str(), name.c_str()))
             substringMatch = itemId;
     }
 
@@ -302,7 +302,7 @@ static bool HasSkipOrderNote(Player* bot)
     if (!member)
         return false;
 
-    std::string note = member->OFFnote;
+    std::string note = member->OfficerNote;
     if (note.empty())
         return false;
 
@@ -330,7 +330,7 @@ GuildOrder GuildOrderValue::Calculate()
     if (!member)
         return order;
 
-    std::string note = member->OFFnote;
+    std::string note = member->OfficerNote;
 
     if (!note.empty())
     {

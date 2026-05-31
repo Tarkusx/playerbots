@@ -168,7 +168,7 @@ void ChatReplyAction::GetAIChatPlaceholders(std::map<std::string, std::string>& 
     {
         Creature* creature = (Creature*)unit;
 
-        CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(creature->GetEntry());
+        CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(creature->GetEntry());
 
         switch (creature->GetCreatureType())
         {
@@ -217,17 +217,24 @@ void ChatReplyAction::GetAIChatPlaceholders(std::map<std::string, std::string>& 
 
         for (auto& gossip = pMenuBounds.first; gossip != pMenuBounds.second; gossip++)
         {
-            const GossipText* gos = sObjectMgr.GetGossipText(gossip->second.text_id);
-            gossipText += " " + gos->Options->Text_0;
+            const NpcText* gos = sObjectMgr.GetNpcText(gossip->second.text_id);
+            if (gos && gos->Options[0].BroadcastTextID)
+            {
+                const char* text = sObjectMgr.GetBroadcastText(gos->Options[0].BroadcastTextID);
+                if (text) gossipText += std::string(" ") + text;
+            }
         }
 
         uint32 textId = observer->GetGossipTextId(creature);
 
         if (textId)
         {
-            const GossipText* gos = sObjectMgr.GetGossipText(textId);
-            if (gos)
-                gossipText += " " + gos->Options->Text_0;
+            const NpcText* gos = sObjectMgr.GetNpcText(textId);
+            if (gos && gos->Options[0].BroadcastTextID)
+            {
+                const char* text = sObjectMgr.GetBroadcastText(gos->Options[0].BroadcastTextID);
+                if (text) gossipText += std::string(" ") + text;
+            }
         }
 
         for (auto& gossip = pMenuItemBounds.first; gossip != pMenuItemBounds.second; gossip++)
@@ -270,7 +277,7 @@ void ChatReplyAction::GetAIChatPlaceholders(std::map<std::string, std::string>& 
     }
 }
 
-WorldPacket ChatReplyAction::GetPacketTemplate(Opcodes op, uint32 type, Unit* sender, Unit* target, std::string channelName)
+WorldPacket ChatReplyAction::GetPacketTemplate(uint32 op, uint32 type, Unit* sender, Unit* target, std::string channelName)
 {
     Player* senderPlayer = (sender->IsPlayer()) ? (Player*)sender : nullptr;
     ObjectGuid senderGuid = sender->GetObjectGuid();
@@ -442,7 +449,7 @@ delayedPackets ChatReplyAction::GenerateResponsePackets(const std::string json
     if (!debugLines.empty())
     {
         debugPackets = LinesToPackets(debugLines, systemTemplate, true, 1);
-        packets.insert(packets.begin(), debugPackets.begin(), debugPackets.end());
+        packets.insert(packets.begin(), std::make_move_iterator(debugPackets.begin()), std::make_move_iterator(debugPackets.end()));
     }
 
     return packets;
@@ -1093,7 +1100,7 @@ std::string ChatReplyAction::GenerateReplyMessage(Player* bot, std::string incom
         // blame gm with chat tag
         if (Player* plr = sObjectMgr.GetPlayer(ObjectGuid(HIGHGUID_PLAYER, guid1)))
         {
-            if (plr->isGMChat())
+            if (plr->IsGMChat())
             {
                 replyType = REPLY_ADMIN_ABUSE;
                 found = true;

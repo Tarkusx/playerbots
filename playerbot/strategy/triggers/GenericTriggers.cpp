@@ -445,7 +445,7 @@ bool DeflectSpellTrigger::IsActive()
     if (!target->IsNonMeleeSpellCasted(true))
         return false;
 
-    if (!target->HasTarget(bot->GetObjectGuid()))
+    if (!target->GetVictim() || target->GetVictim()->GetObjectGuid() != bot->GetObjectGuid())
         return false;
 
     uint32 spellid = context->GetValue<uint32>("spell id", spell)->Get();
@@ -473,7 +473,7 @@ bool DeflectSpellTrigger::IsActive()
         SpellEntry const* tarSpellInfo = spell->m_spellInfo;
         if (tarSpellInfo)
         {
-            attackSchool = GetSpellSchoolMask(tarSpellInfo);
+            attackSchool = tarSpellInfo->GetSpellSchoolMask();
             if (deflectSchool == attackSchool)
                 return true;
         }
@@ -582,7 +582,7 @@ bool TankAssistTrigger::IsActive()
     return tankTarget->GetVictim() != AI_VALUE(Unit*, "self target");
 #endif
 #ifdef MANGOS
-    return tankTarget->getVictim() != AI_VALUE(Unit*, "self target");
+    return tankTarget->GetVictim() != AI_VALUE(Unit*, "self target");
 #endif
 }
 
@@ -814,7 +814,7 @@ bool InRaidFightTrigger::IsActive()
 bool GreaterBuffOnPartyTrigger::IsActive()
 {
     Unit* target = GetTarget();
-    return target && PlayerbotsCompatibility::IsInGroup(bot, target) && BuffOnPartyTrigger::IsActive() && !ai->HasAura(lowerSpell, target, false, checkIsOwner);
+    return target && target->IsPlayer() && PlayerbotsCompatibility::IsInGroup(bot, (Player*)target) && BuffOnPartyTrigger::IsActive() && !ai->HasAura(lowerSpell, target, false, checkIsOwner);
 }
 
 bool TargetOfAttacker::IsActive()
@@ -825,7 +825,7 @@ bool TargetOfAttacker::IsActive()
 bool TargetOfAttackerInRange::IsActive()
 {
     const Unit* closestAttacker = AI_VALUE(Unit*, "closest attacker targeting me");
-    return closestAttacker && bot->GetDistance(closestAttacker, true, DIST_CALC_COMBAT_REACH) <= (distance - sPlayerbotAIConfig.contactDistance);
+    return closestAttacker && bot->GetCombatDistance(closestAttacker) <= (distance - sPlayerbotAIConfig.contactDistance);
 }
 
 bool TargetOfCastedAuraTypeTrigger::IsActive()
@@ -900,7 +900,7 @@ bool DispelOnTargetTrigger::IsActive()
     Unit* target = GetTarget();
     if (target)
     {
-        const uint32 dispelMask = GetDispellMask(dispelType);
+        const uint32 dispelMask = Spells::GetDispellMask(dispelType);
         const std::vector<Aura*> auras = ai->GetAuras(target);
         for (const Aura* aura : auras)
         {
@@ -954,7 +954,7 @@ bool SpellTargetTrigger::IsTargetValid(Unit* target)
     return target &&
            ai->IsSafe(target) &&
            (bot == target || sServerFacade.GetDistance2d(bot, target) < sPlayerbotAIConfig.sightDistance) &&
-           (PlayerbotsCompatibility::IsInGroup(bot, target)) &&
+           (target->IsPlayer() && PlayerbotsCompatibility::IsInGroup(bot, (Player*)target)) &&
            (!aliveCheck || !target->IsDead()) &&
            (!auraCheck || !ai->HasAura(spell, target));
 }

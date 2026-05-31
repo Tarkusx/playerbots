@@ -2849,3 +2849,6 @@ float TravelMgr::MapTransDistance(const WorldPosition& start, const WorldPositio
 
     return sqrt(minsqDist);
 }
+
+#include "Policies/SingletonImp.h"
+INSTANTIATE_SINGLETON_1(ai::TravelMgr);

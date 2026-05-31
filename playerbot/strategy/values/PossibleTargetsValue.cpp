@@ -83,8 +83,8 @@ bool PossibleTargetsValue::IsAttackable(Unit* target, Player* player)
 {
     const bool inVehicle = player->GetPlayerbotAI() && player->GetPlayerbotAI()->IsInVehicle();
     return !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_ATTACKABLE_1) &&
-           !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNTARGETABLE) &&
-           (inVehicle || !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_UNINTERACTIBLE)) &&
+           !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE) &&
+           (inVehicle || !target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER)) &&
            !target->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION);
 }
 
@@ -112,7 +112,7 @@ bool PossibleTargetsValue::IsValid(Unit* target, Player* player, bool ignoreLos)
         }
 
         bool isInCombatWithTarget = target->GetVictim() == player || 
-                                     target->getThreatManager().getThreat(player) > 0.0f ||
+                                     target->GetThreatManager().getThreat(player) > 0.0f ||
                                      player->IsInCombat();
 
         if (!ignoreLos && !isInCombatWithTarget)

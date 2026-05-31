@@ -1,7 +1,7 @@
-﻿#include "playerbot/playerbot.h"
+#include "playerbot/playerbot.h"
 #include "WorldBuffTravelTriggers.h"
 #include "playerbot/ServerFacade.h"
-#include "Server/DBCStores.h"
+#include "Database/DBCStores.h"
 
 using namespace ai;
 

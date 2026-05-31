@@ -45,7 +45,7 @@ bool RpgTaxiTrigger::IsActive()
     for (uint32 i = 0; i < sTaxiPathStore.GetNumRows(); ++i)
     {
         TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i);
-        if (entry && entry->from == node && (bot->GetTaxi().IsTaximaskNodeKnown(entry->to) || bot->isTaxiCheater()))
+        if (entry && entry->from == node && (bot->GetTaxi().IsTaximaskNodeKnown(entry->to) || bot->IsTaxiCheater()))
         {
             return true;
         }
@@ -61,7 +61,7 @@ bool RpgDiscoverTrigger::IsActive()
     if (!guidP.HasNpcFlag(UNIT_NPC_FLAG_FLIGHTMASTER))
         return false;
 
-    if (bot->isTaxiCheater())
+    if (bot->IsTaxiCheater())
         return false;
 
     uint32 node = sObjectMgr.GetNearestTaxiNode(guidP.getX(), guidP.getY(), guidP.getZ(), guidP.getMapId(), bot->GetTeam());
@@ -277,7 +277,7 @@ bool RpgTrainTrigger::IsTrainerOf(CreatureInfo const* cInfo, Player* pPlayer)
         if (cInfo->trainer_race && pPlayer->GetRace() != cInfo->trainer_race)
         {
             // Allowed to train if exalted
-            if (FactionTemplateEntry const* faction_template = sFactionTemplateStore.LookupEntry(cInfo->Faction))
+            if (FactionTemplateEntry const* faction_template = sFactionTemplateStore.LookupEntry(cInfo->faction))
             {
                 if (pPlayer->GetReputationRank(faction_template->faction) == REP_EXALTED)
                     return true;
@@ -323,8 +323,9 @@ bool RpgTrainTrigger::IsActive()
         return false;
     }
 
-    FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(cInfo->Faction);
-    float fDiscountMod = bot->GetReputationPriceDiscount(factionTemplate);
+    FactionTemplateEntry const* factionTemplate = sFactionTemplateStore.LookupEntry(cInfo->faction);
+    Creature* creature = guidP.GetCreature(bot->GetInstanceId());
+    float fDiscountMod = creature ? bot->GetReputationPriceDiscount(creature) : 1.0f;
 
     TrainerSpellMap trainer_spells;
     if (cSpells)
@@ -407,7 +408,7 @@ bool RpgHealTrigger::IsActive()
     if (!unit)
         return false;
 
-    if (!unit->IsFriend(bot))
+    if (!unit->IsFriendlyTo(bot))
         return false;
 
     if (unit->IsDead() || unit->GetHealthPercent() >= 100)
@@ -837,7 +838,7 @@ bool RpgGossipTalkTrigger::IsActive()
     if (!guidP.IsCreature())
         return false;
 
-    GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(guidP.GetCreatureTemplate()->GossipMenuId);
+    GossipMenuItemsMapBounds pMenuItemBounds = sObjectMgr.GetGossipMenuItemsMapBounds(guidP.GetCreatureTemplate()->gossip_menu_id);
     if (pMenuItemBounds.first == pMenuItemBounds.second)
         return false;
 
@@ -846,7 +847,7 @@ bool RpgGossipTalkTrigger::IsActive()
     if (!creature)
         return false;
 
-    if (!creature->isGossip())
+    if (!creature->IsGossip())
         return false;
 
 #ifdef MANGOSBOT_TWO

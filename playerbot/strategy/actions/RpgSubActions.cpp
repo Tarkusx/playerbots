@@ -93,7 +93,7 @@ void RpgHelper::resetFacing(GuidPosition guidPosition)
 
     if (data)
     {
-        unit->SetFacingTo(data->orientation);
+        unit->SetFacingTo(data->position.o);
         sRandomPlayerbotMgr.AddFacingFix(bot->GetMapId(),bot->GetInstanceId(), guidPosition);
     }
 }
@@ -170,7 +170,7 @@ bool RpgTaxiAction::Execute(Event& event)
     for (uint32 i = 0; i < sTaxiPathStore.GetNumRows(); ++i)
     {
         TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i);
-        if (entry && entry->from == node && (bot->GetTaxi().IsTaximaskNodeKnown(entry->to) || bot->isTaxiCheater()))
+        if (entry && entry->from == node && (bot->GetTaxi().IsTaximaskNodeKnown(entry->to) || bot->IsTaxiCheater()))
         {
             nodes.push_back(i);
         }
@@ -284,7 +284,7 @@ bool RpgUseAction::isUseful()
 
             //Do not get in cart if miner is moving some other bot. (This is a core bug, minecart will head to other more distant miner if it exists).
             Creature* creature = nullptr;
-            MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*bot, 28841, true, false, 500.0f, true);
+            MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck creature_check(*bot, 28841, true, 500.0f);
             MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(creature, creature_check);
             Cell::VisitGridObjects(bot, searcher, 500.0f);
 
@@ -588,7 +588,7 @@ void RpgAIChatAction::ManualChat(GuidPosition target, const std::string& line)
     {
         llmContext.clear();
         SET_GAI_VALUE2(std::string, "global string", "llmcontext manual" + std::to_string(target.GetCounter()), llmContext);
-        bot->SendMessageToPlayer("<conversation restarted>");
+        ai->TellPlayerNoFacing(ai->GetMaster() ? ai->GetMaster() : bot, "<conversation restarted>");
         return;
     }
     else if (line == "undo")
@@ -599,7 +599,7 @@ void RpgAIChatAction::ManualChat(GuidPosition target, const std::string& line)
 
         llmContext = llmContext.substr(0, std::max(lastBot,lastUnit));
         SET_GAI_VALUE2(std::string, "global string", "llmcontext manual" + std::to_string(target.GetCounter()), llmContext);
-        bot->SendMessageToPlayer("<last message remove>");
+        ai->TellPlayerNoFacing(ai->GetMaster() ? ai->GetMaster() : bot, "<last message remove>");
         return;
     }
     else if (line == "impersonate")

@@ -1340,9 +1340,9 @@ void ItemUsageValue::PopulateProfessionReagentIds()
 
         if (skillInfo->categoryId == SKILL_CATEGORY_PROFESSION || skillInfo->categoryId == SKILL_CATEGORY_SECONDARY)
         {
-            for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+            for (uint32 j = 0; j < sObjectMgr.GetMaxSkillLineAbilityId(); ++j)
             {
-                SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
+                SkillLineAbilityEntry const* skillLine = sObjectMgr.GetSkillLineAbility(j);
                 if (!skillLine)
                     continue;
 
@@ -1373,9 +1373,9 @@ void ItemUsageValue::PopulateProfessionReagentIds()
 void ItemUsageValue::PopulateReagentItemIdsForCraftableItemIds()
 {
     m_craftingReagentItemIdsForCraftableItem.clear();
-    for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+    for (uint32 j = 0; j < sObjectMgr.GetMaxSkillLineAbilityId(); ++j)
     {
-        SkillLineAbilityEntry const* skillLine = sSkillLineAbilityStore.LookupEntry(j);
+        SkillLineAbilityEntry const* skillLine = sObjectMgr.GetSkillLineAbility(j);
         if (!skillLine)
             continue;
 
@@ -1507,7 +1507,9 @@ uint32 ItemUsageValue::GetAHMedianBuyoutPricePerItem(ItemPrototype const* proto)
 
         for (auto& auction : sRandomPlayerbotMgr.GetAhPrices(proto->ItemId))
         {
-            prices.push_back((float)auction.buyout / (float)auction.itemCount);
+            Item* pItem = sAuctionMgr.GetAItem(auction.itemGuidLow);
+            uint32 itemCount = pItem ? pItem->GetCount() : 1;
+            prices.push_back((float)auction.buyout / (float)itemCount);
         }
 
         if (prices.empty())
@@ -1532,8 +1534,10 @@ uint32 ItemUsageValue::GetAHListingLowestBuyoutPricePerItem(ItemPrototype const*
         {            
             if (!minBuyout || minBuyout > auction.buyout)
             {
+                Item* pItem = sAuctionMgr.GetAItem(auction.itemGuidLow);
+                uint32 itemCount = pItem ? pItem->GetCount() : 1;
                 minBuyout = auction.buyout;
-                minPrice = (float)auction.buyout / (float)auction.itemCount;
+                minPrice = (float)auction.buyout / (float)itemCount;
             }
         }
        
@@ -1887,18 +1891,24 @@ uint32 ItemUsageValue::DesiredPricePerItem(Player* bot, const ItemPrototype* pro
 
     std::vector<AuctionEntry> auctions;
 
+    float lowestPricePerItem = 0.0f;
     for (auto& auction : sRandomPlayerbotMgr.GetAhPrices(proto->ItemId))
     {
-        float pricePerItem = float(auction.buyout) / float(auction.itemCount);
+        Item* pItem = sAuctionMgr.GetAItem(auction.itemGuidLow);
+        uint32 itemCount = pItem ? pItem->GetCount() : 1;
+        float pricePerItem = float(auction.buyout) / float(itemCount);
 
-        if (auction.itemCount != count)
+        if (itemCount != count)
             continue;
 
-        if (lowestPrice.Id == 0 || pricePerItem < float(lowestPrice.buyout) / float(lowestPrice.itemCount))
+        if (lowestPrice.Id == 0 || pricePerItem < lowestPricePerItem)
+        {
             lowestPrice = auction;
+            lowestPricePerItem = pricePerItem;
+        }
     }
 
-    uint32 lowestBuyoutItemPricePerItem = float(lowestPrice.buyout) / float(lowestPrice.itemCount);
+    uint32 lowestBuyoutItemPricePerItem = lowestPricePerItem;
 
     uint32 maxAhPrice = GetBotAHSellMaxPrice(proto);
     uint32 minAhPrice = GetBotAHSellMinPrice(proto);
@@ -1957,7 +1967,7 @@ bool ItemUsageValue::IsItemUsefulForFutureEquip(ItemPrototype const* proto)
         return false;
 
     // Check race restriction
-    if (proto->AllowableRace && !(proto->AllowableRace & bot->getRaceMask()))
+    if (proto->AllowableRace && !(proto->AllowableRace & bot->GetRaceMask()))
         return false;
 
     return true;

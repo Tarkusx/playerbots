@@ -57,7 +57,7 @@ bool MonitorNotOnMap::IsConditionMet(const std::string& monitorStr, Player* bot,
     if (!botPos)
         return true;
 
-    std::string currentMapName = botPos.getMapEntry()->name[0];
+    std::string currentMapName = botPos.getMapEntry()->name ? botPos.getMapEntry()->name : "";
 
     if (currentMapName != wantMapName)
         return true;
@@ -117,7 +117,7 @@ bool MonitorMovementSpeed::IsConditionMet(const std::string& monitorStr, Player*
         lastPositions[guid] = WorldPosition(bot);
         lastTimes[guid] = WorldTimer::getMSTime();
         lastOnTransport[guid] = bot->GetTransport() != nullptr;
-        lastOnTaxi[guid] = bot->IsTaxiDebug();
+        lastOnTaxi[guid] = false;
         return false;
     }
 
@@ -143,7 +143,7 @@ bool MonitorMovementSpeed::IsConditionMet(const std::string& monitorStr, Player*
         return false;
     }
 
-    if (wasOnTaxi && bot->IsTaxiDebug())
+    if (wasOnTaxi && false)
     {
         lastPositions[guid] = currentPos;
         lastTimes[guid] = now;
@@ -167,7 +167,7 @@ bool MonitorMovementSpeed::IsConditionMet(const std::string& monitorStr, Player*
     lastPositions[guid] = currentPos;
     lastTimes[guid] = now;
     lastOnTransport[guid] = bot->GetTransport() != nullptr;
-    lastOnTaxi[guid] = bot->IsTaxiDebug();
+    lastOnTaxi[guid] = false;
 
     if (speed > expectedSpeed * 3.0f)
         return true;

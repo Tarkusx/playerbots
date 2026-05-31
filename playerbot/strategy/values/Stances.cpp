@@ -62,7 +62,7 @@ namespace ai
             Unit* target = GetTarget();
 
 #ifdef MANGOS
-            if (target->getVictim() && target->getVictim()->GetObjectGuid() == bot->GetObjectGuid())
+            if (target->GetVictim() && target->GetVictim()->GetObjectGuid() == bot->GetObjectGuid())
                 return target->GetOrientation();
 #endif
 #ifdef CMANGOS

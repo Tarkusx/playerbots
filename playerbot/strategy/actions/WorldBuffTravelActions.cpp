@@ -82,12 +82,12 @@ static const GameObjectData* FindClosestSongflowerSpawn(Player* bot)
             if (!IsSongflowerEntry(data.id))
                 return false;
 
-            if (data.mapid != mapId)
+            if (data.position.mapId != mapId)
                 return false;
 
-            float dx = data.posX - x;
-            float dy = data.posY - y;
-            float dz = data.posZ - z;
+            float dx = data.position.x - x;
+            float dy = data.position.y - y;
+            float dz = data.position.z - z;
             float distSq = dx * dx + dy * dy + dz * dz;
 
             if (distSq < bestDistSq)
@@ -528,7 +528,7 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
             }
 
             ai->TellPlayer(GetMaster(), "Regrouping at Dire Maul North for portal...");
-            return MoveTo(goData->mapid, goData->posX, goData->posY, goData->posZ);
+            return MoveTo(goData->position.mapId, goData->position.x, goData->position.y, goData->position.z);
         }
 
         // PORTAL_HOME: regroup at the nearest Songflower
@@ -547,7 +547,7 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
 
             const char* portalName = GetHomePortalKeyword(bot);
             ai->TellPlayer(GetMaster(), std::string("Regrouping at Songflower waiting for Portal: ") + portalName + "...");
-            return MoveTo(goData->mapid, goData->posX, goData->posY, goData->posZ);
+            return MoveTo(goData->position.mapId, goData->position.x, goData->position.y, goData->position.z);
         }
 
         return false;
@@ -570,7 +570,7 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
         }
 
         ai->TellPlayer(GetMaster(), "Traveling to Dire Maul North for world buffs");
-        return MoveTo(goData->mapid, goData->posX, goData->posY, goData->posZ);
+        return MoveTo(goData->position.mapId, goData->position.x, goData->position.y, goData->position.z);
     }
 
     if (step == WorldBuffTravelStep::STEP_SONGFLOWER)
@@ -583,7 +583,7 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
         }
 
         ai->TellPlayer(GetMaster(), "Traveling to nearest Songflower for world buffs");
-        return MoveTo(goData->mapid, goData->posX, goData->posY, goData->posZ);
+        return MoveTo(goData->position.mapId, goData->position.x, goData->position.y, goData->position.z);
     }
 
     if (step == WorldBuffTravelStep::STEP_FORGOTTEN_COAST && horde)
@@ -604,12 +604,12 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
                 if (data.id != GO_BONFIRE_FERALAS)
                     return false;
 
-                if (data.mapid != mapId)
+                if (data.position.mapId != mapId)
                     return false;
 
-                float dx = data.posX - x;
-                float dy = data.posY - y;
-                float dz = data.posZ - z;
+                float dx = data.position.x - x;
+                float dy = data.position.y - y;
+                float dz = data.position.z - z;
                 float distSq = dx * dx + dy * dy + dz * dz;
 
                 if (distSq < bestDistSq)
@@ -632,7 +632,7 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
         }
 
         ai->TellPlayer(GetMaster(), "Traveling to the Dire Maul in Feralas");
-        return MoveTo(finder.best->mapid, finder.best->posX, finder.best->posY, finder.best->posZ);
+        return MoveTo(finder.best->position.mapId, finder.best->position.x, finder.best->position.y, finder.best->position.z);
     }
 
     if (step == WorldBuffTravelStep::STEP_FELWOOD)
@@ -654,7 +654,7 @@ bool WorldBuffTravelSetTargetAction::Execute(Event& event)
 
             const char* portalName = horde ? "Orgrimmar" : "Darnassus";
             ai->TellPlayer(GetMaster(), std::string("Regrouping at Dire Maul North before portal to ") + portalName + "...");
-            return MoveTo(goData->mapid, goData->posX, goData->posY, goData->posZ);
+            return MoveTo(goData->position.mapId, goData->position.x, goData->position.y, goData->position.z);
         }
     }
 

@@ -5,19 +5,27 @@
 
 using namespace ai;
 
-std::vector<LootItem*> LootAccess::GetLootContentFor(Player* player) const
+std::vector<LootItem const*> LootAccess::GetLootContentFor(Player* player) const
 {
-	std::vector<LootItem*> retvec;
+	std::vector<LootItem const*> retvec;
 
 	for (LootItemList::const_iterator lootItemItr = m_lootItems.begin(); lootItemItr != m_lootItems.end(); ++lootItemItr)
 	{
-		retvec.push_back(*lootItemItr);
+		retvec.push_back(&(*lootItemItr));
 	}
 
 	return retvec;
 }
 
 // Get loot status for a specified player
+#ifndef LOOT_STATUS_NOT_FULLY_LOOTED
+#define LOOT_STATUS_NOT_FULLY_LOOTED        0x01
+#define LOOT_STATUS_CONTAIN_FFA             0x02
+#define LOOT_STATUS_CONTAIN_RELEASED_ITEMS  0x04
+#define LOOT_STATUS_FAKE_LOOT               0x08
+#define LOOT_STATUS_CONTAIN_GOLD            0x10
+#endif
+
 uint32 LootAccess::GetLootStatusFor(Player const* player) const
 {
 	uint32 status = 0;
@@ -31,16 +39,16 @@ uint32 LootAccess::GetLootStatusFor(Player const* player) const
 	for (auto lootItem : m_lootItems)
 	{
 		Loot const* loot = reinterpret_cast<Loot const*>(this);
-		LootSlotType slotType = lootItem->GetSlotTypeForSharedLoot(player, loot);
+		LootSlotType slotType = lootItem.GetSlotTypeForSharedLoot(ALL_PERMISSION, (Player*)player, loot->GetLootTarget(), true);
 		if (slotType == MAX_LOOT_SLOT_TYPE)
 			continue;
 
 		status |= LOOT_STATUS_NOT_FULLY_LOOTED;
 
-		if (lootItem->freeForAll)
+		if (lootItem.freeforall)
 			status |= LOOT_STATUS_CONTAIN_FFA;
 
-		if (lootItem->isReleased)
+		if (lootItem.is_looted)
 			status |= LOOT_STATUS_CONTAIN_RELEASED_ITEMS;
 	}
 	return status;
@@ -77,11 +85,11 @@ LootTemplateAccess const* DropMapValue::GetLootTemplate(ObjectGuid guid, LootTyp
 		if (info)
 		{
 			if (type == LOOT_CORPSE)
-				lTemplate = LootTemplates_Creature.GetLootFor(info->LootId);
-			else if (type == LOOT_PICKPOCKETING && info->PickpocketLootId)
-				lTemplate = LootTemplates_Pickpocketing.GetLootFor(info->PickpocketLootId);
-			else if (type == LOOT_SKINNING && info->SkinningLootId)
-				lTemplate = LootTemplates_Skinning.GetLootFor(info->SkinningLootId);
+				lTemplate = LootTemplates_Creature.GetLootFor(info->loot_id);
+			else if (type == LOOT_PICKPOCKETING && info->pickpocket_loot_id)
+				lTemplate = LootTemplates_Pickpocketing.GetLootFor(info->pickpocket_loot_id);
+			else if (type == LOOT_SKINNING && info->skinning_loot_id)
+				lTemplate = LootTemplates_Skinning.GetLootFor(info->skinning_loot_id);
 		}
 	}
 	else if (guid.IsGameObject())
@@ -131,7 +139,7 @@ DropMap* ItemDropMapValue::Calculate()
 		if (!proto)
 			continue;
 
-		if (!(proto->Flags & ITEM_FLAG_HAS_LOOT))
+		if (!(proto->Flags & ITEM_FLAG_LOOTABLE))
 			continue;
 
 		LootTemplateAccess const* lTemplateA = DropMapValue::GetLootTemplate(ObjectGuid(HIGHGUID_ITEM, itemId, uint32(1)), LOOT_CORPSE);
@@ -356,6 +364,23 @@ uint32 StackSpaceForItem::Calculate()
 	return maxValue;
 }
 
+static Loot const* GetLootForWorldObject(WorldObject const* object)
+{
+	if (!object)
+		return nullptr;
+
+	if (Creature const* creature = object->ToCreature())
+		return &creature->loot;
+
+	if (GameObject const* go = object->ToGameObject())
+		return &go->loot;
+
+	if (Corpse const* corpse = object->ToCorpse())
+		return &corpse->loot;
+
+	return nullptr;
+}
+
 bool ShouldLootObject::Calculate()
 {
 	GuidPosition guid(stoull(getQualifier()), WorldPosition(bot));
@@ -368,7 +393,9 @@ bool ShouldLootObject::Calculate()
 	if (!object)
 		return false;
 
-	if (!object->m_loot)
+	Loot const* loot = GetLootForWorldObject(object);
+
+	if (!loot)
     {
 		if (!object->IsGameObject())
 			return true;
@@ -383,7 +410,7 @@ bool ShouldLootObject::Calculate()
 		if (!spellId)
             return true;
 
-		SpellEntry const* lootSpell = GetSpellStore()->LookupEntry<SpellEntry>(spellId);
+		SpellEntry const* lootSpell = sSpellMgr.GetSpellEntry(spellId);
 
 		if (!lootSpell || lootSpell->Effect[0] != SPELL_EFFECT_CREATE_ITEM)
             return true;
@@ -401,28 +428,28 @@ bool ShouldLootObject::Calculate()
 		return true;				
     }
 
-	if (object->m_loot->GetGoldAmount() > 0)
+	if (loot->gold > 0)
 		return true;
 
-	LootAccess const* lootAccess = reinterpret_cast<LootAccess const*>(object->m_loot);
+	LootAccess const* lootAccess = reinterpret_cast<LootAccess const*>(loot);
 
 	if (!lootAccess)
 		return false;
 
-	if (lootAccess->m_lootMethod != NOT_GROUP_TYPE_LOOT && !lootAccess->m_isChecked) //Open loot once to start rolls.
+	if (lootAccess->m_lootMethod != FREE_FOR_ALL && !lootAccess->m_isChecked) //Open loot once to start rolls.
 		return true;
 
 	for (auto& lItem : lootAccess->GetLootContentFor(bot))
 	{
-		if (!lItem->itemId)
+		if (!lItem->itemid)
 			continue;
 
-		uint32 canLootAmount = AI_VALUE2(uint32, "stack space for item", lItem->itemId);
+		uint32 canLootAmount = AI_VALUE2(uint32, "stack space for item", lItem->itemid);
 
 		if (canLootAmount < lItem->count)
 			continue;
 
-		ItemQualifier ltemQualifier(lItem);
+		ItemQualifier ltemQualifier(lItem->itemid, lItem->randomPropertyId);
 
 		if (lootAccess->m_lootType != LOOT_SKINNING && !StoreLootAction::IsLootAllowed(ltemQualifier, ai))
 			continue;
@@ -456,12 +483,16 @@ void ActiveRolls::CleanUp(Player* bot, LootRollMap& rollMap, ObjectGuid guid, ui
 			continue;
 		}
 
+		// Turtle WoW: active roll state is not exposed publicly via Loot.
+		// Skip checking GroupLootRoll and just rely on the loot object existence.
+		/*
 		GroupLootRoll* lootRoll = loot->GetRollForSlot(roll->second);
 		if (!lootRoll)
 		{
 			roll = rollMap.erase(roll);
 			continue;
 		}
+		*/
 
 		if(guid)
 		{
@@ -491,11 +522,11 @@ std::string ActiveRolls::Format()
 		Loot* loot = sLootMgr.GetLoot(bot, roll.first);
 		if (loot)
 		{
-			LootItem* item = loot->GetLootItemInSlot(roll.second);
+			LootItem* item = loot->LootItemInSlot(roll.second, bot->GetGUIDLow());
 
 			if (item)
 			{
-				const ItemPrototype* proto = sItemStorage.LookupEntry<ItemPrototype>(item->itemId);
+				const ItemPrototype* proto = sItemStorage.LookupEntry<ItemPrototype>(item->itemid);
 
 				if (proto)
 				{

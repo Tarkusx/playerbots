@@ -20,7 +20,7 @@ bool NearestNonBotPlayersValue::AcceptUnit(Unit* unit)
 {
     ObjectGuid guid = unit->GetObjectGuid();
 #ifdef MANGOS
-    return guid.IsPlayer() && !((Player*)unit)->GetPlayerbotAI() && (!((Player*)unit)->isGameMaster() || ((Player*)unit)->IsGMVisible());
+    return guid.IsPlayer() && !((Player*)unit)->GetPlayerbotAI() && (!((Player*)unit)->IsGameMaster() || ((Player*)unit)->IsGMVisible());
 #endif
 #ifdef CMANGOS
     return guid.IsPlayer() && !((Player*)unit)->GetPlayerbotAI() && (!((Player*)unit)->IsGameMaster() || ((Player*)unit)->IsGMVisible());

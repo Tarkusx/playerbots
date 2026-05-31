@@ -23,7 +23,7 @@ namespace ai
         }
 
         SpellCastResult ForceSpellStart(SpellCastTargets const* targets, Aura* triggeredByAura = nullptr);
-        bool OpenLockCheck();
+
 
     private:
         bool itemCheats;

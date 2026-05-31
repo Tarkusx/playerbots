@@ -49,7 +49,7 @@ bool RTSCAction::Execute(Event& event)
 	if (command == "select" && !selected)
 	{
 		SET_AI_VALUE(bool, "RTSC selected", true);
-		requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 5036);
+		bot->SendPlaySpellVisual(5036);
 		return true;
 	}
 	else if (command == "cancel")
@@ -57,7 +57,7 @@ bool RTSCAction::Execute(Event& event)
 		RESET_AI_VALUE(bool, "RTSC selected");
 		RESET_AI_VALUE(std::string, "RTSC next spell action");
 		if(selected)
-			requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 6372);
+			bot->SendPlaySpellVisual(6372);
 		return true;
 	}
 	else if (command == "toggle")
@@ -65,12 +65,12 @@ bool RTSCAction::Execute(Event& event)
 		if (!selected)
 		{
 			SET_AI_VALUE(bool, "RTSC selected", true);
-			requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 5036);
+			bot->SendPlaySpellVisual(5036);
 		}
 		else
 		{
 			SET_AI_VALUE(bool, "RTSC selected", false);
-			requester->GetSession()->SendPlaySpellVisual(bot->GetObjectGuid(), 6372);
+			bot->SendPlaySpellVisual(6372);
 		}
 
 		return true;
@@ -82,7 +82,7 @@ bool RTSCAction::Execute(Event& event)
 		WorldPosition spellPosition(bot);
 		SET_AI_VALUE2(WorldPosition, "RTSC saved location", locationName, spellPosition);
 
-		Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSPAWN_TIMED_DESPAWN, 2000.0f);
+		Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSUMMON_TIMED_DESPAWN, 2000.0f);
 		wpCreature->SetObjectScale(0.5f);
 
 		return true;
@@ -220,7 +220,7 @@ bool RTSCAction::Execute(Event& event)
 					PlayerbotTextMgr::ReplaceAll(fileName, "BOTNAME", playerName);
 				}
 
-				std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
+				std::string m_logsDir = sConfig.GetStringDefault("LogsDir", "");
 				if (!m_logsDir.empty())
 				{
 					if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -275,7 +275,7 @@ bool RTSCAction::Execute(Event& event)
 
 		if (spellPosition)
 		{
-			Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSPAWN_TIMED_DESPAWN, 2000.0f);
+			Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSUMMON_TIMED_DESPAWN, 2000.0f);
 			wpCreature->SetObjectScale(0.5f);
 		}
 

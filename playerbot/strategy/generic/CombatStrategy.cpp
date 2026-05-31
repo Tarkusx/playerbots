@@ -50,7 +50,7 @@ float AvoidAoeStrategyMultiplier::GetValue(Action* action)
     else if (spellId && pSpellInfo->Targets & TARGET_FLAG_SOURCE_LOCATION)
         return 1.0f;
 
-    uint32 CastingTime = !IsChanneledSpell(pSpellInfo) ? pSpellInfo->GetCastTime(bot) : GetSpellDuration(pSpellInfo);
+    uint32 CastingTime = !pSpellInfo->IsChanneledSpell() ? pSpellInfo->GetCastTime(bot) : pSpellInfo->GetDuration();
 
     if (AI_VALUE2(bool, "has area debuff", "self target") && spellId && CastingTime > 0)
     {

@@ -73,8 +73,10 @@ trainableSpellMap* TrainableSpellMapValue::Calculate()
                 if (PlayerbotsCompatibility::GetTrainerLearnedSpellId(otherTrainerSpell) != PlayerbotsCompatibility::GetTrainerLearnedSpellId(&trainerSpell))
                     continue;
 
-                if (otherTrainerSpell->conditionId != trainerSpell.conditionId)
-                    continue;
+                // Turtle WoW has no conditionId in TrainerSpell, skipping this check.
+                // if (otherTrainerSpell->conditionId != trainerSpell.conditionId)
+                //     continue;
+#endif
 
                 sameTrainerSpell = otherTrainerSpell;
                 break;
@@ -97,7 +99,7 @@ trainableSpellMap* TrainableSpellMapValue::Calculate()
             }
 
             for (auto& trainer : trainers)
-                (*spellMap)[trainerType][spellRequirement][sameTrainerSpell].push_back(trainer->Entry);
+                (*spellMap)[trainerType][spellRequirement][sameTrainerSpell].push_back(trainer->entry);
         }
     }
 

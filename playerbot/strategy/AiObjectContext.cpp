@@ -163,3 +163,6 @@ void AiObjectContext::Load(std::list<std::string> data)
         value->Load(text);
     }
 }
+
+#include "Policies/SingletonImp.h"
+INSTANTIATE_SINGLETON_1(ai::SharedObjectContext);

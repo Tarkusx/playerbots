@@ -40,9 +40,10 @@ bool PlayerHasNoFlag::IsActive()
         if (ai->GetBot()->GetBattleGroundTypeId() == BattleGroundTypeId::BATTLEGROUND_WS)
         {
             BattleGroundWS *bg = (BattleGroundWS*)ai->GetBot()->GetBattleGround();
-            if (!(bg->GetFlagState(bg->GetOtherTeam(bot->GetTeam())) == BG_WS_FLAG_STATE_ON_PLAYER))
+            bool otherTeamFlagPickedUp = (bot->GetTeam() == ALLIANCE) ? bg->IsHordeFlagPickedup() : bg->IsAllianceFlagPickedup();
+            if (!otherTeamFlagPickedUp)
                 return true;
-            if (bot->GetObjectGuid() == bg->GetAllianceFlagCarrierGuid() || bot->GetObjectGuid() == bg->GetHordeFlagCarrierGuid())
+            if (bot->GetObjectGuid() == bg->GetAllianceFlagPickerGuid() || bot->GetObjectGuid() == bg->GetHordeFlagPickerGuid())
             {
                 return false;
             }
@@ -129,9 +130,10 @@ bool PlayerIsInBattlegroundWithoutFlag::IsActive()
         if (ai->GetBot()->GetBattleGroundTypeId() == BattleGroundTypeId::BATTLEGROUND_WS)
         {
             BattleGroundWS *bg = (BattleGroundWS*)ai->GetBot()->GetBattleGround();
-            if (!(bg->GetFlagState(bg->GetOtherTeam(bot->GetTeam())) == BG_WS_FLAG_STATE_ON_PLAYER))
+            bool otherTeamFlagPickedUp = (bot->GetTeam() == ALLIANCE) ? bg->IsHordeFlagPickedup() : bg->IsAllianceFlagPickedup();
+            if (!otherTeamFlagPickedUp)
                 return true;
-            if (bot->GetGUIDLow() == bg->GetAllianceFlagCarrierGuid() || bot->GetGUIDLow() == bg->GetHordeFlagCarrierGuid())
+            if (bot->GetObjectGuid() == bg->GetAllianceFlagPickerGuid() || bot->GetObjectGuid() == bg->GetHordeFlagPickerGuid())
             {
                 return false;
             }
@@ -157,7 +159,7 @@ bool PlayerHasFlag::IsActive()
             if (!bg)
                 return false;
 
-            if (bot->GetObjectGuid() == bg->GetFlagCarrierGuid(TEAM_INDEX_ALLIANCE) || bot->GetObjectGuid() == bg->GetFlagCarrierGuid(TEAM_INDEX_HORDE))
+            if (bot->GetObjectGuid() == bg->GetAllianceFlagPickerGuid() || bot->GetObjectGuid() == bg->GetHordeFlagPickerGuid())
             {
                 return true;
             }
@@ -183,12 +185,13 @@ bool TeamHasFlag::IsActive()
         {
             BattleGroundWS *bg = (BattleGroundWS*)ai->GetBot()->GetBattleGround();
 
-            if (bot->GetObjectGuid() == bg->GetAllianceFlagCarrierGuid() || bot->GetObjectGuid() == bg->GetHordeFlagCarrierGuid())
+            if (bot->GetObjectGuid() == bg->GetAllianceFlagPickerGuid() || bot->GetObjectGuid() == bg->GetHordeFlagPickerGuid())
             {
                 return false;
             }
 
-            if (bg->GetFlagState(bg->GetOtherTeam(bot->GetTeam())) == BG_WS_FLAG_STATE_ON_PLAYER)
+            bool otherTeamFlagPickedUp = (bot->GetTeam() == ALLIANCE) ? bg->IsHordeFlagPickedup() : bg->IsAllianceFlagPickedup();
+            if (otherTeamFlagPickedUp)
                 return true;
         }
         return false;
@@ -210,12 +213,12 @@ bool EnemyTeamHasFlag::IsActive()
 
             if (bot->GetTeam() == HORDE)
             {
-                if (!bg->GetFlagCarrierGuid(TEAM_INDEX_HORDE).IsEmpty())
+                if (bg->IsHordeFlagPickedup())
                     return true;
             }
             else
             {
-                if (!bg->GetFlagCarrierGuid(TEAM_INDEX_ALLIANCE).IsEmpty())
+                if (bg->IsAllianceFlagPickedup())
                     return true;
             }
         }

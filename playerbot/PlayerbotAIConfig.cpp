@@ -928,18 +928,23 @@ bool PlayerbotAIConfig::BootstrapRuntime()
     sLog.outString("Random bot creation started.");
     RandomPlayerbotFactory::CreateRandomBots();
     PlayerbotFactory::Init();
-    sRandomItemMgr.Init();
+    if (config.GetBoolDefault("AiPlayerbot.PreloadRandomItemCaches", false))
+        sRandomItemMgr.Init();
+    else
+        sLog.outString("Skipping random item cache preload. Set AiPlayerbot.PreloadRandomItemCaches = 1 to build gear/item caches at startup.");
     sPlayerbotTextMgr.LoadBotTexts();
     sPlayerbotTextMgr.LoadBotTextChance();
     sPlayerbotHelpMgr.LoadBotHelpTexts();
 
     LoadTalentSpecs();
 
-    if (sPlayerbotAIConfig.autoDoQuests)
+    if (sPlayerbotAIConfig.autoDoQuests && config.GetBoolDefault("AiPlayerbot.PreloadQuestTravelCache", false))
     {
         sLog.outString("Loading Quest Detail Data...");
         sTravelMgr.LoadQuestTravelTable();
     }
+    else if (sPlayerbotAIConfig.autoDoQuests)
+        sLog.outString("Skipping quest travel cache preload. Set AiPlayerbot.PreloadQuestTravelCache = 1 to build quest travel data at startup.");
 
     sLog.outString("Loading named locations...");
     sRandomPlayerbotMgr.LoadNamedLocations();

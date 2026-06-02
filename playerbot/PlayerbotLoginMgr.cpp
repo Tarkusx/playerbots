@@ -178,7 +178,7 @@ bool PlayerLoginInfo::SendHolder()
         return false;
     }
 
-    CharacterDatabase.DelayQueryHolder(this, &PlayerLoginInfo::HandlePlayerBotLoginCallback, holder);
+    CharacterDatabase.DelayQueryHolderUnsafe(this, &PlayerLoginInfo::HandlePlayerBotLoginCallback, holder);
 
     return true;
 }
@@ -773,7 +773,7 @@ void PlayerbotHolder::AddPlayerBot(uint32 guid, uint32 masterAccountId)
         return;
     }
 
-    CharacterDatabase.DelayQueryHolder(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
+    CharacterDatabase.DelayQueryHolderUnsafe(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
 }
 
 void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQueryHolder* holder)
@@ -800,6 +800,7 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
 #endif
 
     Player* bot = new Player(botSession);
+    bot->GetMotionMaster()->Initialize();
 
     if (!bot->LoadFromDB(guid, holder))
     {
@@ -811,6 +812,20 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
 
     bot->SetInGameTime(WorldTimer::getMSTime());
     bot->SetAtLoginFlag(AT_LOGIN_NONE);
+
+    if (!bot->GetMap()->Add(bot))
+    {
+        AreaTriggerTeleport const* at = sObjectMgr.GetGoBackTrigger(bot->GetMapId());
+        if (at)
+            bot->TeleportTo(at->destination, bot->GetOrientation());
+        else if (bot->GetMapId() == 533)
+            bot->TeleportTo(0, 3362.15f, -3379.35f, 144.782f, 6.28319f);
+        else
+            bot->TeleportToHomebind();
+
+        sMapMgr.ExecuteSingleDelayedTeleport(bot);
+    }
+
     sObjectAccessor.AddObject(bot);
     OnBotLogin(bot);
 

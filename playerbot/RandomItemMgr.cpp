@@ -220,12 +220,10 @@ void RandomItemMgr::BuildRandomItemCache()
     }
     else
     {
-        sLog.outString("Building random item cache from %u items", sItemStorage.GetMaxEntry());
-        for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+        sLog.outString("Building random item cache from %u items", (uint32)sObjectMgr.GetItemPrototypeMap().size());
+        for (auto const& [itemId, protoEntry] : sObjectMgr.GetItemPrototypeMap())
         {
-            ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
-            if (!proto)
-                continue;
+            ItemPrototype const* proto = &protoEntry;
 
             if (proto->Duration & 0x80000000)
                 continue;
@@ -958,8 +956,12 @@ void RandomItemMgr::BuildItemInfoCache()
 
     int32 sEntry;
 
-    for (uint32 entry = 0; entry < sCreatureStorage.GetMaxEntry(); entry++)
+    for (auto const& [entry, creatureInfoPtr] : sObjectMgr.GetCreatureInfoMap())
     {
+        CreatureInfo const* creatureInfo = creatureInfoPtr.get();
+        if (!creatureInfo)
+            continue;
+
         sEntry = entry;
 
         LootTemplateAccess const* lTemplateA = DropMapValue::GetLootTemplate(ObjectGuid(HIGHGUID_UNIT, entry, uint32(1)), LOOT_CORPSE);
@@ -969,7 +971,7 @@ void RandomItemMgr::BuildItemInfoCache()
                 dropMap->insert(std::make_pair(lItem.itemid, sEntry));
     }
 
-    for (uint32 entry = 0; entry < sGOStorage.GetMaxEntry(); entry++)
+    for (auto const& [entry, goInfo] : sObjectMgr.GetGameObjectInfoMap())
     {
         sEntry = entry;
 
@@ -998,19 +1000,17 @@ void RandomItemMgr::BuildItemInfoCache()
         } while (result->NextRow());
     }
 
-    sLog.outString("Calculating stat weights for %d items...", sItemStorage.GetMaxEntry());
-    BarGoLink bar(sItemStorage.GetMaxEntry());
+    sLog.outString("Calculating stat weights for %d items...", (uint32)sObjectMgr.GetItemPrototypeMap().size());
+    BarGoLink bar(sObjectMgr.GetItemPrototypeMap().size());
 
     CharacterDatabase.BeginTransaction();
 
     // generate stat weights for classes/specs
-    for (uint32 itemId = 0; itemId < sItemStorage.GetMaxEntry(); ++itemId)
+    for (auto const& [itemId, protoEntry] : sObjectMgr.GetItemPrototypeMap())
     {
         bar.step();
 
-        ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
-        if (!proto)
-            continue;
+        ItemPrototype const* proto = &protoEntry;
 
         // skip non armor/weapon
         if (proto->Class != ITEM_CLASS_WEAPON &&

@@ -804,12 +804,16 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
 
     if (!bot->LoadFromDB(guid, holder))
     {
-        delete botSession;
+        if (sPlayerbotAIConfig.IsInRandomAccountList(accountId))
+            sRandomPlayerbotMgr.OnPlayerLoginError(guid.GetCounter());
+
         delete bot;
+        delete botSession;
         delete holder;
         return;
     }
 
+    botSession->SetPlayer(bot);
     bot->SetInGameTime(WorldTimer::getMSTime());
     bot->SetAtLoginFlag(AT_LOGIN_NONE);
 

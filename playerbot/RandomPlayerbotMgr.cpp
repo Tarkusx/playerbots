@@ -52,6 +52,78 @@
 using namespace ai;
 using namespace MaNGOS;
 
+namespace
+{
+    std::string FormatStrategyList(std::list<std::string_view> const& strategies)
+    {
+        std::ostringstream out;
+        bool first = true;
+        for (std::string_view strategy : strategies)
+        {
+            if (!first)
+                out << ",";
+
+            first = false;
+            out << strategy;
+        }
+
+        return out.str();
+    }
+
+    const char* TravelStateName(TravelState state)
+    {
+        switch (state)
+        {
+        case TravelState::TRAVEL_STATE_IDLE: return "idle";
+        case TravelState::TRAVEL_STATE_TRAVEL_PICK_UP_QUEST: return "travel_pick_up_quest";
+        case TravelState::TRAVEL_STATE_WORK_PICK_UP_QUEST: return "work_pick_up_quest";
+        case TravelState::TRAVEL_STATE_TRAVEL_DO_QUEST: return "travel_do_quest";
+        case TravelState::TRAVEL_STATE_WORK_DO_QUEST: return "work_do_quest";
+        case TravelState::TRAVEL_STATE_TRAVEL_HAND_IN_QUEST: return "travel_hand_in_quest";
+        case TravelState::TRAVEL_STATE_WORK_HAND_IN_QUEST: return "work_hand_in_quest";
+        case TravelState::TRAVEL_STATE_TRAVEL_RPG: return "travel_rpg";
+        case TravelState::TRAVEL_STATE_TRAVEL_EXPLORE: return "travel_explore";
+        default: return "unknown";
+        }
+    }
+
+    const char* TravelStatusName(TravelStatus status)
+    {
+        switch (status)
+        {
+        case TravelStatus::TRAVEL_STATUS_NONE: return "none";
+        case TravelStatus::TRAVEL_STATUS_PREPARE: return "prepare";
+        case TravelStatus::TRAVEL_STATUS_READY: return "ready";
+        case TravelStatus::TRAVEL_STATUS_TRAVEL: return "travel";
+        case TravelStatus::TRAVEL_STATUS_WORK: return "work";
+        case TravelStatus::TRAVEL_STATUS_COOLDOWN: return "cooldown";
+        case TravelStatus::TRAVEL_STATUS_EXPIRED: return "expired";
+        default: return "unknown";
+        }
+    }
+
+    std::string FormatTravelTarget(TravelTarget* target, Player* bot)
+    {
+        if (!target)
+            return "target=null";
+
+        std::ostringstream out;
+        out << "state=" << TravelStateName(target->GetTravelState())
+            << " status=" << TravelStatusName(target->GetStatus())
+            << " active=" << (target->IsActive() ? 1 : 0)
+            << " entry=" << target->GetEntry()
+            << " timeLeft=" << target->GetTimeLeft();
+
+        if (target->GetPosition())
+            out << " pos=" << target->GetPosStr();
+
+        if (bot && target->GetPosition())
+            out << " dist=" << target->Distance(bot);
+
+        return out.str();
+    }
+}
+
 INSTANTIATE_SINGLETON_1(RandomPlayerbotMgr);
 
 #ifdef CMANGOS
@@ -2082,6 +2154,44 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     bool botsAllowedInWorld = !sPlayerbotAIConfig.randomBotLoginWithPlayer || (!players.empty() && sWorld.GetActiveSessionCount() > 0);
 
     bool isValid = true;
+
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        static std::map<uint32, time_t> lastProcessLog;
+        uint32 debugInterval = std::max<uint32>(1, sPlayerbotAIConfig.debugBotAIInterval);
+        time_t now = time(nullptr);
+
+        if (!lastProcessLog[bot] || now >= lastProcessLog[bot] + debugInterval)
+        {
+            sLog.outString("PBDBG rndprocess guid=%u bot=%s reached=1 inWorld=%u teleporting=%u loggingOut=%u botsAllowed=%u login=%u loginTtl=%d add=%u addTtl=%d update=%u updateTtl=%d randomize=%u randomizeTtl=%d changeStrategy=%u changeStrategyTtl=%d teleport=%u teleportTtl=%d ai=%u state=%s allow=%u lastAction=[%s] combat=[%s] noncombat=[%s] travel=[%s]",
+                bot,
+                player ? player->GetName() : "OFFLINE",
+                player && player->IsInWorld() ? 1 : 0,
+                player && player->IsBeingTeleported() ? 1 : 0,
+                player && player->GetSession()->isLogingOut() ? 1 : 0,
+                botsAllowedInWorld ? 1 : 0,
+                GetEventValue(bot, "login"),
+                GetValueValidTime(bot, "login"),
+                GetEventValue(bot, "add"),
+                GetValueValidTime(bot, "add"),
+                GetEventValue(bot, "update"),
+                GetValueValidTime(bot, "update"),
+                GetEventValue(bot, "randomize"),
+                GetValueValidTime(bot, "randomize"),
+                GetEventValue(bot, "change_strategy"),
+                GetValueValidTime(bot, "change_strategy"),
+                GetEventValue(bot, "teleport"),
+                GetValueValidTime(bot, "teleport"),
+                ai ? 1 : 0,
+                ai ? PlayerbotAI::BotStateToString(ai->GetState()).c_str() : "no_ai",
+                ai && ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
+                ai ? ai->GetLastAction(ai->GetState()).c_str() : "",
+                ai ? FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_COMBAT)).c_str() : "",
+                ai ? FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_NON_COMBAT)).c_str() : "",
+                ai ? FormatTravelTarget(ai->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get(), player).c_str() : "no_ai");
+            lastProcessLog[bot] = now;
+        }
+    }
    
     if (sPlayerbotAIConfig.randomBotTimedLogout && !GetEventValue(bot, "add") && !sPlayerbotAIConfig.asyncBotLogin) // RandomBotInWorldTime is expired.
         isValid = false;
@@ -2143,7 +2253,12 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     }
 
     if (!player->IsInWorld() || player->IsBeingTeleported() || player->GetSession()->isLogingOut()) //Skip bots that are in limbo.
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG rndprocess-skip guid=%u bot=%s reason=limbo inWorld=%u teleporting=%u loggingOut=%u",
+                bot, player->GetName(), player->IsInWorld() ? 1 : 0, player->IsBeingTeleported() ? 1 : 0, player->GetSession()->isLogingOut() ? 1 : 0);
         return false;
+    }
 
     if(GetEventValue(bot, "login"))
         SetEventValue(bot, "login", 0, 0); //Bot is no longer loggin in.
@@ -2180,9 +2295,13 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime * 5);
         SetEventValue(bot, "update", 1, randomTime);
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG rndprocess-result guid=%u bot=%s result=processed nextUpdate=%u", bot, player->GetName(), randomTime);
         return true;
     }
 
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG rndprocess-skip guid=%u bot=%s reason=update_timer updateTtl=%d", bot, player->GetName(), GetValueValidTime(bot, "update"));
     return false;
 }
 
@@ -2193,15 +2312,25 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
 
     uint32 bot = player->GetGUIDLow();
 
+    PlayerbotAI* ai = player->GetPlayerbotAI();
+
     if (player->InBattleGround())
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG rndprocess-player guid=%u bot=%s reached=1 result=skip reason=battleground", bot, player->GetName());
         return false;
+    }
 
     if (player->InBattleGroundQueue())
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG rndprocess-player guid=%u bot=%s reached=1 result=skip reason=bg_queue", bot, player->GetName());
         return false;
+    }
 
     // only teleport idle bots
     bool idleBot = false;
-    TravelTarget* target = player->GetPlayerbotAI()->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
+    TravelTarget* target = ai->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get();
     if (target)
     {
         if (target->GetTravelState() == TravelState::TRAVEL_STATE_IDLE)
@@ -2209,6 +2338,29 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
     }
     else
         idleBot = true;
+
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        sLog.outString("PBDBG rndprocess-player guid=%u bot=%s reached=1 idle=%u randomize=%u randomizeTtl=%d changeStrategy=%u changeStrategyTtl=%d teleport=%u teleportTtl=%d autoDoQuests=%u enableTeleports=%u players=%zu state=%s allow=%u lastAction=[%s] combat=[%s] noncombat=[%s] travel=[%s]",
+            bot,
+            player->GetName(),
+            idleBot ? 1 : 0,
+            GetEventValue(bot, "randomize"),
+            GetValueValidTime(bot, "randomize"),
+            GetEventValue(bot, "change_strategy"),
+            GetValueValidTime(bot, "change_strategy"),
+            GetEventValue(bot, "teleport"),
+            GetValueValidTime(bot, "teleport"),
+            sPlayerbotAIConfig.autoDoQuests ? 1 : 0,
+            sPlayerbotAIConfig.enableRandomTeleports ? 1 : 0,
+            players.size(),
+            PlayerbotAI::BotStateToString(ai->GetState()).c_str(),
+            ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
+            ai->GetLastAction(ai->GetState()).c_str(),
+            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_COMBAT)).c_str(),
+            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_NON_COMBAT)).c_str(),
+            FormatTravelTarget(target, player).c_str());
+    }
 
     if (idleBot)
     {
@@ -2229,8 +2381,14 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
 
             if (randomiser)
             {
+                if (sPlayerbotAIConfig.debugBotAI)
+                    sLog.outString("PBDBG rndprocess-player guid=%u bot=%s result=randomize", bot, player->GetName());
                 Randomize(player);
                 return true;
+            }
+            else if (sPlayerbotAIConfig.debugBotAI)
+            {
+                sLog.outString("PBDBG rndprocess-player guid=%u bot=%s result=skip reason=randomizer_blocked", bot, player->GetName());
             }
         }
 
@@ -2247,6 +2405,8 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
             {
                 sLog.outDetail("Changing strategy for bot #%d %s:%d <%s> is supposed to happen, but enableRandomTeleports = false", bot, player->GetTeam() == ALLIANCE ? "A" : "H", player->GetLevel(), player->GetName());
             }
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG rndprocess-player guid=%u bot=%s result=change_strategy enabled=%u", bot, player->GetName(), sPlayerbotAIConfig.enableRandomTeleports ? 1 : 0);
             return true;
         }
 
@@ -2263,10 +2423,14 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
             {
                 sLog.outDetail("Bot #%d %s:%d <%s>: supposed to be sent to grind, but enableRandomTeleports = false", bot, player->GetTeam() == ALLIANCE ? "A" : "H", player->GetLevel(), player->GetName());
             }
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG rndprocess-player guid=%u bot=%s result=teleport enabled=%u players=%zu", bot, player->GetName(), sPlayerbotAIConfig.enableRandomTeleports ? 1 : 0, players.size());
             return true;
         }
     }
 
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG rndprocess-player guid=%u bot=%s result=noop reason=%s", bot, player->GetName(), idleBot ? "timers_active_or_no_players" : "travel_not_idle");
     return false;
 }
 
@@ -3473,7 +3637,24 @@ void RandomPlayerbotMgr::OnPlayerLogout(Player* player)
 void RandomPlayerbotMgr::OnBotLoginInternal(Player * const bot)
 {
     sLog.outDetail("%u/%d Bot %s logged in", GetPlayerbotsAmount(), sRandomPlayerbotMgr.GetMaxAllowedBotCount(), bot->GetName());
-	//if (loginProgressBar && playerBots.size() < sRandomPlayerbotMgr.GetMaxAllowedBotCount()) { loginProgressBar->step(); }
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        PlayerbotAI* ai = bot->GetPlayerbotAI();
+        sLog.outString("PBDBG rndlogin bot=%s guid=%u state=%s isRandom=%u isFree=%u isReal=%u master=%s allow=%u combat=[%s] noncombat=[%s] dead=[%s] reaction=[%s]",
+            bot->GetName(),
+            bot->GetGUIDLow(),
+            PlayerbotAI::BotStateToString(ai->GetState()).c_str(),
+            IsRandomBot(bot) ? 1 : 0,
+            IsFreeBot(bot) ? 1 : 0,
+            ai->IsRealPlayer() ? 1 : 0,
+            ai->GetMaster() ? ai->GetMaster()->GetName() : "NULL",
+            ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
+            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_COMBAT)).c_str(),
+            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_NON_COMBAT)).c_str(),
+            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_DEAD)).c_str(),
+            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_REACTION)).c_str());
+    }
+		//if (loginProgressBar && playerBots.size() < sRandomPlayerbotMgr.GetMaxAllowedBotCount()) { loginProgressBar->step(); }
 	//if (loginProgressBar && playerBots.size() >= sRandomPlayerbotMgr.GetMaxAllowedBotCount() - 1) {
     //if (loginProgressBar && playerBots.size() + 1 >= sRandomPlayerbotMgr.GetMaxAllowedBotCount()) {
 	//	sLog.outString("All bots logged in");

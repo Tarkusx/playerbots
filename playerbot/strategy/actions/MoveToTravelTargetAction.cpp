@@ -11,6 +11,25 @@
 
 using namespace ai;
 
+namespace
+{
+    const char* TravelStatusName(TravelStatus status)
+    {
+        switch (status)
+        {
+            case TravelStatus::TRAVEL_STATUS_NONE: return "NONE";
+            case TravelStatus::TRAVEL_STATUS_PREPARE: return "PREPARE";
+            case TravelStatus::TRAVEL_STATUS_READY: return "READY";
+            case TravelStatus::TRAVEL_STATUS_TRAVEL: return "TRAVEL";
+            case TravelStatus::TRAVEL_STATUS_WORK: return "WORK";
+            case TravelStatus::TRAVEL_STATUS_COOLDOWN: return "COOLDOWN";
+            case TravelStatus::TRAVEL_STATUS_EXPIRED: return "EXPIRED";
+        }
+
+        return "UNKNOWN";
+    }
+}
+
 bool MoveToTravelTargetAction::Execute(Event& event)
 {
     TravelTarget* target = AI_VALUE(TravelTarget*, "travel target");
@@ -18,13 +37,21 @@ bool MoveToTravelTargetAction::Execute(Event& event)
     if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
     {
         ai->TellDebug(ai->GetMaster(), "The target is ready to travel start now.", "debug travel");
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel move bot=%s guid=%u transition=READY->TRAVEL",
+                bot->GetName(), bot->GetGUIDLow());
         target->SetStatus(TravelStatus::TRAVEL_STATUS_TRAVEL);
     }
 
     target->CheckStatus();
 
     if (target->GetStatus() != TravelStatus::TRAVEL_STATUS_TRAVEL)
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel move bot=%s guid=%u result=skip reason=status status=%s",
+                bot->GetName(), bot->GetGUIDLow(), TravelStatusName(target->GetStatus()));
         return true;
+    }
 
     WorldPosition botLocation(bot);
     WorldPosition location = *target->GetPosition();
@@ -146,6 +173,21 @@ bool MoveToTravelTargetAction::Execute(Event& event)
 
     bool canMove = MoveTo(mapId, x, y, z, false, false);
 
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        WorldPosition* pos = target->GetPosition();
+        sLog.outString("PBDBG travel move bot=%s guid=%u result=%s status=%s dest=%s targetMap=%u x=%.2f y=%.2f z=%.2f dist=%.1f moving=%u retries=%u forced=%u",
+            bot->GetName(), bot->GetGUIDLow(), canMove ? "move-ok" : "move-fail", TravelStatusName(target->GetStatus()),
+            target->GetDestination() ? target->GetDestination()->GetShortName().c_str() : "none",
+            pos ? pos->getMapId() : 0, x, y, z, pos ? pos->distance(bot) : 0.0f,
+#ifndef MANGOSBOT_ZERO
+            bot->IsMovingIgnoreFlying(),
+#else
+            bot->IsMoving(),
+#endif
+            target->GetRetryCount(true), target->IsForced());
+    }
+
     if (!canMove)
     {
         target->IncRetry(true);
@@ -191,25 +233,58 @@ bool MoveToTravelTargetAction::Execute(Event& event)
 bool MoveToTravelTargetAction::isUseful()
 {
     if (!ai->AllowActivity(TRAVEL_ACTIVITY))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=activity",
+                bot->GetName(), bot->GetGUIDLow());
         return false;
+    }
 
     if (!AI_VALUE(bool, "travel target traveling") && AI_VALUE(TravelTarget*, "travel target")->GetStatus() != TravelStatus::TRAVEL_STATUS_READY)
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+        {
+            TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+            sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=not-ready status=%s traveling=%u",
+                bot->GetName(), bot->GetGUIDLow(), TravelStatusName(travelTarget->GetStatus()), AI_VALUE(bool, "travel target traveling"));
+        }
         return false;
+    }
 
     if (bot->IsTaxiFlying())
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=taxi",
+                bot->GetName(), bot->GetGUIDLow());
         return false;
+    }
 
     if (MEM_AI_VALUE(WorldPosition, "current position")->LastChangeDelay() < 10)
 #ifndef MANGOSBOT_ZERO
         if (bot->IsMovingIgnoreFlying())
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=already-moving delay=%u",
+                    bot->GetName(), bot->GetGUIDLow(), MEM_AI_VALUE(WorldPosition, "current position")->LastChangeDelay());
             return false;
+        }
 #else
         if (bot->IsMoving())
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=already-moving delay=%u",
+                    bot->GetName(), bot->GetGUIDLow(), MEM_AI_VALUE(WorldPosition, "current position")->LastChangeDelay());
             return false;
+        }
 #endif
 
     if (!AI_VALUE(bool, "can move around"))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=can-move",
+                bot->GetName(), bot->GetGUIDLow());
         return false;
+    }
 
     TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
 
@@ -219,7 +294,12 @@ bool MoveToTravelTargetAction::isUseful()
         for (auto& cond : conditions)
         {
             if (cond == "should travel named::guild order")
+            {
+                if (sPlayerbotAIConfig.debugBotAI)
+                    sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=guild-order-follow",
+                        bot->GetName(), bot->GetGUIDLow());
                 return false;
+            }
         }
     }
 
@@ -228,24 +308,53 @@ bool MoveToTravelTargetAction::isUseful()
             ai->HasStrategy("stay", BotState::BOT_STATE_NON_COMBAT) ||
             ai->HasStrategy("guard", BotState::BOT_STATE_NON_COMBAT))
             if (!travelTarget->IsForced())
+            {
+                if (sPlayerbotAIConfig.debugBotAI)
+                    sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=group-follower",
+                        bot->GetName(), bot->GetGUIDLow());
                 return false;
+            }
 
     WorldPosition travelPos(*travelTarget->GetPosition());
 
     if (travelPos.isDungeon() && bot->GetGroup() && bot->GetGroup()->IsLeader(bot->GetObjectGuid()) && sTravelMgr.MapTransDistance(bot, travelPos, true) < sPlayerbotAIConfig.sightDistance && !AI_VALUE2(bool, "group and", "near leader"))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=dungeon-group-near",
+                bot->GetName(), bot->GetGUIDLow());
         return false;
+    }
      
     if (AI_VALUE(bool, "has available loot"))
     {
         LootObject lootObject = AI_VALUE(LootObjectStack*, "available loot")->GetLoot(sPlayerbotAIConfig.lootDistance);
         if (lootObject.IsLootPossible(bot))
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=loot",
+                    bot->GetName(), bot->GetGUIDLow());
             return false;
+        }
     }
 
     if (!travelTarget->IsForced())
         if (!CanFreeMoveValue::CanFreeMoveTo(ai, *travelTarget->GetPosition()))
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=0 reason=free-move status=%s dest=%s",
+                    bot->GetName(), bot->GetGUIDLow(), TravelStatusName(travelTarget->GetStatus()),
+                    travelTarget->GetDestination() ? travelTarget->GetDestination()->GetShortName().c_str() : "none");
             return false;
+        }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        WorldPosition* pos = travelTarget->GetPosition();
+        sLog.outString("PBDBG travel move useful bot=%s guid=%u useful=1 status=%s dest=%s map=%u dist=%.1f forced=%u",
+            bot->GetName(), bot->GetGUIDLow(), TravelStatusName(travelTarget->GetStatus()),
+            travelTarget->GetDestination() ? travelTarget->GetDestination()->GetShortName().c_str() : "none",
+            pos ? pos->getMapId() : 0, pos ? pos->distance(bot) : 0.0f, travelTarget->IsForced());
+    }
 
     return true;
 }
-

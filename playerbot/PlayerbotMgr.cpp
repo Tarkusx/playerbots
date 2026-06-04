@@ -16,6 +16,54 @@
 #include "Guild/Guild.h"
 #include "Guild/GuildMgr.h"
 #include "Guilds/GuildMgr.h"
+#include <limits>
+#include <unordered_map>
+
+namespace
+{
+    const char* ActivePriorityTypeName(ActivePiorityType type)
+    {
+        switch (type)
+        {
+            case ActivePiorityType::IS_REAL_PLAYER: return "IS_REAL_PLAYER";
+            case ActivePiorityType::HAS_REAL_PLAYER_MASTER: return "HAS_REAL_PLAYER_MASTER";
+            case ActivePiorityType::IN_GROUP_WITH_REAL_PLAYER: return "IN_GROUP_WITH_REAL_PLAYER";
+            case ActivePiorityType::IS_RUNNING_TEST: return "IS_RUNNING_TEST";
+            case ActivePiorityType::IN_BATTLEGROUND: return "IN_BATTLEGROUND";
+            case ActivePiorityType::IN_INSTANCE: return "IN_INSTANCE";
+            case ActivePiorityType::VISIBLE_FOR_PLAYER: return "VISIBLE_FOR_PLAYER";
+            case ActivePiorityType::IS_ALWAYS_ACTIVE: return "IS_ALWAYS_ACTIVE";
+            case ActivePiorityType::IN_COMBAT: return "IN_COMBAT";
+            case ActivePiorityType::IN_BG_QUEUE: return "IN_BG_QUEUE";
+            case ActivePiorityType::IN_LFG: return "IN_LFG";
+            case ActivePiorityType::NEARBY_PLAYER: return "NEARBY_PLAYER";
+            case ActivePiorityType::PLAYER_FRIEND: return "PLAYER_FRIEND";
+            case ActivePiorityType::PLAYER_GUILD: return "PLAYER_GUILD";
+            case ActivePiorityType::NO_PATH: return "NO_PATH";
+            case ActivePiorityType::IN_ACTIVE_AREA: return "IN_ACTIVE_AREA";
+            case ActivePiorityType::IN_ACTIVE_MAP: return "IN_ACTIVE_MAP";
+            case ActivePiorityType::IN_INACTIVE_MAP: return "IN_INACTIVE_MAP";
+            case ActivePiorityType::IN_EMPTY_SERVER: return "IN_EMPTY_SERVER";
+            default: return "UNKNOWN";
+        }
+    }
+
+    std::string FormatStrategyList(std::list<std::string_view> const& strategies)
+    {
+        std::ostringstream out;
+        bool first = true;
+        for (std::string_view strategy : strategies)
+        {
+            if (!first)
+                out << ",";
+
+            first = false;
+            out << strategy;
+        }
+
+        return out.str();
+    }
+}
 
 #ifdef GenerateBotTests
 #include "strategy/tests/TestAction.h"
@@ -124,6 +172,102 @@ void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)
 #ifdef GenerateBotTests
     UpdatePendingTests(elapsed);
 #endif
+
+    if (playerBots.empty())
+        return;
+
+    static std::unordered_map<PlayerbotHolder const*, uint32> updateCursors;
+    static std::unordered_map<PlayerbotHolder const*, uint64> updateClocks;
+    static std::unordered_map<PlayerbotHolder const*, std::unordered_map<uint32, uint64>> lastBotUpdateClocks;
+
+    uint32 budget = std::max<uint32>(1, sPlayerbotAIConfig.botAITicksPerWorldUpdate);
+    budget = std::min<uint32>(budget, playerBots.size());
+
+    uint32& cursor = updateCursors[this];
+    uint64& updateClock = updateClocks[this];
+    updateClock += elapsed;
+    std::unordered_map<uint32, uint64>& lastBotUpdateClock = lastBotUpdateClocks[this];
+
+    uint32 scanned = 0;
+    PlayerBotMap::iterator itr = playerBots.upper_bound(cursor);
+    if (itr == playerBots.end())
+        itr = playerBots.begin();
+
+    for (uint32 processed = 0; processed < budget && scanned < playerBots.size(); ++scanned)
+    {
+        if (itr == playerBots.end())
+            itr = playerBots.begin();
+
+        Player* bot = itr->second;
+        cursor = itr->first;
+        ++itr;
+
+        if (!bot)
+            continue;
+
+        if (PlayerbotAI* ai = bot->GetPlayerbotAI())
+        {
+            uint32 guid = bot->GetGUIDLow();
+            uint64& botClock = lastBotUpdateClock[guid];
+            uint32 botElapsed = botClock ? std::min<uint64>(updateClock - botClock, std::numeric_limits<uint32>::max()) : elapsed;
+            botClock = updateClock;
+
+            uint32 delayBefore = ai->GetAIInternalUpdateDelay();
+            bool canUpdateBefore = ai->CanUpdateAIInternalNow();
+            uint32 aiUpdateStart = WorldTimer::getMSTime();
+            ai->UpdateAI(botElapsed, minimal);
+            uint32 aiUpdateMs = WorldTimer::getMSTimeDiffToNow(aiUpdateStart);
+            uint32 delayAfter = ai->GetAIInternalUpdateDelay();
+            bool canUpdateAfter = ai->CanUpdateAIInternalNow();
+
+            if (aiUpdateMs >= 25)
+                sLog.outString("PBDBG perf bot-update bot=%s guid=%u ms=%u elapsed=%u minimal=%u state=%s moving=%u mm=%u lastAction=[%s]",
+                    bot->GetName(), guid, aiUpdateMs, botElapsed, minimal ? 1 : 0,
+                    PlayerbotAI::BotStateToString(ai->GetState()).c_str(),
+                    (!bot->IsStopped() || bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != IDLE_MOTION_TYPE) ? 1 : 0,
+                    bot->GetMotionMaster()->GetCurrentMovementGeneratorType(),
+                    ai->GetLastAction(ai->GetState()).c_str());
+
+            if (sPlayerbotAIConfig.debugBotAI)
+            {
+                static std::unordered_map<uint32, time_t> lastDebugLog;
+                uint32 debugInterval = std::max<uint32>(1, sPlayerbotAIConfig.debugBotAIInterval);
+                time_t now = time(nullptr);
+
+                if (!lastDebugLog[guid] || now >= lastDebugLog[guid] + debugInterval)
+                {
+                    BotState state = ai->GetState();
+                    ActivePiorityType priority = ai->GetPriorityType();
+                    std::pair<uint32, uint32> bracket = ai->GetPriorityBracket(priority);
+                    std::string strategies = FormatStrategyList(ai->GetStrategies(state));
+                    sLog.outString("PBDBG tick bot=%s guid=%u state=%s priority=%s bracket=%u-%u allow=%u allowTravel=%u allowMove=%u canBefore=%u delayBefore=%u canAfter=%u delayAfter=%u minimal=%u elapsed=%u inWorld=%u moving=%u mm=%u lastAction=[%s] strategies=[%s]",
+                        bot->GetName(),
+                        guid,
+                        PlayerbotAI::BotStateToString(state).c_str(),
+                        ActivePriorityTypeName(priority),
+                        bracket.first,
+                        bracket.second,
+                        ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
+                        ai->AllowActivity(TRAVEL_ACTIVITY) ? 1 : 0,
+                        ai->AllowActivity(DETAILED_MOVE_ACTIVITY) ? 1 : 0,
+                        canUpdateBefore ? 1 : 0,
+                        delayBefore,
+                        canUpdateAfter ? 1 : 0,
+                        delayAfter,
+                        minimal ? 1 : 0,
+                        botElapsed,
+                        bot->IsInWorld() ? 1 : 0,
+                        (!bot->IsStopped() || bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != IDLE_MOTION_TYPE) ? 1 : 0,
+                        bot->GetMotionMaster()->GetCurrentMovementGeneratorType(),
+                        ai->GetLastAction(state).c_str(),
+                        strategies.c_str());
+                    lastDebugLog[guid] = now;
+                }
+            }
+        }
+
+        ++processed;
+    }
 }
 
 void PlayerbotHolder::UpdateSessions(uint32 elapsed)

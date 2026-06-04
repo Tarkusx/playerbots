@@ -1,4 +1,5 @@
 #include "PlayerbotLoginMgr.h"
+#include "Auth/BigNumber.h"
 #include "Database/DatabaseImpl.h"
 #include "PlayerbotMgr.h"
 #include "PlayerbotAIConfig.h"
@@ -760,18 +761,34 @@ INSTANTIATE_SINGLETON_1(ai::PlayerBotLoginMgr);
 void PlayerbotHolder::AddPlayerBot(uint32 guid, uint32 masterAccountId)
 {
     if (GetPlayerBot(guid))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG addbot guid=%u result=skip reason=already_loaded", guid);
         return;
+    }
 
     uint32 accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(HIGHGUID_PLAYER, guid));
     if (!accountId)
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG addbot guid=%u result=skip reason=no_account", guid);
         return;
+    }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG addbot guid=%u account=%u masterAccount=%u result=start", guid, accountId, masterAccountId);
 
     SqlQueryHolder* holder = new PlayerbotLoginQueryHolder(this, masterAccountId, accountId, guid);
     if (!static_cast<PlayerbotLoginQueryHolder*>(holder)->Initialize())
     {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG addbot guid=%u account=%u result=skip reason=holder_init_failed", guid, accountId);
         delete holder;
         return;
     }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG addbot guid=%u account=%u result=queued", guid, accountId);
 
     CharacterDatabase.DelayQueryHolderUnsafe(this, &PlayerbotHolder::HandlePlayerBotLoginCallback, holder);
 }
@@ -784,9 +801,14 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
 
     if (GetPlayerBot(guid.GetCounter()))
     {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG addbot-callback guid=%u account=%u result=skip reason=already_loaded", guid.GetCounter(), accountId);
         delete holder;
         return;
     }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG addbot-callback guid=%u account=%u result=start", guid.GetCounter(), accountId);
 
     WorldSession* botSession = new WorldSession(accountId, NULL, SEC_PLAYER,
 #ifdef MANGOSBOT_TWO
@@ -799,11 +821,24 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
         0, LOCALE_enUS, "", 0);
 #endif
 
+    bool hadAntiCheat = botSession->GetAntiCheat() != nullptr;
+    if (!hadAntiCheat)
+    {
+        BigNumber dummyKey(0);
+        botSession->InitAntiCheatSession(&dummyKey);
+    }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG addbot-callback guid=%u account=%u anticheatBefore=%u anticheatAfter=%u",
+            guid.GetCounter(), accountId, hadAntiCheat ? 1 : 0, botSession->GetAntiCheat() ? 1 : 0);
+
     Player* bot = new Player(botSession);
     bot->GetMotionMaster()->Initialize();
 
     if (!bot->LoadFromDB(guid, holder))
     {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG addbot-callback guid=%u account=%u result=fail reason=load_from_db", guid.GetCounter(), accountId);
         if (sPlayerbotAIConfig.IsInRandomAccountList(accountId))
             sRandomPlayerbotMgr.OnPlayerLoginError(guid.GetCounter());
 
@@ -821,17 +856,35 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
     {
         AreaTriggerTeleport const* at = sObjectMgr.GetGoBackTrigger(bot->GetMapId());
         if (at)
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG addbot-callback guid=%u account=%u mapAdd=0 fallback=goback map=%u", guid.GetCounter(), accountId, bot->GetMapId());
             bot->TeleportTo(at->destination, bot->GetOrientation());
+        }
         else if (bot->GetMapId() == 533)
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG addbot-callback guid=%u account=%u mapAdd=0 fallback=naxx map=%u", guid.GetCounter(), accountId, bot->GetMapId());
             bot->TeleportTo(0, 3362.15f, -3379.35f, 144.782f, 6.28319f);
+        }
         else
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG addbot-callback guid=%u account=%u mapAdd=0 fallback=homebind map=%u", guid.GetCounter(), accountId, bot->GetMapId());
             bot->TeleportToHomebind();
+        }
 
         sMapMgr.ExecuteSingleDelayedTeleport(bot);
     }
 
     sObjectAccessor.AddObject(bot);
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG addbot-callback guid=%u account=%u result=before_onlogin name=%s inWorld=%u map=%u",
+            guid.GetCounter(), accountId, bot->GetName(), bot->IsInWorld() ? 1 : 0, bot->GetMapId());
     OnBotLogin(bot);
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG addbot-callback guid=%u account=%u result=after_onlogin name=%s holderHas=%u",
+            guid.GetCounter(), accountId, bot->GetName(), GetPlayerBot(guid.GetCounter()) ? 1 : 0);
 
     delete holder;
 }

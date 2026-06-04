@@ -602,9 +602,6 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         UpdateAIInternal(elapsed, minimal);
 
         bool min = minimal;
-        // test fix lags because of BG
-        if (!inCombat)
-            min = true;
 
         if (bot && HasRealPlayerMaster())
             min = false;
@@ -720,6 +717,12 @@ const Action* PlayerbotAI::GetLastExecutedAction(BotState state) const
     }
 
     return nullptr;
+}
+
+std::string PlayerbotAI::GetLastAction(BotState state) const
+{
+    const Engine* engine = engines[(uint8)state];
+    return engine ? engine->GetLastAction() : "";
 }
 
 bool PlayerbotAI::IsImmuneToSpell(uint32 spellId) const
@@ -2498,6 +2501,17 @@ void PlayerbotAI::ResetStrategies(bool autoLoad)
     {
         engines[i]->initMode = false;
         engines[i]->Init();
+    }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        sLog.outString("PBDBG reset bot=%s state=%s combat=[%s] noncombat=[%s] dead=[%s] reaction=[%s]",
+            bot->GetName(),
+            BotStateToString(currentState).c_str(),
+            engines[(uint8)BotState::BOT_STATE_COMBAT]->ListStrategies().c_str(),
+            engines[(uint8)BotState::BOT_STATE_NON_COMBAT]->ListStrategies().c_str(),
+            engines[(uint8)BotState::BOT_STATE_DEAD]->ListStrategies().c_str(),
+            engines[(uint8)BotState::BOT_STATE_REACTION]->ListStrategies().c_str());
     }
 }
 

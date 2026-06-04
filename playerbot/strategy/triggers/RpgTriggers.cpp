@@ -7,6 +7,7 @@
 #include "playerbot/ServerFacade.h"
 #include "playerbot/strategy/values/ItemUsageValue.h"
 #include "playerbot/TravelMgr.h"
+#include "playerbot/RandomPlayerbotMgr.h"
 #include "AI/ScriptDevAI/ScriptDevAIMgr.h"
 
 using namespace ai;
@@ -161,6 +162,9 @@ bool RpgBuyTrigger::IsActive()
     if (guidP.IsHostileTo(bot))
         return false;
 
+    if (AI_VALUE(std::string, "next rpg action") == "choose rpg target")
+        return false;
+
     if (!AI_VALUE(bool, "can buy"))
         return false;
 
@@ -299,6 +303,9 @@ bool RpgTrainTrigger::IsTrainerOf(CreatureInfo const* cInfo, Player* pPlayer)
 
 bool RpgTrainTrigger::IsActive()
 {
+    if (sPlayerbotAIConfig.disableRandomBotTrainerClassTravel && sRandomPlayerbotMgr.IsRandomBot(bot))
+        return false;
+
     GuidPosition guidP(getGuidP());
 
     if (!guidP.HasNpcFlag(UNIT_NPC_FLAG_TRAINER))

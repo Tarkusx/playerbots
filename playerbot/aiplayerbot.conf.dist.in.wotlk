@@ -52,6 +52,7 @@ AiPlayerbot.MinRandomBots = 1000
 AiPlayerbot.MaxRandomBots = 1000
 AiPlayerbot.RandomBotMinLevel = 1
 AiPlayerbot.RandomBotMaxLevel = 80
+AiPlayerbot.DisableRandomBotTrainerClassTravel = 0
 
 # Accounts to create for random bots
 AiPlayerbot.RandomBotAccountPrefix = RNDBOT

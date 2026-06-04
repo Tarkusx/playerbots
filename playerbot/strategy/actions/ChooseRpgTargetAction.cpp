@@ -15,6 +15,14 @@
 
 using namespace ai;
 
+namespace
+{
+    uint32 PbdbgElapsed(uint32 start)
+    {
+        return WorldTimer::getMSTimeDiffToNow(start);
+    }
+}
+
 bool ChooseRpgTargetAction::HasSameTarget(ObjectGuid guid, uint32 max, std::list<ObjectGuid>& nearGuids)
 {
     if (ai->HasRealPlayerMaster())
@@ -56,26 +64,52 @@ bool ChooseRpgTargetAction::HasSameTarget(ObjectGuid guid, uint32 max, std::list
 
 std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* requester, bool debug)
 {
+    uint32 totalStart = WorldTimer::getMSTime();
+    uint32 stageStart = WorldTimer::getMSTime();
     TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
+    uint32 travelTargetMs = PbdbgElapsed(stageStart);
+    stageStart = WorldTimer::getMSTime();
     focusQuestTravelList focusList = AI_VALUE(focusQuestTravelList, "focus travel target");
+    uint32 focusListMs = PbdbgElapsed(stageStart);
 
     GuidPosition masterRpgTarget;
+    uint32 masterTargetMs = 0;
     if (requester && ai->IsSafe(requester) && requester->GetPlayerbotAI())
     {
+        stageStart = WorldTimer::getMSTime();
         Player* player = requester;
         masterRpgTarget = PAI_VALUE(GuidPosition, "rpg target");
+        masterTargetMs = PbdbgElapsed(stageStart);
     }
 
     std::unordered_map<ObjectGuid, float> targets;
     std::vector<ObjectGuid> targetList;
 
     //Gather all nearby npc's (+some creatures), game objects and players.
+    stageStart = WorldTimer::getMSTime();
     std::list<ObjectGuid> possibleTargets = AI_VALUE(std::list<ObjectGuid>, "possible rpg targets");
+    uint32 possibleTargetsMs = PbdbgElapsed(stageStart);
+    stageStart = WorldTimer::getMSTime();
     std::list<ObjectGuid> possibleObjects = bot->GetMap()->IsDungeon() ? AI_VALUE(std::list<ObjectGuid>, "nearest game objects") : AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los");
+    uint32 possibleObjectsMs = PbdbgElapsed(stageStart);
+    stageStart = WorldTimer::getMSTime();
     std::list<ObjectGuid> possiblePlayers = AI_VALUE(std::list<ObjectGuid>, "nearest friendly players");
+    uint32 possiblePlayersMs = PbdbgElapsed(stageStart);
 
     //List of targets that we rpg'ed with before and should be ignored.
+    stageStart = WorldTimer::getMSTime();
     std::set<ObjectGuid>& ignoreList = AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target");
+    uint32 ignoreListMs = PbdbgElapsed(stageStart);
+
+    if (travelTargetMs > 100 || focusListMs > 100 || masterTargetMs > 100 || possibleTargetsMs > 100 ||
+        possibleObjectsMs > 100 || possiblePlayersMs > 100 || ignoreListMs > 100)
+    {
+        sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=value-fetch travelTarget=%u focus=%u master=%u possibleTargets=%u possibleObjects=%u possiblePlayers=%u ignore=%u counts targets=%zu objects=%zu players=%zu ignore=%zu map=%u zone=%u level=%u faction=%u",
+            bot->GetName(), bot->GetGUIDLow(), travelTargetMs, focusListMs, masterTargetMs, possibleTargetsMs,
+            possibleObjectsMs, possiblePlayersMs, ignoreListMs, possibleTargets.size(), possibleObjects.size(),
+            possiblePlayers.size(), ignoreList.size(), bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(),
+            bot->GetFactionId());
+    }
 
     //Add all targets with an initial priority of 0.
     for (auto target : possibleTargets)
@@ -97,7 +131,14 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
     }
 
     if (targets.empty())
+    {
+        uint32 totalMs = PbdbgElapsed(totalStart);
+        if (totalMs > 100)
+            sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=get-targets-empty ms=%u rawTargets=%zu rawObjects=%zu rawPlayers=%zu map=%u zone=%u level=%u faction=%u",
+                bot->GetName(), bot->GetGUIDLow(), totalMs, possibleTargets.size(), possibleObjects.size(),
+                possiblePlayers.size(), bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(), bot->GetFactionId());
         return targets;
+    }
 
     uint32 ignored = 0;
 
@@ -140,9 +181,16 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
         maxCheck = 500;
 
     std::unordered_map<ObjectGuid, std::string> debugTargets;
+    uint32 loopStart = WorldTimer::getMSTime();
+    uint32 freeMoveMs = 0;
+    uint32 sameTargetMs = 0;
+    uint32 relevanceMs = 0;
+    uint32 relevanceCalls = 0;
+    uint32 skippedMaxCheck = 0;
 
     for (auto& guid : targetList)
     {
+        uint32 candidateStart = WorldTimer::getMSTime();
         GuidPosition guidP(guid, bot->GetMapId(), bot->GetInstanceId());        
 
         if (!guidP)
@@ -152,11 +200,24 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
 
         //Stop to save peformance.
         if (checked >= maxCheck && !isTravelTarget)
+        {
+            skippedMaxCheck++;
             continue;
+        }
 
         //Check if we are allowed to move to this position. This is based on movement strategies follow, free, guard, stay. Bots are limited to finding targets near the center of those movement strategies.
         //For bots with real players they are also slightly limited in range unless the player stands still for a while. See free move values.
-        if (guidP.GetWorldObject(bot->GetInstanceId()) && !CanFreeMoveValue::CanFreeMoveTo(ai, guidP))
+        stageStart = WorldTimer::getMSTime();
+        WorldObject* worldObject = guidP.GetWorldObject(bot->GetInstanceId());
+        bool canFreeMove = !worldObject || CanFreeMoveValue::CanFreeMoveTo(ai, guidP);
+        uint32 thisFreeMoveMs = PbdbgElapsed(stageStart);
+        freeMoveMs += thisFreeMoveMs;
+        if (thisFreeMoveMs > 100)
+            sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=candidate-free-move ms=%u targetGuid=%u entry=%u type=%s map=%u zone=%u level=%u faction=%u can=%u",
+                bot->GetName(), bot->GetGUIDLow(), thisFreeMoveMs, guidP.GetCounter(), guidP.GetEntry(),
+                guidP.IsGameObject() ? "go" : (guidP.IsPlayer() ? "player" : "unit"), bot->GetMapId(),
+                bot->GetZoneId(), bot->GetLevel(), bot->GetFactionId(), canFreeMove ? 1 : 0);
+        if (!canFreeMove)
             SkipRpgTarget("Can not free move to.");
 
         if (guidP.IsGameObject())
@@ -202,14 +263,36 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
         }
 
         //Limit the amount of bots that can rpg with 1 target. Only if the calculation doesn't involve checking 200+ players.
+        stageStart = WorldTimer::getMSTime();
         if (possiblePlayers.size() < 200 && HasSameTarget(guidP, urand(5, 15), possiblePlayers))
         {
+            uint32 thisSameTargetMs = PbdbgElapsed(stageStart);
+            sameTargetMs += thisSameTargetMs;
+            if (thisSameTargetMs > 100)
+                sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=candidate-same-target ms=%u nearPlayers=%zu targetGuid=%u entry=%u map=%u zone=%u level=%u faction=%u",
+                    bot->GetName(), bot->GetGUIDLow(), thisSameTargetMs, possiblePlayers.size(),
+                    guidP.GetCounter(), guidP.GetEntry(), bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(),
+                    bot->GetFactionId());
             sametarget++;
             SkipRpgTarget("Too many bots are rpging with this npc.");
         }
+        sameTargetMs += PbdbgElapsed(stageStart);
 
         //For all rpg actions that are triggered/possible for this target get the highest relevance.
+        stageStart = WorldTimer::getMSTime();
         float relevance = getMaxRelevance(guidP);
+        uint32 thisRelevanceMs = PbdbgElapsed(stageStart);
+        relevanceMs += thisRelevanceMs;
+        relevanceCalls++;
+        uint32 candidateMs = PbdbgElapsed(candidateStart);
+        if (thisRelevanceMs > 100 || candidateMs > 250)
+        {
+            sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=candidate ms=%u relevanceMs=%u targetGuid=%u entry=%u type=%s isTravel=%u relevance=%.2f checked=%u maxCheck=%u map=%u zone=%u level=%u faction=%u reason=%s",
+                bot->GetName(), bot->GetGUIDLow(), candidateMs, thisRelevanceMs, guidP.GetCounter(),
+                guidP.GetEntry(), guidP.IsGameObject() ? "go" : (guidP.IsPlayer() ? "player" : "unit"),
+                isTravelTarget ? 1 : 0, relevance, checked, maxCheck, bot->GetMapId(), bot->GetZoneId(),
+                bot->GetLevel(), bot->GetFactionId(), rgpActionReason[guidP].c_str());
+        }
 
         //If this rpg target is our travel target increase the relevance by 50% to make it more likely to be picked.
         if (isTravelTarget)
@@ -242,6 +325,17 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
         checked++;
     }
 
+    uint32 loopMs = PbdbgElapsed(loopStart);
+    uint32 totalMs = PbdbgElapsed(totalStart);
+    if (totalMs > 250 || loopMs > 250 || relevanceMs > 250)
+    {
+        sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=get-targets-summary total=%u loop=%u freeMove=%u sameTarget=%u relevance=%u relevanceCalls=%u rawTargets=%zu rawObjects=%zu rawPlayers=%zu candidateMap=%zu checked=%u maxCheck=%u skippedMax=%u sameTargetSkips=%u map=%u zone=%u level=%u faction=%u travelEntry=%u focusQuests=%zu",
+            bot->GetName(), bot->GetGUIDLow(), totalMs, loopMs, freeMoveMs, sameTargetMs, relevanceMs,
+            relevanceCalls, possibleTargets.size(), possibleObjects.size(), possiblePlayers.size(), targets.size(),
+            checked, maxCheck, skippedMaxCheck, sametarget, bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(),
+            bot->GetFactionId(), travelTarget ? travelTarget->GetEntry() : 0, focusList.size());
+    }
+
     if (debug)
     {
         std::sort(targetList.begin(), targetList.end(), [targets](ObjectGuid i, ObjectGuid j) {return targets.at(i) < targets.at(j); });
@@ -267,6 +361,7 @@ std::unordered_map<ObjectGuid, float> ChooseRpgTargetAction::GetTargets(Player* 
 //This method will temporary set the rpg target and finds the highest rpg action relevance that 'could' be triggered when near the target.
 float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
 {
+    uint32 totalStart = WorldTimer::getMSTime();
     GuidPosition currentRpgTarget = AI_VALUE(GuidPosition, "rpg target");
     SET_AI_VALUE(GuidPosition, "rpg target", guidP);
 
@@ -278,23 +373,52 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
 
     //Loop over all strategies containing rpg that are enabled.
     std::set<std::string> strategies;
+    uint32 stageStart = WorldTimer::getMSTime();
     ai->GetAiObjectContext()->GetSupportedStrategies(strategies);
+    uint32 supportedStrategiesMs = PbdbgElapsed(stageStart);
+    uint32 strategiesSeen = 0;
+    uint32 enabledRpgStrategies = 0;
+    uint32 triggerNodesBuilt = 0;
+    uint32 initTriggersMs = 0;
+    uint32 getTriggerMs = 0;
+    uint32 isActiveMs = 0;
+    uint32 actionLookupMs = 0;
+    uint32 destroyMs = 0;
     for (auto& strategy : strategies)
     {
+        strategiesSeen++;
         if (strategy.find("rpg") == std::string::npos)
             continue;
 
         if (!ai->HasStrategy(strategy, BotState::BOT_STATE_NON_COMBAT))
             continue;
 
+        enabledRpgStrategies++;
         rpgStrategy = ai->GetAiObjectContext()->GetStrategy(strategy);
 
+        stageStart = WorldTimer::getMSTime();
         rpgStrategy->InitTriggers(triggerNodes, BotState::BOT_STATE_NON_COMBAT);
+        uint32 thisInitTriggersMs = PbdbgElapsed(stageStart);
+        initTriggersMs += thisInitTriggersMs;
+        triggerNodesBuilt += triggerNodes.size();
+        if (thisInitTriggersMs > 100)
+            sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=relevance-init-triggers ms=%u strategy=%s nodes=%zu targetGuid=%u entry=%u map=%u zone=%u level=%u faction=%u",
+                bot->GetName(), bot->GetGUIDLow(), thisInitTriggersMs, strategy.c_str(), triggerNodes.size(),
+                guidP.GetCounter(), guidP.GetEntry(), bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(),
+                bot->GetFactionId());
 
         //Loop over all triggers of this strategy.
         for (auto& triggerNode : triggerNodes)
         {
+            stageStart = WorldTimer::getMSTime();
             Trigger* trigger = context->GetTrigger(triggerNode->getName());
+            uint32 thisGetTriggerMs = PbdbgElapsed(stageStart);
+            getTriggerMs += thisGetTriggerMs;
+            if (thisGetTriggerMs > 100)
+                sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=relevance-get-trigger ms=%u strategy=%s trigger=%s targetGuid=%u entry=%u map=%u zone=%u level=%u faction=%u",
+                    bot->GetName(), bot->GetGUIDLow(), thisGetTriggerMs, strategy.c_str(),
+                    triggerNode->getName().c_str(), guidP.GetCounter(), guidP.GetEntry(), bot->GetMapId(),
+                    bot->GetZoneId(), bot->GetLevel(), bot->GetFactionId());
 
             if (trigger)
             {
@@ -305,8 +429,25 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
 
                 Trigger* trigger = triggerNode->getTrigger();
 
+                stageStart = WorldTimer::getMSTime();
                 if (!trigger->IsActive())
+                {
+                    uint32 thisIsActiveMs = PbdbgElapsed(stageStart);
+                    isActiveMs += thisIsActiveMs;
+                    if (thisIsActiveMs > 100)
+                        sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=relevance-trigger ms=%u strategy=%s trigger=%s active=0 targetGuid=%u entry=%u map=%u zone=%u level=%u faction=%u",
+                            bot->GetName(), bot->GetGUIDLow(), thisIsActiveMs, strategy.c_str(),
+                            triggerNode->getName().c_str(), guidP.GetCounter(), guidP.GetEntry(),
+                            bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(), bot->GetFactionId());
                     continue;
+                }
+                uint32 thisIsActiveMs = PbdbgElapsed(stageStart);
+                isActiveMs += thisIsActiveMs;
+                if (thisIsActiveMs > 100)
+                    sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=relevance-trigger ms=%u strategy=%s trigger=%s active=1 targetGuid=%u entry=%u map=%u zone=%u level=%u faction=%u",
+                        bot->GetName(), bot->GetGUIDLow(), thisIsActiveMs, strategy.c_str(),
+                        triggerNode->getName().c_str(), guidP.GetCounter(), guidP.GetEntry(), bot->GetMapId(),
+                        bot->GetZoneId(), bot->GetLevel(), bot->GetFactionId());
 
                 NextAction** nextActions = triggerNode->getHandlers();
 
@@ -317,7 +458,9 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
                 {
                     NextAction* nextAction = nextActions[i];
 
+                    stageStart = WorldTimer::getMSTime();
                     Action* action = ai->GetAiObjectContext()->GetAction(nextAction->getName());
+                    actionLookupMs += PbdbgElapsed(stageStart);
 
                     if (dynamic_cast<RpgEnabled*>(action))
                         isRpg = true;
@@ -339,16 +482,28 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
             }
         }
 
+        stageStart = WorldTimer::getMSTime();
         for (std::list<TriggerNode*>::iterator i = triggerNodes.begin(); i != triggerNodes.end(); i++)
         {
             TriggerNode* trigger = *i;
             delete trigger;
         }
+        destroyMs += PbdbgElapsed(stageStart);
 
         triggerNodes.clear();
     }
 
     SET_AI_VALUE(GuidPosition,"rpg target", currentRpgTarget);
+
+    uint32 totalMs = PbdbgElapsed(totalStart);
+    if (totalMs > 100)
+    {
+        sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=relevance-summary ms=%u supported=%u supportedMs=%u enabledRpg=%u nodes=%u initTriggers=%u getTrigger=%u isActive=%u actionLookup=%u destroy=%u targetGuid=%u entry=%u maxRel=%.2f reason=%s map=%u zone=%u level=%u faction=%u",
+            bot->GetName(), bot->GetGUIDLow(), totalMs, strategiesSeen, supportedStrategiesMs, enabledRpgStrategies,
+            triggerNodesBuilt, initTriggersMs, getTriggerMs, isActiveMs, actionLookupMs, destroyMs,
+            guidP.GetCounter(), guidP.GetEntry(), maxRelevance, rgpActionReason[guidP].c_str(), bot->GetMapId(),
+            bot->GetZoneId(), bot->GetLevel(), bot->GetFactionId());
+    }
 
     if (!maxRelevance)
         return 0.0;
@@ -360,22 +515,39 @@ float ChooseRpgTargetAction::getMaxRelevance(GuidPosition guidP)
 
 bool ChooseRpgTargetAction::Execute(Event& event)
 {
+    uint32 totalStart = WorldTimer::getMSTime();
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+    uint32 stageStart = WorldTimer::getMSTime();
     std::unordered_map<ObjectGuid, float> targets = GetTargets(requester);
+    uint32 getTargetsMs = PbdbgElapsed(stageStart);
+    size_t initialTargets = targets.size();
 
     if (targets.empty())
+    {
+        uint32 totalMs = PbdbgElapsed(totalStart);
+        if (totalMs > 100)
+            sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=execute-empty total=%u getTargets=%u map=%u zone=%u level=%u faction=%u",
+                bot->GetName(), bot->GetGUIDLow(), totalMs, getTargetsMs, bot->GetMapId(), bot->GetZoneId(),
+                bot->GetLevel(), bot->GetFactionId());
         return false;
+    }
 
     GuidPosition masterRpgTarget;
+    uint32 masterTargetMs = 0;
     if (requester && ai->IsSafe(requester) && requester->GetPlayerbotAI())
     {
+        stageStart = WorldTimer::getMSTime();
         Player* player = requester;
         masterRpgTarget = PAI_VALUE(GuidPosition, "rpg target");
+        masterTargetMs = PbdbgElapsed(stageStart);
     }
 
     //Enable range check for rpg triggers.
+    stageStart = WorldTimer::getMSTime();
     SET_AI_VALUE(std::string, "next rpg action", "");
+    uint32 setNextActionMs = PbdbgElapsed(stageStart);
 
+    stageStart = WorldTimer::getMSTime();
     bool hasGoodRelevance = false;
     for (auto& [target, relevance] : targets)
     {
@@ -385,7 +557,9 @@ bool ChooseRpgTargetAction::Execute(Event& event)
             break;
         }
     }
+    uint32 goodScanMs = PbdbgElapsed(stageStart);
 
+    stageStart = WorldTimer::getMSTime();
     uint32 checked = 0;
     for (auto it = begin(targets); it != end(targets);)
     {        
@@ -405,6 +579,7 @@ bool ChooseRpgTargetAction::Execute(Event& event)
         else
             ++it;
     }
+    uint32 pruneMs = PbdbgElapsed(stageStart);
 
     //We have no targets. Quit.
     if (targets.empty())
@@ -463,6 +638,7 @@ bool ChooseRpgTargetAction::Execute(Event& event)
     std::vector<ObjectGuid> guidps;
     std::vector<float> relevances;
 
+    stageStart = WorldTimer::getMSTime();
     //If we have only trivial targets ignore them all the next time we look for a new target.
     for (auto& target : targets)
     {
@@ -475,6 +651,7 @@ bool ChooseRpgTargetAction::Execute(Event& event)
         if (target.second == 1)
             ignoreList.insert(target.first);
     }
+    uint32 buildWeightedMs = PbdbgElapsed(stageStart);
 
     //If we can't find a target clear ignore list and try again later.
     if (guidps.empty())
@@ -485,9 +662,11 @@ bool ChooseRpgTargetAction::Execute(Event& event)
     }
 
     //We pick a random target from the list with targets having a higher relevance of being picked.
+    stageStart = WorldTimer::getMSTime();
     std::mt19937 gen(time(0));
     WeightedShuffle(guidps.begin(), guidps.end(), relevances.begin(), relevances.end(), gen);
     GuidPosition guidP(guidps.front(),bot->GetMapId(), bot->GetInstanceId());
+    uint32 weightedShuffleMs = PbdbgElapsed(stageStart);
 
     //If we can't find a target clear ignore list and try again later.
     if (!guidP)
@@ -511,8 +690,21 @@ bool ChooseRpgTargetAction::Execute(Event& event)
     }
 
     //Save the current rpg target and the ignorelist.
+    stageStart = WorldTimer::getMSTime();
     SET_AI_VALUE(GuidPosition, "rpg target", guidP);
     ignoreList.clear();
+    uint32 saveTargetMs = PbdbgElapsed(stageStart);
+
+    uint32 totalMs = PbdbgElapsed(totalStart);
+    if (totalMs > 100)
+    {
+        sLog.outString("PBDBG rpg-choose bot=%s guid=%u stage=execute-summary total=%u getTargets=%u master=%u setNext=%u goodScan=%u prune=%u buildWeighted=%u shuffle=%u save=%u initialTargets=%zu finalTargets=%zu weighted=%zu selectedGuid=%u selectedEntry=%u selectedType=%s selectedRel=%.2f selectedReason=%s map=%u zone=%u level=%u faction=%u checked=%u",
+            bot->GetName(), bot->GetGUIDLow(), totalMs, getTargetsMs, masterTargetMs, setNextActionMs, goodScanMs,
+            pruneMs, buildWeightedMs, weightedShuffleMs, saveTargetMs, initialTargets, targets.size(), guidps.size(),
+            guidP.GetCounter(), guidP.GetEntry(), guidP.IsGameObject() ? "go" : (guidP.IsPlayer() ? "player" : "unit"),
+            targets[guidP], rgpActionReason[guidP].c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetLevel(),
+            bot->GetFactionId(), checked);
+    }
 
     return true;
 }

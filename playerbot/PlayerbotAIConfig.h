@@ -197,6 +197,7 @@ public:
     std::string combatStrategies, nonCombatStrategies, reactStrategies, deadStrategies;
     std::string randomBotCombatStrategies, randomBotNonCombatStrategies, randomBotReactStrategies, randomBotDeadStrategies;
     uint32 randomBotMinLevel, randomBotMaxLevel;
+    bool disableRandomBotTrainerClassTravel;
     float randomChangeMultiplier;
     uint32 specProbability[MAX_CLASSES][10];
 #if PLAYERBOT_RUNTIME_BOOTSTRAP
@@ -226,6 +227,9 @@ public:
     std::list<uint32> randomBotArenaTeams;
 	bool RandombotsWalkingRPG;
 	bool RandombotsWalkingRPGInDoors;
+	bool debugBotAI;
+	uint32 debugBotAIInterval;
+	uint32 botAITicksPerWorldUpdate;
     bool boostFollow;
     bool turnInRpg;
     bool globalSoundEffects;

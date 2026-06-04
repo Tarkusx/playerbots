@@ -17,6 +17,7 @@ public:
     virtual void UpdateAI(uint32 elapsed);
     
     uint32 GetAIInternalUpdateDelay() const { return aiInternalUpdateDelay; }
+    bool CanUpdateAIInternalNow() const { return CanUpdateAIInternal(); }
 
 protected:
     virtual void UpdateAIInternal(uint32 elapsed, bool minimal = false);

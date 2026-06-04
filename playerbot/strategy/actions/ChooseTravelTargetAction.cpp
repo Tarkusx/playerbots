@@ -12,6 +12,25 @@
 
 using namespace ai;
 
+namespace
+{
+    const char* TravelStatusName(TravelStatus status)
+    {
+        switch (status)
+        {
+            case TravelStatus::TRAVEL_STATUS_NONE: return "NONE";
+            case TravelStatus::TRAVEL_STATUS_PREPARE: return "PREPARE";
+            case TravelStatus::TRAVEL_STATUS_READY: return "READY";
+            case TravelStatus::TRAVEL_STATUS_TRAVEL: return "TRAVEL";
+            case TravelStatus::TRAVEL_STATUS_WORK: return "WORK";
+            case TravelStatus::TRAVEL_STATUS_COOLDOWN: return "COOLDOWN";
+            case TravelStatus::TRAVEL_STATUS_EXPIRED: return "EXPIRED";
+        }
+
+        return "UNKNOWN";
+    }
+}
+
 inline std::string GetTravelPurposeName(std::string purpose)
 {
     if (Qualified::isValidNumberString(purpose) && TravelDestinationPurposeName.find(TravelDestinationPurpose(stoi(purpose))) != TravelDestinationPurposeName.end())
@@ -28,7 +47,12 @@ bool ChooseTravelTargetAction::Execute(Event& event)
     TravelTarget* travelTarget = AI_VALUE(TravelTarget*, "travel target");
 
     if(travelTarget->GetStatus() != TravelStatus::TRAVEL_STATUS_PREPARE)
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose bot=%s guid=%u result=skip reason=status status=%s",
+                bot->GetName(), bot->GetGUIDLow(), TravelStatusName(travelTarget->GetStatus()));
         return false;
+    }
 
     Player* requester = event.getOwner() ? event.getOwner() : (GetMaster() ? GetMaster() : bot);
     FutureDestinations* futureDestinations = AI_VALUE(FutureDestinations*, "future travel destinations");
@@ -38,17 +62,29 @@ bool ChooseTravelTargetAction::Execute(Event& event)
 
     if (!futureDestinations->valid())
     {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose bot=%s guid=%u result=fail reason=future-invalid purpose=%s",
+                bot->GetName(), bot->GetGUIDLow(), futureTravelPurposeName.c_str());
         travelTarget->SetStatus(TravelStatus::TRAVEL_STATUS_NONE);
         context->ClearValues("no active travel destinations");        
         return false;
     }
 
     if (futureDestinations->wait_for(std::chrono::seconds(0)) == std::future_status::timeout)
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose bot=%s guid=%u result=wait reason=future-timeout purpose=%s status=%s",
+                bot->GetName(), bot->GetGUIDLow(), futureTravelPurposeName.c_str(), TravelStatusName(travelTarget->GetStatus()));
         return false;
+    }
 
     PartitionedTravelList destinationList = futureDestinations->get();
 
     travelTarget->SetStatus(TravelStatus::TRAVEL_STATUS_NONE);
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG travel choose bot=%s guid=%u result=future-ready purpose=%s ranges=%zu relevance=%u",
+            bot->GetName(), bot->GetGUIDLow(), futureTravelPurposeName.c_str(), destinationList.size(), targetRelevance);
 
     ai->TellDebug(ai->GetMaster(), "Got " + std::to_string(destinationList.size()) + " new destination ranges for " + futureTravelPurposeName, "debug travel");
 
@@ -76,10 +112,23 @@ bool ChooseTravelTargetAction::Execute(Event& event)
     {
         SET_AI_VALUE2(bool, "no active travel destinations", futureTravelPurpose, true);
         ai->TellDebug(ai->GetMaster(), "No target set", "debug travel");
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose bot=%s guid=%u result=fail reason=no-best-target purpose=%s ranges=%zu",
+                bot->GetName(), bot->GetGUIDLow(), futureTravelPurposeName.c_str(), destinationList.size());
         return false;
     }
 
     setNewTarget(requester, &newTarget, travelTarget);
+
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        WorldPosition* pos = travelTarget->GetPosition();
+        sLog.outString("PBDBG travel choose bot=%s guid=%u result=ready purpose=%s status=%s dest=%s map=%u x=%.2f y=%.2f z=%.2f dist=%.1f forced=%u relevance=%u",
+            bot->GetName(), bot->GetGUIDLow(), futureTravelPurposeName.c_str(), TravelStatusName(travelTarget->GetStatus()),
+            travelTarget->GetDestination() ? travelTarget->GetDestination()->GetShortName().c_str() : "none",
+            pos ? pos->getMapId() : 0, pos ? pos->getX() : 0.0f, pos ? pos->getY() : 0.0f, pos ? pos->getZ() : 0.0f,
+            pos ? pos->distance(bot) : 0.0f, travelTarget->IsForced(), travelTarget->GetRelevance());
+    }
     
     return true;
 }
@@ -87,13 +136,28 @@ bool ChooseTravelTargetAction::Execute(Event& event)
 bool ChooseTravelTargetAction::isUseful()
 {
     if (!ai->AllowActivity(TRAVEL_ACTIVITY))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose useful bot=%s guid=%u useful=0 reason=activity",
+                bot->GetName(), bot->GetGUIDLow());
         return false;
+    }
 
     if (!AI_VALUE(bool, "can move around"))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose useful bot=%s guid=%u useful=0 reason=can-move",
+                bot->GetName(), bot->GetGUIDLow());
         return false;
+    }
 
     if (AI_VALUE(bool, "travel target active"))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel choose useful bot=%s guid=%u useful=0 reason=target-active status=%s",
+                bot->GetName(), bot->GetGUIDLow(), TravelStatusName(AI_VALUE(TravelTarget*, "travel target")->GetStatus()));
         return false;
+    }
 
     return true;
 }
@@ -146,6 +210,16 @@ void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* new
     }
 
     oldTarget->SetStatus(TravelStatus::TRAVEL_STATUS_READY);
+
+    if (sPlayerbotAIConfig.debugBotAI)
+    {
+        WorldPosition* pos = oldTarget->GetPosition();
+        sLog.outString("PBDBG travel set-target bot=%s guid=%u status=%s dest=%s map=%u x=%.2f y=%.2f z=%.2f dist=%.1f forced=%u relevance=%u",
+            bot->GetName(), bot->GetGUIDLow(), TravelStatusName(oldTarget->GetStatus()),
+            oldTarget->GetDestination() ? oldTarget->GetDestination()->GetShortName().c_str() : "none",
+            pos ? pos->getMapId() : 0, pos ? pos->getX() : 0.0f, pos ? pos->getY() : 0.0f, pos ? pos->getZ() : 0.0f,
+            pos ? pos->distance(bot) : 0.0f, oldTarget->IsForced(), oldTarget->GetRelevance());
+    }
 
     //Clear rpg and attack/grind target. We want to travel, not hang around some more.
     RESET_AI_VALUE(GuidPosition,"rpg target");
@@ -714,6 +788,10 @@ bool RequestTravelTargetAction::Execute(Event& event)
 
     ai->TellDebug(ai->GetMaster(), "Getting new destination ranges for " + TravelDestinationPurposeName.at(actionPurpose), "debug travel");
 
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG travel request bot=%s guid=%u result=start purpose=%s qualifier=%s source=%s",
+            bot->GetName(), bot->GetGUIDLow(), GetTravelPurposeName(getQualifier()).c_str(), getQualifier().c_str(), event.getSource().c_str());
+
     *AI_VALUE(FutureDestinations*, "future travel destinations") = std::async(std::launch::async, [partitions = travelPartitions, travelInfo = PlayerTravelInfo(bot), center, purpose = actionPurpose]() { return sTravelMgr.GetPartitions(center, partitions, travelInfo, (uint32)purpose); });
 
     AI_VALUE(TravelTarget*, "travel target")->SetStatus(TravelStatus::TRAVEL_STATUS_PREPARE);
@@ -726,28 +804,68 @@ bool RequestTravelTargetAction::Execute(Event& event)
 
 bool RequestTravelTargetAction::isUseful() {
     if (bot->InBattleGround())
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=battleground qualifier=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str());
         return false;
+    }
 
     if (!ai->AllowActivity(TRAVEL_ACTIVITY))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=activity qualifier=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str());
         return false;
+    }
 
     if (AI_VALUE(TravelTarget*, "travel target")->GetStatus() == TravelStatus::TRAVEL_STATUS_PREPARE)
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=prepare qualifier=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str());
         return false;
+    }
 
     if (AI_VALUE(bool, "travel target active"))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+        {
+            TravelTarget* target = AI_VALUE(TravelTarget*, "travel target");
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=active qualifier=%s status=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str(), TravelStatusName(target->GetStatus()));
+        }
         return false;
+    }
 
     if (AI_VALUE2(bool, "no active travel destinations", (getQualifier().empty() ? "quest" : getQualifier())))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=no-active-dest qualifier=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str());
         return false;
+    }
 
     if (!AI_VALUE(bool, "can move around"))
+    {
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=can-move qualifier=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str());
         return false;
+    }
 
     if (!isAllowed())
     {
         ai->TellDebug(ai->GetMaster(), "Skipped " + GetTravelPurposeName(qualifier) + " because of skip chance", "debug travel");
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=0 reason=skip-chance qualifier=%s purpose=%s",
+                bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str(), GetTravelPurposeName(getQualifier()).c_str());
         return false;
     }
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG travel request useful bot=%s guid=%u useful=1 qualifier=%s purpose=%s",
+            bot->GetName(), bot->GetGUIDLow(), getQualifier().c_str(), GetTravelPurposeName(getQualifier()).c_str());
 
     return true;
 }
@@ -1431,6 +1549,10 @@ bool RequestQuestTravelTargetAction::Execute(Event& event)
     SET_AI_VALUE2(std::string, "manual string", "future travel purpose", "quest");
     SET_AI_VALUE2(std::string, "manual string", "future travel condition", event.getSource());
     SET_AI_VALUE2(int, "manual int", "future travel relevance", relevance * 100);
+
+    if (sPlayerbotAIConfig.debugBotAI)
+        sLog.outString("PBDBG travel request bot=%s guid=%u result=start purpose=quest fetches=%zu source=%s",
+            bot->GetName(), bot->GetGUIDLow(), destinationFetches.size(), event.getSource().c_str());
 
     return true;
 }

@@ -122,6 +122,7 @@ void Engine::Init()
 
 bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
 {
+    uint32 engineStartMs = WorldTimer::getMSTime();
     LogAction("--- AI Tick ---");
     if (sPlayerbotAIConfig.logValuesPerTick)
         LogValues();
@@ -130,9 +131,15 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
     ActionBasket* basket = NULL;
 
     time_t currentTime = time(0);
+    uint32 stageStartMs = WorldTimer::getMSTime();
     aiObjectContext->Update();
+    uint32 contextMs = WorldTimer::getMSTimeDiffToNow(stageStartMs);
+    stageStartMs = WorldTimer::getMSTime();
     ProcessTriggers(minimal);
+    uint32 triggersMs = WorldTimer::getMSTimeDiffToNow(stageStartMs);
+    stageStartMs = WorldTimer::getMSTime();
     PushDefaultActions();
+    uint32 defaultsMs = WorldTimer::getMSTimeDiffToNow(stageStartMs);
 
     std::vector<Action*> modifiedActions;
 
@@ -187,7 +194,12 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
                 if (!isStunned || action->isUsefulWhenStunned())
                 {
                     auto pmo2 = sPerformanceMonitor.start(PERF_MON_ACTION, "isUseful", ai);
+                    uint32 usefulStartMs = WorldTimer::getMSTime();
                     isUseful = action->isUseful();
+                    uint32 usefulMs = WorldTimer::getMSTimeDiffToNow(usefulStartMs);
+                    if (usefulMs >= 20)
+                        sLog.outString("PBDBG perf action-stage bot=%s guid=%u action=%s stage=isUseful ms=%u useful=%u",
+                            ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), action->getName().c_str(), usefulMs, isUseful ? 1 : 0);
                     pmo2.reset();
                 }
 
@@ -228,13 +240,23 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
                     }
 
                     auto pmo3 = sPerformanceMonitor.start(PERF_MON_ACTION, "isPossible", ai);
+                    uint32 possibleStartMs = WorldTimer::getMSTime();
                     bool isPossible = action->isPossible();
+                    uint32 possibleMs = WorldTimer::getMSTimeDiffToNow(possibleStartMs);
+                    if (possibleMs >= 20)
+                        sLog.outString("PBDBG perf action-stage bot=%s guid=%u action=%s stage=isPossible ms=%u possible=%u",
+                            ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), action->getName().c_str(), possibleMs, isPossible ? 1 : 0);
                     pmo3.reset();
 
                     if (isPossible && relevance)
                     {
                         auto pmo4 = sPerformanceMonitor.start(PERF_MON_ACTION, "Execute", ai);
+                        uint32 executeStartMs = WorldTimer::getMSTime();
                         actionExecuted = ListenAndExecute(action, event);
+                        uint32 executeMs = WorldTimer::getMSTimeDiffToNow(executeStartMs);
+                        if (executeMs >= 20)
+                            sLog.outString("PBDBG perf action-stage bot=%s guid=%u action=%s stage=Execute ms=%u executed=%u",
+                                ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), action->getName().c_str(), executeMs, actionExecuted ? 1 : 0);
                         pmo4.reset();
 
 #ifdef PLAYERBOT_ELUNA
@@ -331,6 +353,11 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
         LogAction("no actions executed");
 
     queue.RemoveExpired();
+    uint32 engineMs = WorldTimer::getMSTimeDiffToNow(engineStartMs);
+    if (engineMs >= 25 || contextMs >= 20 || triggersMs >= 20 || defaultsMs >= 20)
+        sLog.outString("PBDBG perf engine bot=%s guid=%u ms=%u context=%u triggers=%u defaults=%u iterations=%d queue=%d minimal=%u executed=%u",
+            ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), engineMs, contextMs, triggersMs, defaultsMs,
+            iterations, queue.Size(), minimal ? 1 : 0, actionExecuted ? 1 : 0);
     return actionExecuted;
 }
 
@@ -583,7 +610,12 @@ void Engine::ProcessTriggers(bool minimal)
         Trigger* trigger = node->getTrigger();
         if (!trigger)
         {
+            uint32 getTriggerStartMs = WorldTimer::getMSTime();
             trigger = aiObjectContext->GetTrigger(node->getName());
+            uint32 getTriggerMs = WorldTimer::getMSTimeDiffToNow(getTriggerStartMs);
+            if (getTriggerMs >= 20)
+                sLog.outString("PBDBG perf trigger-stage bot=%s guid=%u trigger=%s stage=getTrigger ms=%u",
+                    ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), node->getName().c_str(), getTriggerMs);
             node->setTrigger(trigger);
         }
         if (!trigger)
@@ -594,7 +626,12 @@ void Engine::ProcessTriggers(bool minimal)
             if (minimal && node->getFirstRelevance() < 100)
                 continue;
             auto pmo = sPerformanceMonitor.start(PERF_MON_TRIGGER, trigger->getName(), ai);
+            uint32 checkStartMs = WorldTimer::getMSTime();
             Event event = trigger->Check();
+            uint32 checkMs = WorldTimer::getMSTimeDiffToNow(checkStartMs);
+            if (checkMs >= 20)
+                sLog.outString("PBDBG perf trigger-stage bot=%s guid=%u trigger=%s stage=Check ms=%u active=%u",
+                    ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), trigger->getName().c_str(), checkMs, !event ? 0 : 1);
 
 #ifdef PLAYERBOT_ELUNA
             // used by eluna    
@@ -605,7 +642,12 @@ void Engine::ProcessTriggers(bool minimal)
             if (!event)
                 continue;
 
+            uint32 pushStartMs = WorldTimer::getMSTime();
             MultiplyAndPush(node->getHandlers(), 0.0f, false, event, "trigger");
+            uint32 pushMs = WorldTimer::getMSTimeDiffToNow(pushStartMs);
+            if (pushMs >= 20)
+                sLog.outString("PBDBG perf trigger-stage bot=%s guid=%u trigger=%s stage=MultiplyAndPush ms=%u",
+                    ai->GetBot()->GetName(), ai->GetBot()->GetGUIDLow(), trigger->getName().c_str(), pushMs);
             LogAction("T:%s", trigger->getName().c_str());
         }
     }

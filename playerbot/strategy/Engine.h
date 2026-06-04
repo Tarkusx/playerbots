@@ -77,7 +77,7 @@ namespace ai
 		bool ContainsStrategy(StrategyType type);
 		void ChangeStrategy(const std::string& names);
 		void PrintStrategies(Player* requester, const std::string& engineType);
-        std::string GetLastAction() { return lastAction; }
+        std::string GetLastAction() const { return lastAction; }
         const Action* GetLastExecutedAction() const { return lastExecutedAction; }
 
     public:

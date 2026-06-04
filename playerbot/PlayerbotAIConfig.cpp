@@ -363,6 +363,7 @@ bool PlayerbotAIConfig::LoadConfig()
     summonAtInnkeepersEnabled = config.GetBoolDefault("AiPlayerbot.SummonAtInnkeepersEnabled", true);
     randomBotMinLevel = config.GetIntDefault("AiPlayerbot.RandomBotMinLevel", 1);
     randomBotMaxLevel = config.GetIntDefault("AiPlayerbot.RandomBotMaxLevel", 255);
+    disableRandomBotTrainerClassTravel = config.GetBoolDefault("AiPlayerbot.DisableRandomBotTrainerClassTravel", false);
     randomBotLoginAtStartup = config.GetBoolDefault("AiPlayerbot.RandomBotLoginAtStartup", true);
     randomBotTeleLevel = config.GetIntDefault("AiPlayerbot.RandomBotTeleLevel", 5);
     openGoSpell = config.GetIntDefault("AiPlayerbot.OpenGoSpell", 6477);
@@ -637,6 +638,9 @@ bool PlayerbotAIConfig::LoadConfig()
     diffEmpty = config.GetIntDefault("AiPlayerbot.DiffEmpty", 200);
     RandombotsWalkingRPG = config.GetBoolDefault("AiPlayerbot.RandombotsWalkingRPG", false);
     RandombotsWalkingRPGInDoors = config.GetBoolDefault("AiPlayerbot.RandombotsWalkingRPG.InDoors", false);
+    debugBotAI = config.GetBoolDefault("AiPlayerbot.DebugBotAI", false);
+    debugBotAIInterval = config.GetIntDefault("AiPlayerbot.DebugBotAIInterval", 10);
+    botAITicksPerWorldUpdate = config.GetIntDefault("AiPlayerbot.BotAITicksPerWorldUpdate", 3);
     minEnchantingBotLevel = config.GetIntDefault("AiPlayerbot.minEnchantingBotLevel", 60);
     randombotStartingLevel = config.GetIntDefault("AiPlayerbot.randombotStartingLevel", 5);
     gearscorecheck = config.GetBoolDefault("AiPlayerbot.GearScoreCheck", false);

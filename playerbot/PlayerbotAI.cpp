@@ -3077,12 +3077,20 @@ bool PlayerbotAI::SayToGuild(std::string msg, bool likePlayer)
     return false;
 }
 
+static bool CanBotUseTurtleChannel(Player* bot)
+{
+    return bot && bot->GetSession() && bot->GetSession()->GetMasterPlayer();
+}
+
 bool PlayerbotAI::SayToWorld(std::string msg)
 {
     if (msg.empty())
     {
         return false;
     }
+
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
 
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)
@@ -3106,6 +3114,9 @@ bool PlayerbotAI::SayToGeneral(std::string msg)
     {
         return false;
     }
+
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
 
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)
@@ -3135,6 +3146,9 @@ bool PlayerbotAI::SayToTrade(std::string msg)
     {
         return false;
     }
+
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
 
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)
@@ -3174,6 +3188,9 @@ bool PlayerbotAI::SayToLFG(std::string msg)
         return false;
     }
 
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
+
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)
     {
@@ -3201,6 +3218,9 @@ bool PlayerbotAI::SayToLocalDefense(std::string msg)
     {
         return false;
     }
+
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
 
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)
@@ -3238,6 +3258,9 @@ bool PlayerbotAI::SayToWorldDefense(std::string msg)
         return false;
     }
 
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
+
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)
     {
@@ -3260,6 +3283,9 @@ bool PlayerbotAI::SayToGuildRecruitment(std::string msg)
     {
         return false;
     }
+
+    if (!CanBotUseTurtleChannel(bot))
+        return false;
 
     ChannelMgr* cMgr = channelMgr(bot->GetTeam());
     if (!cMgr)

@@ -2163,7 +2163,7 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
 
         if (!lastProcessLog[bot] || now >= lastProcessLog[bot] + debugInterval)
         {
-            sLog.outString("PBDBG rndprocess guid=%u bot=%s reached=1 inWorld=%u teleporting=%u loggingOut=%u botsAllowed=%u login=%u loginTtl=%d add=%u addTtl=%d update=%u updateTtl=%d randomize=%u randomizeTtl=%d changeStrategy=%u changeStrategyTtl=%d teleport=%u teleportTtl=%d ai=%u state=%s allow=%u lastAction=[%s] combat=[%s] noncombat=[%s] travel=[%s]",
+            sLog.outString("PBDBG rndprocess guid=%u bot=%s reached=1 inWorld=%u teleporting=%u loggingOut=%u botsAllowed=%u login=%u loginTtl=%d add=%u addTtl=%d update=%u updateTtl=%d randomize=%u randomizeTtl=%d changeStrategy=%u changeStrategyTtl=%d teleport=%u teleportTtl=%d ai=%u state=%s allow=%u travel=[%s]",
                 bot,
                 player ? player->GetName() : "OFFLINE",
                 player && player->IsInWorld() ? 1 : 0,
@@ -2185,9 +2185,6 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
                 ai ? 1 : 0,
                 ai ? PlayerbotAI::BotStateToString(ai->GetState()).c_str() : "no_ai",
                 ai && ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
-                ai ? ai->GetLastAction(ai->GetState()).c_str() : "",
-                ai ? FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_COMBAT)).c_str() : "",
-                ai ? FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_NON_COMBAT)).c_str() : "",
                 ai ? FormatTravelTarget(ai->GetAiObjectContext()->GetValue<TravelTarget*>("travel target")->Get(), player).c_str() : "no_ai");
             lastProcessLog[bot] = now;
         }
@@ -2268,8 +2265,11 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     if (!update)
     {
         //Clean up expired values
+        uint32 const expiredStart = WorldTimer::getMSTime();
+        sLog.outString("PBDBG rndprocess-update-stage guid=%u bot=%s stage=clear-expired-start ai=%u", bot, player->GetName(), ai ? 1 : 0);
         if (ai && !ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT))
             ai->GetAiObjectContext()->ClearExpiredValues();
+        sLog.outString("PBDBG rndprocess-update-stage guid=%u bot=%s stage=clear-expired-end ms=%u", bot, player->GetName(), WorldTimer::getMSTimeDiffToNow(expiredStart));
 
         //Randomize/teleport bot
         if (!sPlayerbotAIConfig.disableRandomLevels)
@@ -2278,6 +2278,7 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
                 return false;
 
             bool update = true;
+            bool hasNearbyPlayer = false;
             if (ai)
             {
                 if (!sRandomPlayerbotMgr.IsRandomBot(player))
@@ -2286,11 +2287,19 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
                 if (player->GetGroup() && ai->GetGroupMaster() && (!ai->GetGroupMaster()->GetPlayerbotAI() || ai->GetGroupMaster()->GetPlayerbotAI()->IsRealPlayer()))
                     update = false;
 
-                if (ai->HasPlayerNearby())
+                hasNearbyPlayer = ai->HasPlayerNearby();
+                if (hasNearbyPlayer)
                     update = false;
             }
+            sLog.outString("PBDBG rndprocess-update-stage guid=%u bot=%s stage=player-process-check update=%u group=%u taxi=%u nearby=%u",
+                bot, player->GetName(), update ? 1 : 0, player->GetGroup() ? 1 : 0, player->IsTaxiFlying() ? 1 : 0, hasNearbyPlayer ? 1 : 0);
             if (update)
+            {
+                uint32 const playerProcessStart = WorldTimer::getMSTime();
+                sLog.outString("PBDBG rndprocess-update-stage guid=%u bot=%s stage=player-process-start", bot, player->GetName());
                 ProcessBot(player);
+                sLog.outString("PBDBG rndprocess-update-stage guid=%u bot=%s stage=player-process-end ms=%u", bot, player->GetName(), WorldTimer::getMSTimeDiffToNow(playerProcessStart));
+            }
         }
 
         uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotReviveTime, sPlayerbotAIConfig.maxRandomBotReviveTime * 5);
@@ -2341,7 +2350,7 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
 
     if (sPlayerbotAIConfig.debugBotAI)
     {
-        sLog.outString("PBDBG rndprocess-player guid=%u bot=%s reached=1 idle=%u randomize=%u randomizeTtl=%d changeStrategy=%u changeStrategyTtl=%d teleport=%u teleportTtl=%d autoDoQuests=%u enableTeleports=%u players=%zu state=%s allow=%u lastAction=[%s] combat=[%s] noncombat=[%s] travel=[%s]",
+        sLog.outString("PBDBG rndprocess-player guid=%u bot=%s reached=1 idle=%u randomize=%u randomizeTtl=%d changeStrategy=%u changeStrategyTtl=%d teleport=%u teleportTtl=%d autoDoQuests=%u enableTeleports=%u players=%zu state=%s allow=%u travel=[%s]",
             bot,
             player->GetName(),
             idleBot ? 1 : 0,
@@ -2356,9 +2365,6 @@ bool RandomPlayerbotMgr::ProcessBot(Player* player)
             players.size(),
             PlayerbotAI::BotStateToString(ai->GetState()).c_str(),
             ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
-            ai->GetLastAction(ai->GetState()).c_str(),
-            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_COMBAT)).c_str(),
-            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_NON_COMBAT)).c_str(),
             FormatTravelTarget(target, player).c_str());
     }
 
@@ -3063,6 +3069,10 @@ void RandomPlayerbotMgr::Randomize(Player* bot)
     if (!bot || !bot->IsInWorld() || bot->IsBeingTeleported() || bot->GetSession()->isLogingOut())
         return;
 
+    uint32 const randomizeStart = WorldTimer::getMSTime();
+    sLog.outString("PBDBG rnd-randomize-start guid=%u bot=%s level=%u players=%zu",
+        bot->GetGUIDLow(), bot->GetName(), bot->GetLevel(), players.size());
+
     bool initialRandom = false;
     if (bot->GetLevel() <= sPlayerbotAIConfig.randombotStartingLevel)
         initialRandom = true;
@@ -3081,12 +3091,20 @@ void RandomPlayerbotMgr::Randomize(Player* bot)
 
     if (initialRandom)
     {
+        sLog.outString("PBDBG rnd-randomize-stage guid=%u bot=%s stage=randomize-first-start",
+            bot->GetGUIDLow(), bot->GetName());
         RandomizeFirst(bot);
+        sLog.outString("PBDBG rnd-randomize-stage guid=%u bot=%s stage=randomize-first-end ms=%u level=%u",
+            bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(randomizeStart), bot->GetLevel());
         sLog.outDetail("Bot #%d %s:%d <%s>: gear/level randomised", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
     }
     else if (sPlayerbotAIConfig.randomGearUpgradeEnabled)
     {
+        sLog.outString("PBDBG rnd-randomize-stage guid=%u bot=%s stage=update-gear-start",
+            bot->GetGUIDLow(), bot->GetName());
         UpdateGearSpells(bot);
+        sLog.outString("PBDBG rnd-randomize-stage guid=%u bot=%s stage=update-gear-end ms=%u level=%u",
+            bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(randomizeStart), bot->GetLevel());
         sLog.outDetail("Bot #%d %s:%d <%s>: gear upgraded", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
     }
     else
@@ -3096,6 +3114,8 @@ void RandomPlayerbotMgr::Randomize(Player* bot)
         SetEventValue(bot->GetGUIDLow(), "randomize", 1, randomTime);
     }
 
+    sLog.outString("PBDBG rnd-randomize-end guid=%u bot=%s ms=%u level=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(randomizeStart), bot->GetLevel());
     //SetValue(bot, "version", MANGOSBOT_VERSION);
 }
 
@@ -3122,6 +3142,7 @@ void RandomPlayerbotMgr::UpdateGearSpells(Player* bot)
 
 void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 {
+    uint32 const start = WorldTimer::getMSTime();
     uint32 maxLevel = sPlayerbotAIConfig.randomBotMaxLevel;
     if (maxLevel > sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         maxLevel = sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL);
@@ -3131,6 +3152,8 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
         maxLevel = std::max(sPlayerbotAIConfig.randomBotMinLevel, std::min(playersLevel+ sPlayerbotAIConfig.syncLevelMaxAbove, sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL)));
 
     auto pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT, "RandomizeFirst");
+    sLog.outString("PBDBG rnd-randomize-first-start guid=%u bot=%s min=%u max=%u players=%zu currentLevel=%u",
+        bot->GetGUIDLow(), bot->GetName(), sPlayerbotAIConfig.randomBotMinLevel, maxLevel, players.size(), bot->GetLevel());
     uint32 level = urand(std::max(uint32(sWorld.getConfig(CONFIG_UINT32_START_PLAYER_LEVEL)), sPlayerbotAIConfig.randomBotMinLevel), maxLevel);
 
 #ifdef MANGOSBOT_TWO
@@ -3157,21 +3180,50 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 #endif
 
     if (level == sWorld.getConfig(CONFIG_UINT32_START_PLAYER_LEVEL))
+    {
+        sLog.outString("PBDBG rnd-randomize-first-exit guid=%u bot=%s reason=start-level level=%u ms=%u",
+            bot->GetGUIDLow(), bot->GetName(), level, WorldTimer::getMSTimeDiffToNow(start));
         return;
+    }
 
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=set-level-start level=%u ms=%u",
+        bot->GetGUIDLow(), bot->GetName(), level, WorldTimer::getMSTimeDiffToNow(start));
     SetValue(bot, "level", level);
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=set-level-end ms=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start));
     PlayerbotFactory factory(bot, level);
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=factory-randomize-start ms=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start));
     factory.Randomize(false, false);
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=factory-randomize-end ms=%u level=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start), bot->GetLevel());
 
     // schedule randomise
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=schedule-randomize-start ms=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start));
     uint32 randomTime = urand(sPlayerbotAIConfig.minRandomBotRandomizeTime, sPlayerbotAIConfig.maxRandomBotRandomizeTime);
     SetEventValue(bot->GetGUIDLow(), "randomize", 1, randomTime);
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=schedule-randomize-end ms=%u randomTime=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start), randomTime);
 
     bool hasPlayer = bot->GetPlayerbotAI()->HasRealPlayerMaster();
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=ai-reset-start hasPlayer=%u ms=%u",
+        bot->GetGUIDLow(), bot->GetName(), hasPlayer ? 1 : 0, WorldTimer::getMSTimeDiffToNow(start));
     bot->GetPlayerbotAI()->Reset(!hasPlayer);
+    sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=ai-reset-end ms=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start));
 
     if (bot->GetGroup() && !hasPlayer)
+    {
+        sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=remove-group-start ms=%u",
+            bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start));
         bot->RemoveFromGroup();
+        sLog.outString("PBDBG rnd-randomize-first-stage guid=%u bot=%s stage=remove-group-end ms=%u",
+            bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start));
+    }
+
+    sLog.outString("PBDBG rnd-randomize-first-end guid=%u bot=%s ms=%u level=%u",
+        bot->GetGUIDLow(), bot->GetName(), WorldTimer::getMSTimeDiffToNow(start), bot->GetLevel());
 }
 
 uint32 RandomPlayerbotMgr::GetZoneLevel(uint16 mapId, float teleX, float teleY, float teleZ)
@@ -3640,7 +3692,7 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player * const bot)
     if (sPlayerbotAIConfig.debugBotAI)
     {
         PlayerbotAI* ai = bot->GetPlayerbotAI();
-        sLog.outString("PBDBG rndlogin bot=%s guid=%u state=%s isRandom=%u isFree=%u isReal=%u master=%s allow=%u combat=[%s] noncombat=[%s] dead=[%s] reaction=[%s]",
+        sLog.outString("PBDBG rndlogin bot=%s guid=%u state=%s isRandom=%u isFree=%u isReal=%u master=%s allow=%u",
             bot->GetName(),
             bot->GetGUIDLow(),
             PlayerbotAI::BotStateToString(ai->GetState()).c_str(),
@@ -3648,11 +3700,7 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player * const bot)
             IsFreeBot(bot) ? 1 : 0,
             ai->IsRealPlayer() ? 1 : 0,
             ai->GetMaster() ? ai->GetMaster()->GetName() : "NULL",
-            ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0,
-            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_COMBAT)).c_str(),
-            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_NON_COMBAT)).c_str(),
-            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_DEAD)).c_str(),
-            FormatStrategyList(ai->GetStrategies(BotState::BOT_STATE_REACTION)).c_str());
+            ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0);
     }
 		//if (loginProgressBar && playerBots.size() < sRandomPlayerbotMgr.GetMaxAllowedBotCount()) { loginProgressBar->step(); }
 	//if (loginProgressBar && playerBots.size() >= sRandomPlayerbotMgr.GetMaxAllowedBotCount() - 1) {

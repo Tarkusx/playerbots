@@ -29,6 +29,52 @@ namespace
 
         return "UNKNOWN";
     }
+
+    bool FindFallbackTeleCachePosition(Player* bot, WorldPosition& position)
+    {
+        if (!bot)
+            return false;
+
+        WorldPosition center(bot);
+        uint32 level = bot->GetLevel();
+        uint32 minLevel = level > 1 ? level - 1 : 1;
+        uint32 maxLevel = level + 1;
+        float minDistSq = 25.0f;
+        float maxDistSq = 250000.0f;
+
+        std::unique_ptr<QueryResult> result(CharacterDatabase.PQuery(
+            "SELECT `map_id`, `x`, `y`, `z`, ((`x` - %f) * (`x` - %f) + (`y` - %f) * (`y` - %f)) AS dist2 "
+            "FROM `ai_playerbot_tele_cache` "
+            "WHERE `level` BETWEEN %u AND %u AND `map_id` = %u "
+            "HAVING dist2 BETWEEN %f AND %f "
+            "ORDER BY dist2 ASC LIMIT 1",
+            center.getX(), center.getX(), center.getY(), center.getY(), minLevel, maxLevel, center.getMapId(), minDistSq, maxDistSq));
+
+        if (!result)
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG travel fallback bot=%s guid=%u result=none source=tele-cache map=%u level=%u",
+                    bot->GetName(), bot->GetGUIDLow(), center.getMapId(), level);
+            return false;
+        }
+
+        Field* fields = result->Fetch();
+        position = WorldPosition(fields[0].GetUInt32(), fields[1].GetFloat(), fields[2].GetFloat(), fields[3].GetFloat(), 0.0f);
+
+        if (!position.isValid() || !TravelMgr::IsLocationLevelValid(position, PlayerTravelInfo(bot)))
+        {
+            if (sPlayerbotAIConfig.debugBotAI)
+                sLog.outString("PBDBG travel fallback bot=%s guid=%u result=reject source=tele-cache map=%u x=%.2f y=%.2f z=%.2f valid=%u",
+                    bot->GetName(), bot->GetGUIDLow(), position.getMapId(), position.getX(), position.getY(), position.getZ(), position.isValid() ? 1 : 0);
+            return false;
+        }
+
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel fallback bot=%s guid=%u result=found source=tele-cache map=%u x=%.2f y=%.2f z=%.2f dist=%.1f",
+                bot->GetName(), bot->GetGUIDLow(), position.getMapId(), position.getX(), position.getY(), position.getZ(), position.distance(center));
+
+        return true;
+    }
 }
 
 inline std::string GetTravelPurposeName(std::string purpose)
@@ -115,6 +161,16 @@ bool ChooseTravelTargetAction::Execute(Event& event)
         if (sPlayerbotAIConfig.debugBotAI)
             sLog.outString("PBDBG travel choose bot=%s guid=%u result=fail reason=no-best-target purpose=%s ranges=%zu",
                 bot->GetName(), bot->GetGUIDLow(), futureTravelPurposeName.c_str(), destinationList.size());
+        WorldPosition fallbackPosition;
+        if (FindFallbackTeleCachePosition(bot, fallbackPosition))
+        {
+            TemporaryTravelDestination* destination = new TemporaryTravelDestination(fallbackPosition);
+            TravelTarget fallbackTarget(ai);
+            fallbackTarget.SetTarget(destination, destination->GetPosition());
+            fallbackTarget.SetRelevance(1);
+            setNewTarget(requester, &fallbackTarget, travelTarget);
+            return true;
+        }
         return false;
     }
 
@@ -164,6 +220,20 @@ bool ChooseTravelTargetAction::isUseful()
 
 void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* newTarget, TravelTarget* oldTarget)
 {
+    if (!newTarget || !newTarget->GetDestination() || !newTarget->GetPosition() ||
+        typeid(*newTarget->GetDestination()) == typeid(NullTravelDestination) || *newTarget->GetPosition() == WorldPosition())
+    {
+        sTravelMgr.SetNullTravelTarget(oldTarget);
+        RESET_AI_VALUE(bool, "travel target active");
+        context->ClearValues("no active travel destinations");
+
+        if (sPlayerbotAIConfig.debugBotAI)
+            sLog.outString("PBDBG travel set-target bot=%s guid=%u result=clear reason=invalid-target",
+                bot->GetName(), bot->GetGUIDLow());
+
+        return;
+    }
+
     if (CanFreeMoveValue::CanFreeMoveTo(ai, newTarget->GetPosStr()))
         ReportTravelTarget(bot, requester, newTarget, oldTarget);
 
@@ -211,6 +281,12 @@ void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* new
 
     oldTarget->SetStatus(TravelStatus::TRAVEL_STATUS_READY);
 
+    RESET_AI_VALUE(TravelTarget*, "leader travel target");
+    RESET_AI_VALUE(bool, "travel target active");
+    RESET_AI_VALUE(bool, "travel target ready");
+    RESET_AI_VALUE(bool, "travel target traveling");
+    RESET_AI_VALUE(bool, "travel target working");
+
     if (sPlayerbotAIConfig.debugBotAI)
     {
         WorldPosition* pos = oldTarget->GetPosition();
@@ -225,7 +301,6 @@ void ChooseTravelTargetAction::setNewTarget(Player* requester, TravelTarget* new
     RESET_AI_VALUE(GuidPosition,"rpg target");
     RESET_AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target");
     RESET_AI_VALUE(ObjectGuid,"attack target");
-    RESET_AI_VALUE(bool, "travel target active");
     context->ClearValues("no active travel destinations");
     SET_AI_VALUE2(std::string, "manual string", "future travel detail", std::string());
 };

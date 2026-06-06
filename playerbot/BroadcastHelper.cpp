@@ -71,7 +71,7 @@ bool BroadcastHelper::BroadcastTest(
 */
 bool BroadcastHelper::BroadcastToChannelWithGlobalChance(PlayerbotAI* ai, std::string message, std::list<std::pair<ToChannel, uint32>> toChannels)
 {
-    if (message.empty())
+    if (message.empty() || !ai || !ai->GetBot() || !ai->GetBot()->GetSession() || !ai->GetBot()->GetSession()->GetSocket())
     {
         return false;
     }

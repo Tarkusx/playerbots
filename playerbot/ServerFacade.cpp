@@ -127,7 +127,18 @@ FactionTemplateEntry const* ServerFacade::GetFactionTemplateEntry(Unit *unit)
 
 Unit* ServerFacade::GetChaseTarget(Unit* target)
 {
-    return static_cast<ChaseMovementGenerator<Player> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget();
+    if (!target || !target->GetMotionMaster())
+        return nullptr;
+
+    switch (target->GetMotionMaster()->GetCurrentMovementGeneratorType())
+    {
+        case CHASE_MOTION_TYPE:
+            return static_cast<ChaseMovementGenerator<Player> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget();
+        case FOLLOW_MOTION_TYPE:
+            return static_cast<FollowMovementGenerator<Player> const*>(target->GetMotionMaster()->GetCurrent())->GetTarget();
+        default:
+            return nullptr;
+    }
 }
 
 float ServerFacade::GetChaseAngle(Unit* target)

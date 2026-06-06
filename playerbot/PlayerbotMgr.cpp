@@ -239,8 +239,7 @@ void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)
                     BotState state = ai->GetState();
                     ActivePiorityType priority = ai->GetPriorityType();
                     std::pair<uint32, uint32> bracket = ai->GetPriorityBracket(priority);
-                    std::string strategies = FormatStrategyList(ai->GetStrategies(state));
-                    sLog.outString("PBDBG tick bot=%s guid=%u state=%s priority=%s bracket=%u-%u allow=%u allowTravel=%u allowMove=%u canBefore=%u delayBefore=%u canAfter=%u delayAfter=%u minimal=%u elapsed=%u inWorld=%u moving=%u mm=%u lastAction=[%s] strategies=[%s]",
+                    sLog.outString("PBDBG tick bot=%s guid=%u state=%s priority=%s bracket=%u-%u allow=%u allowTravel=%u allowMove=%u canBefore=%u delayBefore=%u canAfter=%u delayAfter=%u minimal=%u elapsed=%u inWorld=%u moving=%u mm=%u",
                         bot->GetName(),
                         guid,
                         PlayerbotAI::BotStateToString(state).c_str(),
@@ -258,9 +257,7 @@ void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)
                         botElapsed,
                         bot->IsInWorld() ? 1 : 0,
                         (!bot->IsStopped() || bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != IDLE_MOTION_TYPE) ? 1 : 0,
-                        bot->GetMotionMaster()->GetCurrentMovementGeneratorType(),
-                        ai->GetLastAction(state).c_str(),
-                        strategies.c_str());
+                        bot->GetMotionMaster()->GetCurrentMovementGeneratorType());
                     lastDebugLog[guid] = now;
                 }
             }

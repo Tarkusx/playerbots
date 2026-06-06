@@ -475,22 +475,44 @@ bool ShouldTravelNamedValue::Calculate()
 
 bool TravelTargetActiveValue::Calculate() 
 {
-    return AI_VALUE(TravelTarget*, "travel target")->IsActive();
+    TravelTarget* target = AI_VALUE(TravelTarget*, "travel target");
+    bool active = target->IsActive();
+
+    if (sPlayerbotAIConfig.debugBotAI && target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
+        sLog.outString("PBDBG travel value bot=%s guid=%u value=active result=%u status=%u",
+            bot->GetName(), bot->GetGUIDLow(), active, uint32(target->GetStatus()));
+
+    return active;
 };
 
 bool TravelTargetReadyValue::Calculate()
 {
-    return AI_VALUE(TravelTarget*, "leader travel target")->GetStatus() == TravelStatus::TRAVEL_STATUS_READY;
+    TravelTarget* target = AI_VALUE(TravelTarget*, "leader travel target");
+    bool ready = target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY;
+
+    if (sPlayerbotAIConfig.debugBotAI && target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
+        sLog.outString("PBDBG travel value bot=%s guid=%u value=ready result=%u status=%u",
+            bot->GetName(), bot->GetGUIDLow(), ready, uint32(target->GetStatus()));
+
+    return ready;
 };
 
 bool TravelTargetTravelingValue::Calculate()
 {
-    return AI_VALUE(TravelTarget*, "leader travel target")->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL;
+    TravelTarget* target = AI_VALUE(TravelTarget*, "leader travel target");
+    bool traveling = target->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL;
+
+    if (sPlayerbotAIConfig.debugBotAI && target->GetStatus() == TravelStatus::TRAVEL_STATUS_TRAVEL)
+        sLog.outString("PBDBG travel value bot=%s guid=%u value=traveling result=%u status=%u",
+            bot->GetName(), bot->GetGUIDLow(), traveling, uint32(target->GetStatus()));
+
+    return traveling;
 };
 
 bool TravelTargetWorkingValue::Calculate()
 {
-    return AI_VALUE(TravelTarget*, "leader travel target")->GetStatus() == TravelStatus::TRAVEL_STATUS_WORK;
+    TravelTarget* target = AI_VALUE(TravelTarget*, "leader travel target");
+    return target->GetStatus() == TravelStatus::TRAVEL_STATUS_WORK;
 };
 
 bool QuestStageActiveValue::Calculate()

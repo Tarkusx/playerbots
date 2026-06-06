@@ -3079,7 +3079,9 @@ bool PlayerbotAI::SayToGuild(std::string msg, bool likePlayer)
 
 static bool CanBotUseTurtleChannel(Player* bot)
 {
-    return bot && bot->GetSession() && bot->GetSession()->GetMasterPlayer();
+    return bot && bot->GetSession() && bot->GetSession()->GetSocket() &&
+        bot->GetLevel() >= sWorld.GetMinChatLevel() &&
+        bot->GetLevel() >= sWorld.getConfig(CONFIG_UINT32_WORLD_CHAN_MIN_LEVEL);
 }
 
 bool PlayerbotAI::SayToWorld(std::string msg)

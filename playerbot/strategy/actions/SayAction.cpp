@@ -108,6 +108,9 @@ bool SayAction::Execute(Event& event)
 
 bool SayAction::isUseful()
 {
+    if (!bot->GetSession() || !bot->GetSession()->GetSocket())
+        return false;
+
     if (!ai->AllowActivity())
         return false;
 

@@ -1018,6 +1018,14 @@ void TravelTarget::CheckStatus()
 }
 
 bool TravelTarget::IsActive() {
+    if (!tDestination || !wPosition || typeid(*tDestination) == typeid(NullTravelDestination) || *wPosition == WorldPosition())
+    {
+        if (m_status != TravelStatus::TRAVEL_STATUS_NONE && m_status != TravelStatus::TRAVEL_STATUS_PREPARE && m_status != TravelStatus::TRAVEL_STATUS_EXPIRED)
+            SetStatus(TravelStatus::TRAVEL_STATUS_NONE);
+
+        return false;
+    }
+
     if (m_status == TravelStatus::TRAVEL_STATUS_NONE || m_status == TravelStatus::TRAVEL_STATUS_EXPIRED || m_status == TravelStatus::TRAVEL_STATUS_PREPARE)
         return false;
 
@@ -2579,6 +2587,12 @@ DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 
 {
     WorldPosition center = info.GetPosition();
     DestinationList retDests;
+    uint32 totalDestinations = 0;
+    uint32 purposeMatched = 0;
+    uint32 entryMatched = 0;
+    uint32 possibleRejected = 0;
+    uint32 maxDistanceRejected = 0;
+    uint32 pathRejected = 0;
 
     for (auto& [purpose, entryDests] : destinationMap)
     {
@@ -2588,24 +2602,45 @@ DestinationList TravelMgr::GetDestinations(const PlayerTravelInfo& info, uint32 
 
         for (auto& [destEntry, dests] : entryDests)
         {
+            purposeMatched += dests.size();
+
             if (entries.size() && std::find(entries.begin(), entries.end(), destEntry) == entries.end())
                 continue;
 
+            entryMatched += dests.size();
+
             for (auto& dest : dests)
             {
+                totalDestinations++;
+
                 if (onlyPossible && !dest->IsPossible(info))
+                {
+                    possibleRejected++;
                     continue;
+                }
 
                 if (maxDistance > 0 && dest->DistanceTo(center) > maxDistance)
+                {
+                    maxDistanceRejected++;
                     continue;
+                }
 
                 if (dest->DistanceTo(center) == FLT_MAX) //Do not return destinations on maps you can't path to.
+                {
+                    pathRejected++;
                     continue;
+                }
                 
                 retDests.push_back(dest);
             }
         }
     }
+
+    if (sPlayerbotAIConfig.debugBotAI && retDests.empty())
+        sLog.outString("PBDBG travel destinations purpose=%u entries=%zu onlyPossible=%u maxDistance=%.1f center=%u|%.2f|%.2f|%.2f total=%u purposeMatched=%u entryMatched=%u possibleRejected=%u maxDistanceRejected=%u pathRejected=%u result=0",
+            purposeFlag, entries.size(), onlyPossible ? 1 : 0, maxDistance,
+            center.getMapId(), center.getX(), center.getY(), center.getZ(),
+            totalDestinations, purposeMatched, entryMatched, possibleRejected, maxDistanceRejected, pathRejected);
 
     return retDests;
 }
@@ -2665,6 +2700,11 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
 
     PartitionedTravelList pointMap;
     DestinationList destinations = GetDestinations(info, purposeFlag, entries, onlyPossible, maxDistance);
+    uint32 noPartition = 0;
+    uint32 pointsChecked = 0;
+    uint32 levelRejected = 0;
+    uint32 pointDistanceRejected = 0;
+    uint32 pointsAccepted = 0;
 
 
 
@@ -2678,7 +2718,10 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
         std::pair<uint32, std::vector<WorldPosition*>> pointRange = dest->GetClosestPartition(center, distancePartitions);
 
         if (!pointRange.first)
+        {
+            noPartition++;
             continue;
+        }
 
         MANGOS_ASSERT(pointRange.second.size());
         std::vector<WorldPosition*> points = pointRange.second;
@@ -2686,20 +2729,35 @@ PartitionedTravelList TravelMgr::GetPartitions(const WorldPosition& center, cons
 
         for (auto& position : points)
         {
+            pointsChecked++;
+
             if (!IsLocationLevelValid(*position, info))
+            {
+                levelRejected++;
                 continue;
+            }
 
             float distance = position->distance(center);
 
             if (distance > maxDistance)
+            {
+                pointDistanceRejected++;
                 continue;
+            }
             
             point = TravelPoint(dest, position, distance);
+            pointsAccepted++;
         }
 
         if (std::get<2>(point) > 0)
             pointMap[pointRange.first].push_back(point);
     }
+
+    if (sPlayerbotAIConfig.debugBotAI && pointMap.empty())
+        sLog.outString("PBDBG travel partitions purpose=%u entries=%zu onlyPossible=%u maxDistance=%.1f center=%u|%.2f|%.2f|%.2f level=%u destinations=%zu noPartition=%u pointsChecked=%u levelRejected=%u pointDistanceRejected=%u pointsAccepted=%u result=0",
+            purposeFlag, entries.size(), onlyPossible ? 1 : 0, maxDistance,
+            center.getMapId(), center.getX(), center.getY(), center.getZ(), info.GetLevel(),
+            destinations.size(), noPartition, pointsChecked, levelRejected, pointDistanceRejected, pointsAccepted);
 
     sTravelMgr.GetPartitionsLock(false);
 

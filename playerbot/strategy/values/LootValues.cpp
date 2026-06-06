@@ -215,12 +215,19 @@ DropMap* DropMapValue::Calculate()
 
 	DropMap* itemDropMap = GAI_VALUE(DropMap*, "item drop map");
 
-	//Add items that drop from items.
-	for (auto& [lootItemId, sourceItemId] : *itemDropMap)
+	if (itemDropMap)
 	{
-		auto range = dropMap->equal_range(sourceItemId);
-		for (auto itr = range.first; itr != range.second; ++itr)
-			dropMap->insert(std::make_pair(lootItemId, itr->second));
+		std::vector<std::pair<uint32, int32>> toAdd;
+		//Add items that drop from items.
+		for (auto& [lootItemId, sourceItemId] : *itemDropMap)
+		{
+			auto range = dropMap->equal_range(sourceItemId);
+			for (auto itr = range.first; itr != range.second; ++itr)
+				toAdd.push_back(std::make_pair(lootItemId, itr->second));
+		}
+		
+		for (auto& pair : toAdd)
+			dropMap->insert(pair);
 	}
 
 	return dropMap;

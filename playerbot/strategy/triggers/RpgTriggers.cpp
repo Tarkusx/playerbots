@@ -774,7 +774,7 @@ bool RpgDuelTrigger::IsActive()
         return false;
 
     // caster or target already have requested duel
-    if (bot->m_duel || player->m_duel || !player->GetSocial() || player->GetSocial()->HasIgnore(bot->GetObjectGuid()))
+    if (bot->m_duel || player->m_duel || !player->FindSocial() || player->FindSocial()->HasIgnore(bot->GetObjectGuid()))
         return false;
 
     AreaTableEntry const* targetAreaEntry = GetAreaEntryByAreaID(sServerFacade.GetAreaId(player));

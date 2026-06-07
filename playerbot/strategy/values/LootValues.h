@@ -16,6 +16,7 @@ namespace ai
     public:
         LootStoreItemList ExplicitlyChanced;                // Entries with chances defined in DB
         LootStoreItemList EqualChanced;                     // Zero chances - every entry takes the same chance
+        bool hasConditionalEqualChancedItem;
     };
 
     class LootTemplateAccess

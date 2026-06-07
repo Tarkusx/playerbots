@@ -848,6 +848,15 @@ void PlayerbotHolder::HandlePlayerBotLoginCallback(QueryResult* /*dummy*/, SqlQu
         return;
     }
 
+    if (Item* mainhand = bot->GetItemByPos(255, 16))
+    {
+        sLog.outError("BOT %u HAS MAINHAND LOADED IN MEMORY!", guid.GetCounter());
+    }
+    else
+    {
+        sLog.outError("BOT %u DOES NOT HAVE MAINHAND IN MEMORY!", guid.GetCounter());
+    }
+
     botSession->SetPlayer(bot);
     bot->SetInGameTime(WorldTimer::getMSTime());
     bot->SetAtLoginFlag(AT_LOGIN_NONE);

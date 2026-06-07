@@ -5993,7 +5993,7 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
         if (!player || !player->IsInWorld())
             continue;
 
-        if (player->GetSocial()->HasFriend(bot->GetObjectGuid()))
+        if (player->FindSocial() && player->FindSocial()->HasFriend(bot->GetObjectGuid()))
             return ActivePiorityType::PLAYER_FRIEND;
     }
 
@@ -8445,7 +8445,7 @@ bool PlayerbotAI::HasPlayerRelation()
 
     for (auto& p : sRandomPlayerbotMgr.GetPlayers())
     {
-        if (p.second && p.second->GetSocial()->HasFriend(bot->GetObjectGuid()))
+        if (p.second && p.second->FindSocial() && p.second->FindSocial()->HasFriend(bot->GetObjectGuid()))
         {
             SetPlayerFriend(true);
             return true;

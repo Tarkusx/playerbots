@@ -929,13 +929,14 @@ bool PlayerbotAIConfig::BootstrapRuntime()
     ItemUsageValue::PopulateSoldByVendorItemIds();
     ItemUsageValue::PopulateReagentItemIdsForCraftableItemIds();
 
-    sLog.outString("Random bot creation started.");
-    RandomPlayerbotFactory::CreateRandomBots();
-    PlayerbotFactory::Init();
     if (config.GetBoolDefault("AiPlayerbot.PreloadRandomItemCaches", false))
         sRandomItemMgr.Init();
     else
         sLog.outString("Skipping random item cache preload. Set AiPlayerbot.PreloadRandomItemCaches = 1 to build gear/item caches at startup.");
+
+    sLog.outString("Random bot creation started.");
+    RandomPlayerbotFactory::CreateRandomBots();
+    PlayerbotFactory::Init();
     sPlayerbotTextMgr.LoadBotTexts();
     sPlayerbotTextMgr.LoadBotTextChance();
     sPlayerbotHelpMgr.LoadBotHelpTexts();

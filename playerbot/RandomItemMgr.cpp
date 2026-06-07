@@ -1449,7 +1449,10 @@ void RandomItemMgr::BuildItemInfoCache()
                 // set stat weight = 1 for items that can be equipped but have no proper stats
                 //statWeight.weight = statW;
                 // save item statWeight into ItemCache
+                                                if (statW > 8300000) statW = 8300000;
                 cacheInfo->weights[spec] = statW;
+                if (statW > 8000000)
+                    sLog.outError("HUGE WEIGHT! Item: %d, weight: %d, class: %d, spec: %s", proto->ItemId, statW, clazz, m_weightScales[spec].info.name.c_str());
                 sLog.outDetail("Item: %d, weight: %d, class: %d, spec: %s", proto->ItemId, statW, clazz, m_weightScales[spec].info.name.c_str());
             }
         }
@@ -1480,10 +1483,7 @@ void RandomItemMgr::BuildItemInfoCache()
 
         for (int i = 1; i <= MAX_STAT_SCALES; ++i)
         {
-            if (cacheInfo->weights[i])
-                stmt.addUInt32(cacheInfo->weights[i]);
-            else
-                stmt.addUInt32(0);
+            stmt.addUInt32(cacheInfo->weights[i] ? cacheInfo->weights[i] : 0);
         }
 
         stmt.Execute();
@@ -1498,10 +1498,10 @@ void RandomItemMgr::BuildItemInfoCache()
 uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPrototype const* proto, ItemSpecType& itSpec)
 {
     uint32 specType = ITEM_SPEC_NONE;
-    uint32 statWeight = 0;
-    uint32 spellPower = 0;
-    uint32 spellHeal = 0;
-    uint32 attackPower = 0;
+    int32 statWeight = 0;
+    int32 spellPower = 0;
+    int32 spellHeal = 0;
+    int32 attackPower = 0;
     bool isCasterItem = false;
     bool isAttackItem = false;
     bool isDpsItem = false;
@@ -1646,7 +1646,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
     }
 
     // check defensive stats
-    uint32 defenseStats = 0;
+    int32 defenseStats = 0;
     defenseStats += CalculateSingleStatWeight(playerclass, spec, "block", proto->Block);
     defenseStats += CalculateSingleStatWeight(playerclass, spec, "armor", proto->Armor);
 
@@ -1674,12 +1674,12 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
     }
 
     // check item spells
-    uint32 spellDamage = 0;
-    uint32 spellHealing = 0;
-    uint32 auraStatWeight = 0;
-    uint32 auraApStatWeight = 0;
-    uint32 auraHealStatWeight = 0;
-    uint32 auraDamageStatWeight = 0;
+    int32 spellDamage = 0;
+    int32 spellHealing = 0;
+    int32 auraStatWeight = 0;
+    int32 auraApStatWeight = 0;
+    int32 auraHealStatWeight = 0;
+    int32 auraDamageStatWeight = 0;
     bool isFeral = false;
     for (const auto& spellData : proto->Spells)
     {
@@ -1698,10 +1698,10 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
 
         bool hasAP = false;
 
-        uint32 effectAuraStatWeight = 0;
-        uint32 effectAuraApStatWeight = 0;
-        uint32 effectAuraHealStatWeight = 0;
-        uint32 effectAuraDamageStatWeight = 0;
+        int32 effectAuraStatWeight = 0;
+        int32 effectAuraApStatWeight = 0;
+        int32 effectAuraHealStatWeight = 0;
+        int32 effectAuraDamageStatWeight = 0;
 
         for (uint8 j = 0; j < MAX_EFFECT_INDEX; ++j)
         {
@@ -1724,7 +1724,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
                     }
                     else
                     {
-                        uint32 specialDamage = 0;
+                        int32 specialDamage = 0;
                         if ((spellproto->EffectMiscValue[j] & SPELL_SCHOOL_MASK_ARCANE) != 0)
                             specialDamage += CalculateSingleStatWeight(playerclass, spec, "arcsplpwr", spellDamage);
 
@@ -1760,7 +1760,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
                     }
                     else
                     {
-                        uint32 specialDamage = 0;
+                        int32 specialDamage = 0;
                         if ((spellproto->EffectMiscValue[j] & SPELL_SCHOOL_MASK_ARCANE) != 0)
                             specialDamage += CalculateSingleStatWeight(playerclass, spec, "arcsplpwr", spellDamage);
 
@@ -2010,7 +2010,7 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
     spellPower += auraDamageStatWeight;
     attackPower += auraApStatWeight;
 
-    uint32 socketBonus = 0;
+    int32 socketBonus = 0;
 #ifndef MANGOSBOT_ZERO
     // check sockets
     for (int i = 0; i < MAX_GEM_SOCKETS; ++i)
@@ -2162,12 +2162,12 @@ uint32 RandomItemMgr::CalculateStatWeight(uint8 playerclass, uint8 spec, ItemPro
     statWeight += socketBonus;
 
     // handle negative stats
-    if (basicStatsWeight < 0 && ((uint32)(abs(basicStatsWeight)) >= statWeight))
+    if (basicStatsWeight < 0 && (abs(basicStatsWeight) >= statWeight))
         statWeight = 0;
     else
         statWeight += basicStatsWeight;
 
-    return statWeight;
+    return statWeight > 0 ? (uint32)statWeight : 0;
 }
 
 uint32 RandomItemMgr::CalculateRandomEnchantId(uint8 playerclass, uint8 spec, ItemPrototype const* proto)
@@ -2244,7 +2244,7 @@ uint32 RandomItemMgr::CalculateEnchantWeight(uint8 playerclass, uint8 spec, uint
     if (!pEnchant)
         return 0;
 
-    uint32 weight = 0;
+    int32 weight = 0;
 
     for (int s = 0; s < 3; ++s)
     {
@@ -2298,7 +2298,7 @@ uint32 RandomItemMgr::CalculateEnchantWeight(uint8 playerclass, uint8 spec, uint
                     }
                     else
                     {
-                        uint32 specialDamage = 0;
+                        int32 specialDamage = 0;
                         if ((spellInfo->EffectMiscValue[j] & SPELL_SCHOOL_MASK_ARCANE) != 0)
                             specialDamage += CalculateSingleStatWeight(playerclass, spec, "arcsplpwr", spellDamage);
 
@@ -2330,7 +2330,7 @@ uint32 RandomItemMgr::CalculateEnchantWeight(uint8 playerclass, uint8 spec, uint
                     }
                     else
                     {
-                        uint32 specialDamage = 0;
+                        int32 specialDamage = 0;
                         if ((spellInfo->EffectMiscValue[j] & SPELL_SCHOOL_MASK_ARCANE) != 0)
                             specialDamage += CalculateSingleStatWeight(playerclass, spec, "arcsplpwr", spellDamage);
 
@@ -2386,13 +2386,13 @@ uint32 RandomItemMgr::CalculateEnchantWeight(uint8 playerclass, uint8 spec, uint
         }
     }
 
-    return weight;
+    return weight > 0 ? (uint32)weight : 0;
 }
 
 
 uint32 RandomItemMgr::CalculateRandomPropertyWeight(uint8 playerclass, uint8 spec, int32 randomPropertyId)
 {
-    uint32 weight = 0;
+    int32 weight = 0;
     if (randomPropertyId)
     {
         ItemRandomPropertiesEntry const* item_rand = sItemRandomPropertiesStore.LookupEntry(abs(randomPropertyId));
@@ -2508,9 +2508,9 @@ uint32 RandomItemMgr::ItemStatWeight(Player* player, Item* item)
     return ItemStatWeight(player, itemQualifier);
 }
 
-uint32 RandomItemMgr::CalculateSingleStatWeight(uint8 playerclass, uint8 spec, std::string stat, uint32 value)
+int32 RandomItemMgr::CalculateSingleStatWeight(uint8 playerclass, uint8 spec, std::string stat, int32 value)
 {
-    uint32 statWeight = 0;
+    int32 statWeight = 0;
     for (std::vector<WeightScaleStat>::iterator i = m_weightScales[spec].stats.begin(); i != m_weightScales[spec].stats.end(); ++i)
     {
         if (stat == i->stat)
@@ -3087,7 +3087,7 @@ uint32 RandomItemMgr::GetStatWeight(Player* player, uint32 itemId)
     if (!itemInfoCache[itemId])
         return 0;
 
-    uint32 statWeight = 0;
+    int32 statWeight = 0;
     uint32 specId = GetPlayerSpecId(player);
     std::vector<uint32> classspecs;
 
@@ -3114,7 +3114,7 @@ uint32 RandomItemMgr::GetStatWeight(uint32 itemId, uint32 specId)
     if (!itemInfoCache[itemId])
         return 0;
 
-    uint32 statWeight = 0;
+    int32 statWeight = 0;
     std::vector<uint32> classspecs;
 
     if (!m_weightScales[specId].info.id)
@@ -3141,7 +3141,7 @@ uint32 RandomItemMgr::GetBestRandomEnchantStatWeight(uint32 itemId, uint32 specI
         return 0;
 
     uint8 plrClass = 0;
-    uint32 statWeight = 0;
+    int32 statWeight = 0;
 
     for (auto itr : m_weightScales)
     {
@@ -3173,7 +3173,7 @@ uint32 RandomItemMgr::GetLiveStatWeight(Player* player, uint32 itemId, uint32 sp
     if (!itemInfoCache[itemId])
         return 0;
 
-    uint32 statWeight = 0;
+    int32 statWeight = 0;
     specId = specId ? specId : GetPlayerSpecId(player);
     if (specId == 0)
         return 0;
@@ -3507,7 +3507,7 @@ void RandomItemMgr::BuildAmmoCache()
         for (uint32 subClass = ITEM_SUBCLASS_ARROW; subClass <= ITEM_SUBCLASS_BULLET; subClass++)
         {
             auto results = WorldDatabase.PQuery(
-                    "select entry, RequiredLevel from item_template where class = '%u' and subclass = '%u' and RequiredLevel <= '%u' and quality = '%u' order by RequiredLevel desc",
+                    "select entry, required_level from item_template where class = '%u' and subclass = '%u' and required_level <= '%u' and quality = '%u' order by required_level desc",
                     ITEM_CLASS_PROJECTILE, subClass, level, ITEM_QUALITY_NORMAL);
             if (!results)
                 return;
@@ -3522,7 +3522,7 @@ void RandomItemMgr::BuildAmmoCache()
         }
 
         auto results = WorldDatabase.PQuery(
-            "select entry, RequiredLevel from item_template where class = '%u' and subclass = '%u' and RequiredLevel <= '%u' and quality = '%u' order by RequiredLevel desc",
+            "select entry, required_level from item_template where class = '%u' and subclass = '%u' and required_level <= '%u' and quality = '%u' order by required_level desc",
             ITEM_CLASS_WEAPON, ITEM_SUBCLASS_WEAPON_THROWN, level, ITEM_QUALITY_NORMAL);
         if (!results)
             return;

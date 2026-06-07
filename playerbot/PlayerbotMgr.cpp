@@ -2656,53 +2656,62 @@ std::string PlayerbotHolder::HandleBotDelete(Player* bot, Player* master, const 
 
 std::string PlayerbotHolder::HandleBotGear(Player* bot, Player* master, const std::string param)
 {
+    if (!bot)
+        return "bot is offline";
+
+    auto saveGear = [bot](const std::string& message)
+    {
+        bot->SaveInventoryAndGoldToDB();
+        return message;
+    };
+
     if (param.empty())
     {
         PlayerbotFactory factory(bot, bot->GetLevel());
         factory.EquipGear();
-        return "random gear equipped";
+        return saveGear("random gear equipped");
     }
     if (param == "green" || param == "uncommon")
     {
         PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_UNCOMMON);
         factory.EquipGear();
-        return "random green gear equipped";
+        return saveGear("random green gear equipped");
     }
     if (param == "blue" || param == "rare")
     {
         PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_RARE);
         factory.EquipGear();
-        return "random blue gear equipped";
+        return saveGear("random blue gear equipped");
     }
     if (param == "purple" || param == "epic")
     {
         PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_EPIC);
         factory.EquipGear();
-        return "random epic gear equipped";
+        return saveGear("random epic gear equipped");
     }
     if (param == "upgrade")
     {
         PlayerbotFactory factory(bot, master ? master->GetLevel() : bot->GetLevel(), ITEM_QUALITY_NORMAL);
         factory.UpgradeGear(false);
-        return "gear upgraded";
+        return saveGear("gear upgraded");
     }
     if (param == "sync")
     {
         PlayerbotFactory factory(bot, master ? master->GetLevel() : bot->GetLevel(), ITEM_QUALITY_NORMAL);
         factory.UpgradeGear(true);
-        return "gear upgraded";
+        return saveGear("gear upgraded");
     }
     if (param == "best")
     {
         PlayerbotFactory factory(bot, bot->GetLevel());
         factory.EquipGearBest();
-        return "random best gear equipped";
+        return saveGear("random best gear equipped");
     }
     if (param == "partial")
     {
         PlayerbotFactory factory(bot, bot->GetLevel());
         factory.EquipGearPartialUpgrade();
-        return "random gear upgraded to some slots";
+        return saveGear("random gear upgraded to some slots");
     }
 
     return "unknown gear command";

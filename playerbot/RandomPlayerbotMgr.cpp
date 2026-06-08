@@ -3702,6 +3702,17 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player * const bot)
             ai->GetMaster() ? ai->GetMaster()->GetName() : "NULL",
             ai->AllowActivity(ALL_ACTIVITY) ? 1 : 0);
     }
+
+    if (IsRandomBot(bot))
+    {
+        bot->SetHealthPercent(100);
+        if (bot->GetMaxPower(POWER_MANA) > 0)
+            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+        if (bot->GetMaxPower(POWER_ENERGY) > 0)
+            bot->SetPower(POWER_ENERGY, bot->GetMaxPower(POWER_ENERGY));
+        if (bot->GetMaxPower(POWER_RAGE) > 0)
+            bot->SetPower(POWER_RAGE, 0);
+    }
 		//if (loginProgressBar && playerBots.size() < sRandomPlayerbotMgr.GetMaxAllowedBotCount()) { loginProgressBar->step(); }
 	//if (loginProgressBar && playerBots.size() >= sRandomPlayerbotMgr.GetMaxAllowedBotCount() - 1) {
     //if (loginProgressBar && playerBots.size() + 1 >= sRandomPlayerbotMgr.GetMaxAllowedBotCount()) {

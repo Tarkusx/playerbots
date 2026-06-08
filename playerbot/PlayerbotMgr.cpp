@@ -732,6 +732,15 @@ std::string PlayerbotHolder::ProcessBotCommand(std::string cmd, ObjectGuid guid,
         else
             realParam = param;            
 
+        if (!bot && 
+            it->second != &PlayerbotHolder::HandleBotAddLogin && 
+            it->second != &PlayerbotHolder::HandleBotRemoveLogout && 
+            it->second != &PlayerbotHolder::HandleBotDelete && 
+            it->second != &PlayerbotHolder::HandleBotAlways)
+        {
+            return "bot is offline";
+        }
+
         return (this->*it->second)(bot, master, realParam);
     }
 

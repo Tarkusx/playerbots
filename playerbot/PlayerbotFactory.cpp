@@ -348,6 +348,17 @@ void PlayerbotFactory::Randomize(bool incremental, bool syncWithMaster)
         InitTaxiNodes();
     }
 
+    if (isRandomBot)
+    {
+        bot->SetHealthPercent(100);
+        if (bot->GetMaxPower(POWER_MANA) > 0)
+            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+        if (bot->GetMaxPower(POWER_ENERGY) > 0)
+            bot->SetPower(POWER_ENERGY, bot->GetMaxPower(POWER_ENERGY));
+        if (bot->GetMaxPower(POWER_RAGE) > 0)
+            bot->SetPower(POWER_RAGE, 0);
+    }
+
     pmo = sPerformanceMonitor.start(PERF_MON_RNDBOT, "PlayerbotFactory_Save");
     sLog.outDetail("Saving to DB...");
     if (sRandomPlayerbotMgr.GetDatabaseDelay("CharacterDatabase") < 10 * IN_MILLISECONDS)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <shared_mutex>
+#include <memory>
 #include "WorldPosition.h"
 #include "MotionGenerators/PathFinder.h"
 
@@ -311,7 +312,7 @@ namespace ai
     {
     public:
         TravelNodeRoute() {}
-        TravelNodeRoute(std::vector<TravelNode*> nodes1, std::vector<TravelNode*> tempNodes) { nodes = nodes1; if (tempNodes.size()) addTempNodes(tempNodes); }
+        TravelNodeRoute(std::vector<TravelNode*> nodes1, std::vector<TravelNode*> tempNodes1) { nodes = nodes1; if (tempNodes1.size()) addTempNodes(tempNodes1); }
 
         bool isEmpty() { return nodes.empty(); }
 
@@ -321,8 +322,11 @@ namespace ai
         void setNodes(std::vector<TravelNode*> nodes1) { nodes = nodes1; }
         std::vector<TravelNode*>& getNodes() { return nodes; }
 
-        void addTempNodes(std::vector<TravelNode*> nodes) { tempNodes.insert(tempNodes.end(), nodes.begin(), nodes.end()); }
-        void cleanTempNodes() { for (auto node : tempNodes) delete node; }
+        void addTempNodes(std::vector<TravelNode*> nodes_to_add) { 
+            for (auto node : nodes_to_add) 
+                tempNodes.push_back(std::shared_ptr<TravelNode>(node)); 
+        }
+        void cleanTempNodes() { tempNodes.clear(); }
 
         TravelPath buildPath(std::vector<WorldPosition> pathToStart = {}, std::vector<WorldPosition> pathToEnd = {}, Unit* bot = nullptr);
 
@@ -330,7 +334,7 @@ namespace ai
     private:
         std::vector<TravelNode*>::iterator findNode(TravelNode* node) { return std::find(nodes.begin(), nodes.end(), node); }
         std::vector<TravelNode*> nodes;
-        std::vector<TravelNode*> tempNodes;
+        std::vector<std::shared_ptr<TravelNode>> tempNodes;
     };
 
     //A node container to aid A* calculations with nodes.
